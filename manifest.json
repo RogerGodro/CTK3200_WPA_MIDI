@@ -1,0 +1,33 @@
+{
+  "name": "CTK-3200 MIDI Controller",
+  "short_name": "CTK-3200",
+  "description": "Contrôleur MIDI pour Casio CTK-3200 avec 5 drum sets",
+  "start_url": "./ctk3200-pwa.html",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#1e1e2e",
+  "theme_color": "#5865f2",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%235865f2' width='512' height='512' rx='100'/%3E%3Ctext x='256' y='340' font-size='280' text-anchor='middle' fill='white' font-family='Arial'%3E🎹%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["music", "entertainment", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Standard Set",
+      "short_name": "Standard",
+      "description": "Ouvrir avec Standard Drum Set",
+      "url": "./ctk3200-pwa.html?set=0"
+    },
+    {
+      "name": "Power Set",
+      "short_name": "Power",
+      "description": "Ouvrir avec Power Drum Set",
+      "url": "./ctk3200-pwa.html?set=2"
+    }
+  ]
+}

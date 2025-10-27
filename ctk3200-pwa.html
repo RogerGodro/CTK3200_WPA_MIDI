@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Contrôleur MIDI pour Casio CTK-3200 avec 5 drum sets">
+    <meta name="theme-color" content="#5865f2">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>CTK-3200 MIDI Controller</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="./manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80'%3E🎹%3C/text%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%235865f2' width='512' height='512' rx='100'/%3E%3Ctext x='256' y='340' font-size='280' text-anchor='middle' fill='white'%3E🎹%3C/text%3E%3C/svg%3E">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 12px;
+            height: 100vh;
+            padding: 12px;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 20px;
+            font-size: 13px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff4444;
+        }
+
+        .status-dot.connected {
+            background: #44ff44;
+            box-shadow: 0 0 10px #44ff44;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .connect-btn {
+            padding: 10px 20px;
+            background: #5865f2;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .connect-btn:active {
+            transform: scale(0.95);
+        }
+
+        .fullscreen-btn {
+            padding: 8px 14px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .sidebar {
+            background: rgba(255,255,255,0.08);
+            border-radius: 15px;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .control-section {
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .drum-set-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .drum-set-btn {
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+
+        .drum-set-btn.active {
+            background: #5865f2;
+            border-color: #7289da;
+        }
+
+        .rhythm-select {
+            width: 100%;
+            padding: 8px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            color: white;
+            font-size: 12px;
+            max-height: 150px;
+        }
+
+        .rhythm-select option {
+            background: #2d2d44;
+            padding: 5px;
+        }
+
+        .rhythm-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .rhythm-btn {
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .rhythm-btn.start {
+            background: #44ff44;
+            color: #000;
+        }
+
+        .rhythm-btn.stop {
+            background: #ff4444;
+        }
+
+        .rhythm-btn:active {
+            transform: scale(0.95);
+        }
+
+        .slider-control {
+            margin-top: 10px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-bottom: 6px;
+            opacity: 0.8;
+        }
+
+        .slider-value {
+            font-weight: 700;
+            color: #5865f2;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #5865f2;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(88,101,242,0.5);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #5865f2;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .main-area {
+            background: rgba(255,255,255,0.08);
+            border-radius: 15px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pads-container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .pad {
+            background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
+            border: 3px solid rgba(255,255,255,0.2);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.1s;
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pad::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle, rgba(255,255,255,0.4), transparent);
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
+
+        .pad.active::before {
+            opacity: 1;
+        }
+
+        .pad:active {
+            transform: scale(0.95);
+        }
+
+        .pad-number {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .pad-label {
+            font-size: 12px;
+            opacity: 0.9;
+            text-align: center;
+        }
+
+        .pad-note {
+            font-size: 9px;
+            opacity: 0.6;
+            margin-top: 2px;
+        }
+
+        /* Drum Set Colors */
+        .drum-standard .pad {
+            background: linear-gradient(135deg, rgba(255,77,77,0.2), rgba(255,77,77,0.05));
+            border-color: rgba(255,77,77,0.4);
+            color: #ff6b6b;
+        }
+
+        .drum-standard .pad.active {
+            background: rgba(255,77,77,0.5);
+            border-color: #ff4444;
+            box-shadow: 0 0 25px rgba(255,77,77,0.7);
+        }
+
+        .drum-room .pad {
+            background: linear-gradient(135deg, rgba(255,167,38,0.2), rgba(255,167,38,0.05));
+            border-color: rgba(255,167,38,0.4);
+            color: #ffa726;
+        }
+
+        .drum-room .pad.active {
+            background: rgba(255,167,38,0.5);
+            border-color: #ff9800;
+            box-shadow: 0 0 25px rgba(255,167,38,0.7);
+        }
+
+        .drum-power .pad {
+            background: linear-gradient(135deg, rgba(171,71,188,0.2), rgba(171,71,188,0.05));
+            border-color: rgba(171,71,188,0.4);
+            color: #ba68c8;
+        }
+
+        .drum-power .pad.active {
+            background: rgba(171,71,188,0.5);
+            border-color: #ab47bc;
+            box-shadow: 0 0 25px rgba(171,71,188,0.7);
+        }
+
+        .drum-synth .pad {
+            background: linear-gradient(135deg, rgba(38,198,218,0.2), rgba(38,198,218,0.05));
+            border-color: rgba(38,198,218,0.4);
+            color: #4dd0e1;
+        }
+
+        .drum-synth .pad.active {
+            background: rgba(38,198,218,0.5);
+            border-color: #26c6da;
+            box-shadow: 0 0 25px rgba(38,198,218,0.7);
+        }
+
+        .drum-brush .pad {
+            background: linear-gradient(135deg, rgba(102,187,106,0.2), rgba(102,187,106,0.05));
+            border-color: rgba(102,187,106,0.4);
+            color: #81c784;
+        }
+
+        .drum-brush .pad.active {
+            background: rgba(102,187,106,0.5);
+            border-color: #66bb6a;
+            box-shadow: 0 0 25px rgba(102,187,106,0.7);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(0,0,0,0.95);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎹 CTK-3200 MIDI</h1>
+            <div class="header-controls">
+                <div class="status-indicator">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Non connecté</span>
+                </div>
+                <button class="connect-btn" id="connectBtn" onclick="connectMIDI()">Autoriser MIDI</button>
+                <button class="fullscreen-btn" onclick="toggleFullscreen()">⛶</button>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="control-section">
+                <div class="section-title">🥁 DRUM SET</div>
+                <div class="drum-set-selector">
+                    <button class="drum-set-btn active" onclick="selectDrumSet(0)">STANDARD</button>
+                    <button class="drum-set-btn" onclick="selectDrumSet(1)">ROOM</button>
+                    <button class="drum-set-btn" onclick="selectDrumSet(2)">POWER</button>
+                    <button class="drum-set-btn" onclick="selectDrumSet(3)">SYNTH</button>
+                    <button class="drum-set-btn" onclick="selectDrumSet(4)">BRUSH</button>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <div class="section-title">🎵 RYTHME</div>
+                <select class="rhythm-select" id="rhythmSelect" size="6" onchange="selectRhythm()">
+                    <optgroup label="POPS/ROCK">
+                        <option value="0">001 POP ROCK</option>
+                        <option value="1">002 8 BEAT</option>
+                        <option value="2">003 16 BEAT</option>
+                        <option value="3">004 ROCK</option>
+                        <option value="4">005 HARD ROCK</option>
+                    </optgroup>
+                    <optgroup label="DANCE">
+                        <option value="10">011 DANCE POP</option>
+                        <option value="11">012 CLUB DANCE</option>
+                        <option value="12">013 HOUSE</option>
+                        <option value="13">014 TECHNO</option>
+                    </optgroup>
+                    <optgroup label="LATIN">
+                        <option value="29">030 BOSSA NOVA</option>
+                        <option value="30">031 SAMBA</option>
+                        <option value="31">032 RUMBA</option>
+                        <option value="32">033 SALSA</option>
+                    </optgroup>
+                </select>
+                <div class="rhythm-controls">
+                    <button class="rhythm-btn start" onclick="startRhythm()">▶ START</button>
+                    <button class="rhythm-btn stop" onclick="stopRhythm()">⏹ STOP</button>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <div class="section-title">⏱ TEMPO</div>
+                <div class="slider-control">
+                    <div class="slider-label">
+                        <span>BPM</span>
+                        <span class="slider-value" id="tempoValue">120</span>
+                    </div>
+                    <input type="range" class="slider" min="30" max="255" value="120" id="tempoSlider" oninput="updateTempo()">
+                </div>
+            </div>
+
+            <div class="control-section">
+                <div class="section-title">🔊 VÉLOCITÉ</div>
+                <div class="slider-control">
+                    <div class="slider-label">
+                        <span>Force</span>
+                        <span class="slider-value" id="velocityValue">100</span>
+                    </div>
+                    <input type="range" class="slider" min="1" max="127" value="100" id="velocitySlider" oninput="updateVelocity()">
+                </div>
+            </div>
+
+            <div class="control-section">
+                <div class="section-title">ℹ️ DIAGNOSTIC</div>
+                <div id="diagnosticInfo" style="font-size: 10px; opacity: 0.7; line-height: 1.5;">
+                    <div>Navigateur: <span id="browserInfo">-</span></div>
+                    <div>MIDI API: <span id="midiApiInfo">-</span></div>
+                    <div>Périphériques: <span id="devicesInfo">-</span></div>
+                </div>
+                <div style="margin-top: 10px; font-size: 9px; opacity: 0.6; line-height: 1.4;">
+                    💡 Chrome va demander la permission d'accéder aux périphériques MIDI. Clique "Autoriser" quand demandé.
+                </div>
+            </div>
+        </div>
+
+        <div class="main-area">
+            <div class="pads-container" id="padsContainer"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Variables
+        let midiAccess = null;
+        let midiOutput = null;
+        let currentDrumSet = 0;
+        let velocity = 100;
+        let tempo = 120;
+        let currentRhythm = 0;
+
+        // Drum Sets from CTK-3200 Manual
+        const drumSets = [
+            {
+                name: 'STANDARD',
+                class: 'drum-standard',
+                pads: [
+                    { note: 36, label: 'Kick 1', full: 'BASS DRUM 1' },
+                    { note: 38, label: 'Snare', full: 'ACOUSTIC SNARE' },
+                    { note: 40, label: 'E-Snare', full: 'ELECTRIC SNARE' },
+                    { note: 41, label: 'Tom L2', full: 'LOW TOM 2' },
+                    { note: 42, label: 'HH Close', full: 'CLOSED HI-HAT' },
+                    { note: 43, label: 'Tom L1', full: 'LOW TOM 1' },
+                    { note: 45, label: 'Tom M2', full: 'MID TOM 2' },
+                    { note: 46, label: 'HH Open', full: 'OPEN HI-HAT' },
+                    { note: 47, label: 'Tom M1', full: 'MID TOM 1' },
+                    { note: 48, label: 'Tom H2', full: 'HIGH TOM 2' },
+                    { note: 49, label: 'Crash 1', full: 'CRASH CYMBAL 1' },
+                    { note: 50, label: 'Tom H1', full: 'HIGH TOM 1' },
+                    { note: 51, label: 'Ride', full: 'RIDE CYMBAL 1' },
+                    { note: 52, label: 'China', full: 'CHINESE CYMBAL' },
+                    { note: 53, label: 'Bell', full: 'RIDE BELL' },
+                    { note: 54, label: 'Tamb', full: 'TAMBOURINE' }
+                ]
+            },
+            {
+                name: 'ROOM',
+                class: 'drum-room',
+                pads: [
+                    { note: 36, label: 'Kick', full: 'BASS DRUM 1' },
+                    { note: 38, label: 'R-Snare', full: 'ROOM SNARE' },
+                    { note: 40, label: 'E-Snare', full: 'ELECTRIC SNARE' },
+                    { note: 41, label: 'Tom L2', full: 'ROOM LOW TOM 2' },
+                    { note: 42, label: 'HH Close', full: 'CLOSED HI-HAT' },
+                    { note: 43, label: 'Tom L1', full: 'ROOM LOW TOM 1' },
+                    { note: 45, label: 'Tom M2', full: 'ROOM MID TOM 2' },
+                    { note: 46, label: 'HH Open', full: 'OPEN HI-HAT' },
+                    { note: 47, label: 'Tom M1', full: 'ROOM MID TOM 1' },
+                    { note: 48, label: 'Tom H2', full: 'ROOM HIGH TOM 2' },
+                    { note: 49, label: 'Crash', full: 'CRASH CYMBAL 1' },
+                    { note: 50, label: 'Tom H1', full: 'ROOM HIGH TOM 1' },
+                    { note: 51, label: 'Ride', full: 'RIDE CYMBAL 1' },
+                    { note: 52, label: 'China', full: 'CHINESE CYMBAL' },
+                    { note: 53, label: 'Bell', full: 'RIDE BELL' },
+                    { note: 54, label: 'Tamb', full: 'TAMBOURINE' }
+                ]
+            },
+            {
+                name: 'POWER',
+                class: 'drum-power',
+                pads: [
+                    { note: 36, label: 'Kick', full: 'BASS DRUM 1' },
+                    { note: 38, label: 'P-Snare', full: 'POWER SNARE' },
+                    { note: 40, label: 'E-Snare', full: 'ELECTRIC SNARE' },
+                    { note: 41, label: 'Tom L2', full: 'POWER LOW TOM 2' },
+                    { note: 42, label: 'HH Close', full: 'CLOSED HI-HAT' },
+                    { note: 43, label: 'Tom L1', full: 'POWER LOW TOM 1' },
+                    { note: 45, label: 'Tom M2', full: 'POWER MID TOM 2' },
+                    { note: 46, label: 'HH Open', full: 'OPEN HI-HAT' },
+                    { note: 47, label: 'Tom M1', full: 'POWER MID TOM 1' },
+                    { note: 48, label: 'Tom H2', full: 'POWER HIGH TOM 2' },
+                    { note: 49, label: 'Crash', full: 'CRASH CYMBAL 1' },
+                    { note: 50, label: 'Tom H1', full: 'POWER HIGH TOM 1' },
+                    { note: 51, label: 'Ride', full: 'RIDE CYMBAL 1' },
+                    { note: 52, label: 'China', full: 'CHINESE CYMBAL' },
+                    { note: 53, label: 'Bell', full: 'RIDE BELL' },
+                    { note: 54, label: 'Tamb', full: 'TAMBOURINE' }
+                ]
+            },
+            {
+                name: 'SYNTH',
+                class: 'drum-synth',
+                pads: [
+                    { note: 36, label: 'Kick 2', full: 'BASS DRUM 2' },
+                    { note: 38, label: 'Snare 2', full: 'SNARE DRUM 2' },
+                    { note: 40, label: 'E-Snare', full: 'ELECTRIC SNARE' },
+                    { note: 41, label: 'Tom L2', full: 'LOW TOM 2' },
+                    { note: 42, label: 'HH Cl 2', full: 'CLOSED HI-HAT 2' },
+                    { note: 43, label: 'Tom L1', full: 'LOW TOM 1' },
+                    { note: 45, label: 'Tom M2', full: 'MID TOM 2' },
+                    { note: 46, label: 'HH Op 2', full: 'OPEN HI-HAT 2' },
+                    { note: 47, label: 'Tom M1', full: 'MID TOM 1' },
+                    { note: 48, label: 'Tom H2', full: 'HIGH TOM 2' },
+                    { note: 49, label: 'Crash 2', full: 'CRASH CYMBAL 2' },
+                    { note: 50, label: 'Tom H1', full: 'HIGH TOM 1' },
+                    { note: 51, label: 'Ride 2', full: 'RIDE CYMBAL 2' },
+                    { note: 52, label: 'China', full: 'CHINESE CYMBAL' },
+                    { note: 53, label: 'Bell', full: 'RIDE BELL' },
+                    { note: 54, label: 'Tamb', full: 'TAMBOURINE' }
+                ]
+            },
+            {
+                name: 'BRUSH',
+                class: 'drum-brush',
+                pads: [
+                    { note: 36, label: 'Kick', full: 'BASS DRUM 1' },
+                    { note: 38, label: 'Brush', full: 'BRUSH TAP' },
+                    { note: 40, label: 'B-Slap', full: 'BRUSH SLAP' },
+                    { note: 41, label: 'Tom L2', full: 'LOW TOM 2' },
+                    { note: 42, label: 'HH Close', full: 'CLOSED HI-HAT' },
+                    { note: 43, label: 'Tom L1', full: 'LOW TOM 1' },
+                    { note: 45, label: 'Tom M2', full: 'MID TOM 2' },
+                    { note: 46, label: 'HH Open', full: 'OPEN HI-HAT' },
+                    { note: 47, label: 'Tom M1', full: 'MID TOM 1' },
+                    { note: 48, label: 'Tom H2', full: 'HIGH TOM 2' },
+                    { note: 49, label: 'Crash', full: 'CRASH CYMBAL 1' },
+                    { note: 50, label: 'Tom H1', full: 'HIGH TOM 1' },
+                    { note: 51, label: 'Ride', full: 'RIDE CYMBAL 1' },
+                    { note: 52, label: 'China', full: 'CHINESE CYMBAL' },
+                    { note: 53, label: 'Bell', full: 'RIDE BELL' },
+                    { note: 54, label: 'Tamb', full: 'TAMBOURINE' }
+                ]
+            }
+        ];
+
+        // Check MIDI Support
+        function checkMIDISupport() {
+            const status = document.getElementById('statusText');
+            const btn = document.getElementById('connectBtn');
+            
+            // Update browser info
+            const isChrome = navigator.userAgent.includes('Chrome');
+            document.getElementById('browserInfo').textContent = isChrome ? 'Chrome ✓' : 'Autre ⚠️';
+            document.getElementById('browserInfo').style.color = isChrome ? '#44ff44' : '#ffaa00';
+            
+            if (!navigator.requestMIDIAccess) {
+                status.textContent = '❌ MIDI non supporté';
+                btn.textContent = 'MIDI non dispo';
+                btn.disabled = true;
+                btn.style.background = '#666';
+                document.getElementById('midiApiInfo').textContent = 'Non disponible ❌';
+                document.getElementById('midiApiInfo').style.color = '#ff4444';
+                document.getElementById('devicesInfo').textContent = 'N/A';
+                showToast('❌ Web MIDI non supporté. Utilise Chrome sur Android !', 5000);
+                return false;
+            }
+            
+            document.getElementById('midiApiInfo').textContent = 'Disponible ✓';
+            document.getElementById('midiApiInfo').style.color = '#44ff44';
+            return true;
+        }
+
+        // Connect MIDI
+        async function connectMIDI() {
+            try {
+                if (!checkMIDISupport()) return;
+
+                const status = document.getElementById('statusText');
+                const btn = document.getElementById('connectBtn');
+                
+                status.textContent = '🔌 Connexion...';
+                showToast('🔌 Demande de permission MIDI...');
+                
+                // Request MIDI access (this will show permission dialog)
+                midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+                
+                // List all MIDI devices
+                const outputs = Array.from(midiAccess.outputs.values());
+                const inputs = Array.from(midiAccess.inputs.values());
+                
+                console.log('MIDI Outputs:', outputs);
+                console.log('MIDI Inputs:', inputs);
+                
+                // Update diagnostic info
+                document.getElementById('devicesInfo').textContent = `${outputs.length} trouvé(s)`;
+                document.getElementById('devicesInfo').style.color = outputs.length > 0 ? '#44ff44' : '#ff4444';
+                
+                if (outputs.length === 0) {
+                    status.textContent = '❌ Aucun périphérique';
+                    showToast('❌ Aucun périphérique MIDI trouvé', 4000);
+                    
+                    // Show helpful diagnostic
+                    setTimeout(() => {
+                        let msg = '🔍 AUCUN PÉRIPHÉRIQUE MIDI DÉTECTÉ\n\n';
+                        msg += '✅ Web MIDI fonctionne\n';
+                        msg += `✅ Navigateur: ${navigator.userAgent.includes('Chrome') ? 'Chrome' : 'Compatible'}\n\n`;
+                        msg += '⚠️ À VÉRIFIER:\n\n';
+                        msg += '1️⃣ CTK-3200 allumé?\n';
+                        msg += '2️⃣ Câble USB OTG branché fermement?\n';
+                        msg += '3️⃣ USB du CTK-3200 vers OTG?\n';
+                        msg += '4️⃣ Mode USB MIDI activé sur le clavier?\n\n';
+                        msg += '💡 ASTUCE: Débranche et rebranche le câble, puis réessaie.';
+                        alert(msg);
+                    }, 500);
+                    return;
+                }
+
+                // Select MIDI output
+                midiOutput = outputs.find(o => 
+                    o.name.toLowerCase().includes('ctk') || 
+                    o.name.toLowerCase().includes('casio') ||
+                    o.name.toLowerCase().includes('keyboard')
+                ) || outputs[0];
+
+                document.getElementById('statusDot').classList.add('connected');
+                status.textContent = midiOutput.name;
+                btn.textContent = '✓ Connecté';
+                btn.style.background = '#44ff44';
+                btn.style.color = '#000';
+
+                let successMsg = `✅ Connecté: ${midiOutput.name}`;
+                showToast(successMsg);
+                
+                // Log all devices
+                console.log('✅ Périphérique utilisé:', midiOutput.name);
+                if (outputs.length > 1) {
+                    console.log(`ℹ️ ${outputs.length} périphériques MIDI trouvés:`);
+                    outputs.forEach((o, i) => {
+                        console.log(`  ${i+1}. ${o.name} ${o === midiOutput ? '← ACTIF' : ''}`);
+                    });
+                    
+                    // Show info if multiple devices
+                    setTimeout(() => {
+                        let msg = `✅ CONNECTÉ!\n\n`;
+                        msg += `Utilisé: ${midiOutput.name}\n\n`;
+                        msg += `${outputs.length} périphérique(s) MIDI détecté(s):\n`;
+                        outputs.forEach((o, i) => {
+                            msg += `${i+1}. ${o.name}\n`;
+                        });
+                        console.log(msg);
+                    }, 1000);
+                }
+                
+                // Listen for MIDI disconnect
+                midiAccess.onstatechange = (e) => {
+                    console.log('MIDI State Change:', e.port.name, e.port.state);
+                    if (e.port.state === 'disconnected' && e.port === midiOutput) {
+                        status.textContent = '⚠️ Déconnecté';
+                        document.getElementById('statusDot').classList.remove('connected');
+                        btn.textContent = 'Reconnecter';
+                        btn.style.background = '#5865f2';
+                        btn.style.color = '#fff';
+                        showToast('⚠️ CTK-3200 déconnecté');
+                        midiOutput = null;
+                    }
+                };
+                
+            } catch (error) {
+                console.error('MIDI Error:', error);
+                const status = document.getElementById('statusText');
+                status.textContent = '❌ Erreur';
+                
+                let errorMsg = '❌ ERREUR MIDI\n\n';
+                errorMsg += `Type: ${error.name}\n`;
+                errorMsg += `Message: ${error.message}\n\n`;
+                
+                if (error.name === 'NotAllowedError') {
+                    errorMsg += '🔒 PERMISSION REFUSÉE\n\n';
+                    errorMsg += 'Chrome a bloqué l\'accès au MIDI.\n\n';
+                    errorMsg += '📋 SOLUTION:\n\n';
+                    errorMsg += '1️⃣ Clique sur l\'icône 🔒 ou ⓘ dans la barre d\'adresse\n';
+                    errorMsg += '2️⃣ Cherche "MIDI devices" ou "Périphériques MIDI"\n';
+                    errorMsg += '3️⃣ Change de "Bloquer" à "Autoriser"\n';
+                    errorMsg += '4️⃣ Recharge la page (F5)\n\n';
+                    errorMsg += 'OU\n\n';
+                    errorMsg += '📱 Ouvre Chrome → ⋮ → Paramètres → Paramètres du site → MIDI\n';
+                    errorMsg += 'Active "Demander avant d\'accéder"';
+                    showToast('❌ Permission MIDI refusée', 5000);
+                } else if (error.name === 'SecurityError') {
+                    errorMsg += '🔐 ERREUR DE SÉCURITÉ\n\n';
+                    errorMsg += 'Chrome bloque l\'accès MIDI pour des raisons de sécurité.\n\n';
+                    errorMsg += '💡 Essaie d\'ouvrir le fichier depuis:\n';
+                    errorMsg += '- Un serveur web local\n';
+                    errorMsg += '- Un hébergement HTTPS';
+                    showToast('❌ Erreur de sécurité', 4000);
+                } else if (error.name === 'NotSupportedError') {
+                    errorMsg += '⚠️ MIDI NON SUPPORTÉ\n\n';
+                    errorMsg += 'Web MIDI API n\'est pas disponible sur cet appareil.\n\n';
+                    errorMsg += 'Vérifie que tu utilises une version récente de Chrome.';
+                    showToast('❌ MIDI non supporté', 4000);
+                } else {
+                    errorMsg += '⚠️ ERREUR INCONNUE\n\n';
+                    errorMsg += 'Vérifie que:\n';
+                    errorMsg += '1. Tu utilises Chrome\n';
+                    errorMsg += '2. Le CTK-3200 est branché\n';
+                    errorMsg += '3. Le câble USB OTG fonctionne';
+                    showToast('❌ Erreur MIDI', 4000);
+                }
+                
+                console.error(errorMsg);
+                alert(errorMsg);
+            }
+        }
+
+        // Send MIDI
+        function sendMIDI(note, vel = 127) {
+            if (!midiOutput) {
+                showToast('⚠️ Connecte d\'abord le MIDI');
+                return;
+            }
+
+            // Note On (Channel 10 for drums = 0x99)
+            midiOutput.send([0x99, note, vel]);
+            
+            // Note Off
+            setTimeout(() => {
+                midiOutput.send([0x89, note, 0]);
+            }, 100);
+        }
+
+        // Generate Pads
+        function generatePads() {
+            const container = document.getElementById('padsContainer');
+            container.innerHTML = '';
+            
+            const drumSet = drumSets[currentDrumSet];
+            
+            drumSet.pads.forEach((pad, index) => {
+                const padEl = document.createElement('div');
+                padEl.className = 'pad';
+                padEl.innerHTML = `
+                    <div class="pad-number">${index + 1}</div>
+                    <div class="pad-label">${pad.label}</div>
+                    <div class="pad-note">N${pad.note}</div>
+                `;
+                
+                // Touch
+                padEl.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    padEl.classList.add('active');
+                    sendMIDI(pad.note, velocity);
+                });
+                
+                padEl.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    padEl.classList.remove('active');
+                });
+                
+                // Mouse
+                padEl.addEventListener('mousedown', () => {
+                    padEl.classList.add('active');
+                    sendMIDI(pad.note, velocity);
+                });
+                
+                padEl.addEventListener('mouseup', () => {
+                    padEl.classList.remove('active');
+                });
+                
+                padEl.addEventListener('mouseleave', () => {
+                    padEl.classList.remove('active');
+                });
+                
+                container.appendChild(padEl);
+            });
+            
+            container.className = `pads-container ${drumSet.class}`;
+        }
+
+        // Select Drum Set
+        function selectDrumSet(index) {
+            currentDrumSet = index;
+            
+            document.querySelectorAll('.drum-set-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', i === index);
+            });
+            
+            generatePads();
+            showToast(`🥁 ${drumSets[index].name} SET`);
+            
+            if (midiOutput) {
+                midiOutput.send([0xC9, index]);
+            }
+        }
+
+        // Rhythm
+        function selectRhythm() {
+            const select = document.getElementById('rhythmSelect');
+            currentRhythm = parseInt(select.value);
+            const name = select.options[select.selectedIndex].text;
+            showToast(`🎵 ${name}`);
+        }
+
+        function startRhythm() {
+            if (!midiOutput) {
+                showToast('⚠️ Connecte le MIDI');
+                return;
+            }
+            midiOutput.send([0xFA]);
+            showToast('▶ Rythme démarré');
+        }
+
+        function stopRhythm() {
+            if (!midiOutput) return;
+            midiOutput.send([0xFC]);
+            showToast('⏹ Arrêté');
+        }
+
+        // Controls
+        function updateTempo() {
+            tempo = parseInt(document.getElementById('tempoSlider').value);
+            document.getElementById('tempoValue').textContent = tempo;
+        }
+
+        function updateVelocity() {
+            velocity = parseInt(document.getElementById('velocitySlider').value);
+            document.getElementById('velocityValue').textContent = velocity;
+        }
+
+        // Fullscreen
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Toast
+        function showToast(msg, duration = 2500) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), duration);
+        }
+
+        // Init
+        window.addEventListener('load', async () => {
+            generatePads();
+            
+            // Check MIDI support first
+            const midiSupported = checkMIDISupport();
+            
+            if (!midiSupported) {
+                showToast('❌ MIDI non supporté. Utilise Chrome !', 5000);
+                return;
+            }
+            
+            // Show initial message
+            showToast('🎹 Prêt ! Clique "Autoriser MIDI" pour connecter le CTK-3200', 5000);
+            
+            // Auto-connect after first user interaction (required for permission dialog)
+            let firstInteraction = true;
+            document.addEventListener('click', async (e) => {
+                if (firstInteraction && !midiOutput) {
+                    firstInteraction = false;
+                    // Only auto-connect if clicked outside the connect button
+                    if (e.target.id !== 'connectBtn') {
+                        setTimeout(async () => {
+                            showToast('🔌 Tentative de connexion...');
+                            await connectMIDI();
+                        }, 500);
+                    }
+                }
+            }, { once: false });
+        });
+
+        // Wake Lock
+        let wakeLock = null;
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                }
+            } catch (err) {}
+        }
+
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock && document.visibilityState === 'visible') {
+                await requestWakeLock();
+            }
+        });
+
+        requestWakeLock();
+        
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => {
+                        console.log('✅ Service Worker enregistré:', reg);
+                    })
+                    .catch(err => {
+                        console.log('❌ Service Worker erreur:', err);
+                    });
+            });
+        }
+        
+        // PWA Install Prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Show install button
+            showToast('📱 Tu peux installer cette app ! Clique sur ⋮ puis "Installer l\'application"', 6000);
+            console.log('💡 PWA installable ! beforeinstallprompt event captured');
+        });
+        
+        window.addEventListener('appinstalled', () => {
+            showToast('✅ App installée ! Lance-la depuis ton écran d\'accueil', 5000);
+            deferredPrompt = null;
+        });
+    </script>
+</body>
+</html>
