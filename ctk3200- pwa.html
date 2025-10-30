@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>CTK-3200 Controller v2.2</title>
+    <link rel="manifest" data-manifest='{"name":"CTK-3200 Controller","short_name":"CTK Pad","display":"fullscreen","orientation":"landscape","start_url":".","theme_color":"#1a1a2e","background_color":"#0f0f1e"}'>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(180deg, #0f0f1e 0%, #1a1a2e 100%);
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+            height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 8px;
+        }
+
+        .header {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff4444;
+            transition: all 0.3s;
+        }
+
+        .status-dot.connected {
+            background: #44ff44;
+            box-shadow: 0 0 8px #44ff44;
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .control-btn {
+            flex: 1;
+            padding: 12px;
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+            background: rgba(255,255,255,0.15);
+        }
+
+        .control-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: transparent;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .velocity-slider {
+            flex: 2;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 10px;
+        }
+
+        .velocity-slider input {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .velocity-slider input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .pads-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .pads-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            height: 100%;
+        }
+
+        .pad {
+            background: linear-gradient(145deg, #2a2a3e, #1a1a2e);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.1s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pad:active, .pad.active {
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            transform: scale(0.95);
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .pad-number {
+            font-size: 10px;
+            opacity: 0.5;
+            margin-top: 2px;
+        }
+
+        .pad-label {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+
+        .rhythm-list {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(26, 26, 46, 0.98);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 16px;
+            padding: 20px;
+            max-width: 90%;
+            max-height: 80%;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .rhythm-list.active {
+            display: block;
+        }
+
+        .rhythm-list h3 {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .rhythm-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 8px;
+        }
+
+        .rhythm-item {
+            padding: 8px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .rhythm-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .rhythm-number {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 600px) {
+            .pads-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎹 CTK-3200 Controller v2.2</h1>
+            <div class="status">
+                <div class="status-indicator">
+                    <span class="status-dot" id="midiStatus"></span>
+                    <span id="statusText">MIDI déconnecté</span>
+                </div>
+                <button class="control-btn" style="width: auto; padding: 8px 12px;" onclick="connectMIDI()">
+                    🔌 Connect MIDI
+                </button>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="control-btn" id="modeBtn" onclick="toggleMode()">
+                🥁 MODE DRUM
+            </button>
+            <button class="control-btn" onclick="showRhythms()">
+                📋 RHYTHMS
+            </button>
+            <div class="velocity-slider">
+                <span style="font-size: 12px;">Velocity:</span>
+                <input type="range" id="velocitySlider" min="1" max="127" value="100">
+                <span id="velocityValue" style="font-size: 12px; min-width: 30px;">100</span>
+            </div>
+        </div>
+
+        <div class="pads-section">
+            <div class="pads-grid" id="padsGrid"></div>
+        </div>
+    </div>
+
+    <div class="rhythm-list" id="rhythmList">
+        <button class="close-btn" onclick="hideRhythms()">×</button>
+        <h3>🎵 150 Rythmes CTK-3200</h3>
+        <div class="rhythm-grid" id="rhythmGrid"></div>
+    </div>
+
+    <script>
+        let midiOut = null;
+        let currentMode = 'drum'; // 'drum' ou 'chord'
+        let currentDrumSet = 0;
+        let velocity = 100;
+        let audioContext = null;
+        let testMode = false;
+
+        // Configuration des drum sets
+        const drumSets = [
+            { name: "STANDARD 1", notes: [36, 38, 42, 46, 45, 48, 49, 51, 35, 39, 54, 56, 47, 50, 52, 57] },
+            { name: "STANDARD 2", notes: [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51] },
+            { name: "ROOM", notes: [36, 38, 42, 46, 45, 48, 49, 51, 35, 37, 54, 56, 47, 50, 52, 57] },
+            { name: "POWER", notes: [36, 38, 42, 46, 45, 48, 49, 51, 35, 40, 54, 56, 47, 50, 52, 57] },
+            { name: "ELECTRO", notes: [36, 38, 42, 46, 45, 48, 49, 51, 35, 41, 54, 56, 47, 50, 52, 57] }
+        ];
+
+        // Configuration des accords
+        const chords = [
+            { name: "C", label: "Do", notes: [60, 64, 67] },
+            { name: "Dm", label: "Rém", notes: [62, 65, 69] },
+            { name: "Em", label: "Mim", notes: [64, 67, 71] },
+            { name: "F", label: "Fa", notes: [65, 69, 72] },
+            { name: "G", label: "Sol", notes: [67, 71, 74] },
+            { name: "Am", label: "Lam", notes: [69, 72, 76] },
+            { name: "Bdim", label: "Sidim", notes: [71, 74, 77] },
+            { name: "C7", label: "Do7", notes: [60, 64, 67, 70] },
+            { name: "Dm7", label: "Rém7", notes: [62, 65, 69, 72] },
+            { name: "Em7", label: "Mim7", notes: [64, 67, 71, 74] },
+            { name: "FM7", label: "FaM7", notes: [65, 69, 72, 76] },
+            { name: "G7", label: "Sol7", notes: [67, 71, 74, 77] },
+            { name: "Am7", label: "Lam7", notes: [69, 72, 76, 81] },
+            { name: "Bm7♭5", label: "Sim7♭5", notes: [71, 74, 77, 81] },
+            { name: "CM7", label: "DoM7", notes: [60, 64, 67, 71] },
+            { name: "Csus4", label: "Dosus4", notes: [60, 65, 67] }
+        ];
+
+        // Les 150 rythmes (à corriger avec les vrais noms quand tu m'enverras les images)
+        const rhythms = [
+            "001: CLUB 8 BEAT", "002: CLUB 16 BEAT", "003: TECHNO", "004: TRANCE", "005: EURO TRANCE",
+            "006: AMBIENT", "007: DANCE POP 1", "008: DANCE POP 2", "009: DISCO", "010: 70's DISCO",
+            "011: LATIN DISCO", "012: DANCE", "013: 16 BEAT", "014: 8 BEAT MODERN", "015: SHUFFLE",
+            "016: 8 BEAT", "017: 60's 8 BEAT", "018: POP", "019: 16 SHUFFLE", "020: GUITAR POP",
+            "021: KOOL POP", "022: POP ROCK", "023: ROCK", "024: ROCK WALTZ", "025: 60's ROCK",
+            "026: HARD ROCK", "027: HEAVY METAL", "028: SLOW ROCK", "029: R&B", "030: SOUL",
+            "031: DETROIT POP", "032: 6/8 SOUL", "033: CRY", "034: OLDIES", "035: TWIST",
+            "036: SLOW BLUES", "037: BLUES", "038: BOOGIE", "039: COUNTRY", "040: ACOUSTIC GUITAR",
+            "041: UNPLUGGED", "042: FOLK", "043: FOLK ROCK", "044: J-POP", "045: J-WALK",
+            "046: HEAVY 8 BEAT", "047: POP FUSION", "048: FUNK", "049: 16 BEAT FUNK", "050: 8 BEAT FUNK",
+            "051: NEW JACK SWING", "052: BRIT POP", "053: HIP HOP", "054: RAP", "055: INDUSTRIAL",
+            "056: ELECTRIC GROOVE", "057: TRIP HOP", "058: BEBOP", "059: ACID JAZZ", "060: BAND JAZZ",
+            "061: BAND LATIN", "062: BIG BAND", "063: SWING", "064: FOX TROT", "065: COUNTRY WALTZ",
+            "066: RAGTIME", "067: CHARLESTON", "068: MARCH", "069: 6/8 MARCH", "070: GERMAN MARCH",
+            "071: POLKA", "072: TRADITIONAL WALTZ", "073: VIENNESE WALTZ", "074: FRENCH WALTZ", "075: SLOW WALTZ",
+            "076: SAMBA", "077: BOSSA NOVA", "078: MAMBO", "079: RHUMBA", "080: CHA-CHA-CHA",
+            "081: MERENGUE", "082: BOLERO", "083: SALSA", "084: TANGO", "085: HABANERA",
+            "086: REGGAE", "087: POP REGGAE", "088: SKA", "089: CALYPSO", "090: SOCA",
+            "091: BEGUINE", "092: ARABIC", "093: ENKA", "094: MIN'YO", "095: CHINESE",
+            "096: GAMELAN", "097: RAGA", "098: DANGDUT", "099: KERONCONG", "100: PHILIPPINES",
+            "101: SPAIN", "102: GREEK", "103: HAWAIIAN", "104: MUS'ETTE", "105: ADRIA",
+            "106: TRADITIONAL", "107: FOXTROT", "108: CHRISTMAS WALTZ", "109: ADANI", "110: BALADI",
+            "111: SAMBA 2", "112: SA SA", "113: GYPSY", "114: SALON", "115: RHUMBA 2",
+            "116: LATIN", "117: JEWISH", "118: SYMPHONY", "119: STR QUARTET", "120: PIANO WALTZ",
+            "121: PIANO MARCH", "122: PIANO RAGTIME", "123: ARPEGGIO", "124: HABANERA 2", "125: NURSERY",
+            "126: KIDS MARCH", "127: KIDS RANDOM", "128: SYNCHRO A", "129: SYNCHRO B", "130: SYNCHRO C",
+            "131: CLUB LATIN", "132: GARAGE 1", "133: GARAGE 2", "134: GARAGE 3", "135: HOUSE",
+            "136: RAVE", "137: DRUM'N'BASS", "138: INDIAN POP", "139: ARABIC POP", "140: TRADITIONAL SAMBA",
+            "141: NORTENO", "142: TEX-MEX", "143: GRUPERO", "144: BANDA", "145: LOVE SONG",
+            "146: 6/8 MODERN", "147: POP WALTZ", "148: GUITAR SERENADE", "149: BLUEGRASS", "150: DIXIE"
+        ];
+
+        // Initialisation au chargement
+        document.addEventListener('DOMContentLoaded', () => {
+            initializePads();
+            createRhythmList();
+            
+            // Slider velocity
+            const velocitySlider = document.getElementById('velocitySlider');
+            const velocityValue = document.getElementById('velocityValue');
+            velocitySlider.addEventListener('input', (e) => {
+                velocity = parseInt(e.target.value);
+                velocityValue.textContent = velocity;
+            });
+        });
+
+        async function connectMIDI() {
+            try {
+                // Ne pas initialiser l'audio context ici, seulement MIDI
+                const midiAccess = await navigator.requestMIDIAccess();
+                const outputs = Array.from(midiAccess.outputs.values());
+                
+                if (outputs.length > 0) {
+                    midiOut = outputs[0];
+                    document.getElementById('midiStatus').classList.add('connected');
+                    document.getElementById('statusText').textContent = `MIDI: ${midiOut.name}`;
+                    testMode = false;
+                } else {
+                    // Mode test si pas de MIDI
+                    document.getElementById('statusText').textContent = 'Mode TEST (pas de MIDI)';
+                    document.getElementById('midiStatus').classList.add('connected');
+                    testMode = true;
+                    
+                    // Initialiser l'audio context seulement en mode test
+                    if (!audioContext) {
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur MIDI:', error);
+                document.getElementById('statusText').textContent = 'Erreur: ' + error.message;
+                
+                // Activer le mode test en cas d'erreur
+                testMode = true;
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+        }
+
+        function initializePads() {
+            const grid = document.getElementById('padsGrid');
+            grid.innerHTML = '';
+            
+            for (let i = 0; i < 16; i++) {
+                const pad = document.createElement('div');
+                pad.className = 'pad';
+                pad.dataset.index = i;
+                
+                if (currentMode === 'drum') {
+                    pad.innerHTML = `
+                        <div>PAD ${i + 1}</div>
+                        <div class="pad-number">Note ${drumSets[currentDrumSet].notes[i]}</div>
+                    `;
+                } else {
+                    const chord = chords[i];
+                    pad.innerHTML = `
+                        <div>${chord.name}</div>
+                        <div class="pad-label">${chord.label}</div>
+                    `;
+                }
+                
+                // Touch events pour mobile
+                pad.addEventListener('touchstart', handlePadTouch, { passive: false });
+                pad.addEventListener('touchend', handlePadRelease, { passive: false });
+                
+                // Mouse events pour desktop
+                pad.addEventListener('mousedown', handlePadTouch);
+                pad.addEventListener('mouseup', handlePadRelease);
+                pad.addEventListener('mouseleave', handlePadRelease);
+                
+                grid.appendChild(pad);
+            }
+        }
+
+        function handlePadTouch(e) {
+            e.preventDefault();
+            const pad = e.currentTarget;
+            const index = parseInt(pad.dataset.index);
+            pad.classList.add('active');
+            
+            if (currentMode === 'drum') {
+                playDrum(index);
+            } else {
+                playChord(index);
+            }
+        }
+
+        function handlePadRelease(e) {
+            e.preventDefault();
+            const pad = e.currentTarget;
+            pad.classList.remove('active');
+            
+            if (currentMode === 'chord') {
+                stopChord(parseInt(pad.dataset.index));
+            }
+        }
+
+        function playDrum(index) {
+            const note = drumSets[currentDrumSet].notes[index];
+            if (midiOut && !testMode) {
+                midiOut.send([0x99, note, velocity]); // Canal 10 pour drums
+            } else if (testMode) {
+                playTestBeep(200 + index * 50);
+            }
+        }
+
+        function playChord(index) {
+            const chord = chords[index];
+            if (midiOut && !testMode) {
+                chord.notes.forEach(note => {
+                    midiOut.send([0x90, note, velocity]); // Canal 1
+                });
+            } else if (testMode) {
+                playTestBeep(400 + index * 30);
+            }
+        }
+
+        function stopChord(index) {
+            const chord = chords[index];
+            if (midiOut && !testMode) {
+                chord.notes.forEach(note => {
+                    midiOut.send([0x80, note, 0]); // Note off
+                });
+            }
+        }
+
+        function playTestBeep(frequency) {
+            if (!audioContext) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = frequency;
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+
+        function toggleMode() {
+            currentMode = currentMode === 'drum' ? 'chord' : 'drum';
+            
+            const modeBtn = document.getElementById('modeBtn');
+            
+            if (currentMode === 'drum') {
+                modeBtn.textContent = '🥁 MODE DRUM';
+                modeBtn.classList.remove('active');
+                
+                // Cycle through drum sets
+                currentDrumSet = (currentDrumSet + 1) % drumSets.length;
+                document.getElementById('statusText').textContent = 
+                    (midiOut ? `MIDI: ${midiOut.name}` : 'Mode TEST') + 
+                    ` - ${drumSets[currentDrumSet].name}`;
+            } else {
+                modeBtn.textContent = '🎸 MODE ACCORD';
+                modeBtn.classList.add('active');
+            }
+            
+            initializePads();
+        }
+
+        function createRhythmList() {
+            const grid = document.getElementById('rhythmGrid');
+            grid.innerHTML = rhythms.map(rhythm => 
+                `<div class="rhythm-item">${rhythm}</div>`
+            ).join('');
+        }
+
+        function showRhythms() {
+            document.getElementById('rhythmList').classList.add('active');
+        }
+
+        function hideRhythms() {
+            document.getElementById('rhythmList').classList.remove('active');
+        }
+    </script>
+</body>
+</html>
