@@ -638,9 +638,11 @@
                     </optgroup>
                 </select>
                 <div class="rhythm-controls">
-                    <button class="rhythm-btn start" onclick="startRhythm()">▶ START</button>
-                    <button class="rhythm-btn stop" onclick="stopRhythm()">⏹ STOP</button>
-                    <button class="rhythm-btn" onclick="changeRhythmMethod()" style="font-size: 11px; padding: 8px;">Méthode 1/3</button>
+                    <button class="rhythm-btn start" onclick="startRhythm()">🎸 MODE ACCORD</button>
+                    <button class="rhythm-btn stop" onclick="stopRhythm()">🥁 MODE DRUM</button>
+                </div>
+                <div style="font-size: 10px; opacity: 0.6; margin-top: 8px; text-align: center;">
+                    Démarre le rythme sur le CTK-3200
                 </div>
             </div>
 
@@ -1136,17 +1138,13 @@
             currentRhythm = parseInt(select.value);
             const name = select.options[select.selectedIndex].text;
             
-            if (midiOutput) {
-                // Send Program Change on channel 1 to select rhythm (0xC0 = Program Change channel 1)
-                midiOutput.send([0xC0, currentRhythm]);
-                console.log(`Rhythm selected: ${currentRhythm} - ${name}`);
-            }
-            
-            showToast(`🎵 ${name}`);
+            // Don't send Program Change - rhythms must be selected manually on CTK-3200
+            showToast(`🎵 ${name} - Sélectionne sur le clavier`);
+            console.log(`Rhythm ${currentRhythm} selected: ${name} - Change it manually on CTK-3200`);
+        }
         }
 
         let rhythmNotes = [];
-        let rhythmMethod = 1; // Different methods to try
         let rhythmPlaying = false; // Track if rhythm is active
         
         // Define 16 chords for the pads when rhythm is playing
@@ -1175,54 +1173,14 @@
                 return;
             }
             
-            // First select the rhythm if one is selected
-            if (currentRhythm !== null) {
-                midiOutput.send([0xC0, currentRhythm]);
-                console.log(`Rhythm Program Change: ${currentRhythm}`);
-            }
-            
             const select = document.getElementById('rhythmSelect');
             const name = select.options[select.selectedIndex]?.text || 'Rythme';
             
-            // Enable rhythm playing mode
+            // Enable rhythm playing mode (chord mode)
             rhythmPlaying = true;
             
-            // METHOD 1: Play accompaniment chord (most reliable for Casio)
-            if (rhythmMethod === 1) {
-                // Playing C Major chord in accompaniment zone (lower keys)
-                const chordNotes = [36, 40, 43]; // C2, E2, G2
-                
-                setTimeout(() => {
-                    chordNotes.forEach(note => {
-                        midiOutput.send([0x90, note, 80]); // Note On, channel 1
-                        rhythmNotes.push(note);
-                    });
-                    console.log('✅ Method 1: Playing accompaniment chord');
-                }, 50);
-                
-                showToast(`▶ ${name} - MODE ACCORD ! 🎸`);
-            }
-            
-            // METHOD 2: MIDI Sync Start
-            else if (rhythmMethod === 2) {
-                midiOutput.send([0xFA]); // MIDI Start
-                console.log('✅ Method 2: MIDI Start');
-                showToast(`▶ ${name} - MODE ACCORD ! 🎸`);
-            }
-            
-            // METHOD 3: Combined approach
-            else if (rhythmMethod === 3) {
-                // Enable sync
-                midiOutput.send([0xB0, 80, 127]);
-                setTimeout(() => {
-                    midiOutput.send([0xFA]); // MIDI Start
-                    // Also play a note
-                    midiOutput.send([0x90, 36, 80]);
-                    rhythmNotes.push(36);
-                }, 50);
-                console.log('✅ Method 3: Combined');
-                showToast(`▶ ${name} - MODE ACCORD ! 🎸`);
-            }
+            showToast(`🎸 MODE ACCORD activé ! Démarre le rythme sur ton CTK-3200`);
+            console.log('🎸 Chord mode enabled. Start rhythm on CTK-3200 keyboard.');
             
             // Update pads to show chord names
             updatePadsForChordMode();
@@ -1274,14 +1232,6 @@
         }
         
         // Function to change rhythm method (for testing)
-        function changeRhythmMethod() {
-            rhythmMethod = (rhythmMethod % 3) + 1;
-            const btn = document.querySelector('.rhythm-controls button:nth-child(3)');
-            if (btn) btn.textContent = `Méthode ${rhythmMethod}/3`;
-            showToast(`Méthode ${rhythmMethod}/3 - Réessaie START`);
-            console.log(`Rhythm method changed to: ${rhythmMethod}`);
-        }
-
         // Controls
         function updateTempo() {
             tempo = parseInt(document.getElementById('tempoSlider').value);
