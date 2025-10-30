@@ -392,9 +392,9 @@
 
         .toast {
             position: fixed;
-            bottom: 30px;
+            top: 80px;
             left: 50%;
-            transform: translateX(-50%) translateY(100px);
+            transform: translateX(-50%) translateY(-100px);
             background: rgba(0,0,0,0.95);
             color: white;
             padding: 12px 24px;
@@ -456,23 +456,185 @@
                 <div class="section-title">🎵 RYTHME</div>
                 <select class="rhythm-select" id="rhythmSelect" size="6" onchange="selectRhythm()">
                     <optgroup label="POPS/ROCK">
-                        <option value="0">001 POP ROCK</option>
-                        <option value="1">002 8 BEAT</option>
-                        <option value="2">003 16 BEAT</option>
-                        <option value="3">004 ROCK</option>
-                        <option value="4">005 HARD ROCK</option>
+                        <option value="0">001 CLUB 8 BEAT</option>
+                        <option value="1">002 STANDARD 8 BEAT</option>
+                        <option value="2">003 STRAIGHT 8 BEAT</option>
+                        <option value="3">004 MODERN 8 BEAT</option>
+                        <option value="4">005 STRAIGHT 16 BEAT</option>
+                        <option value="5">006 8 BEAT SHUFFLE</option>
+                        <option value="6">007 8 BEAT</option>
+                        <option value="7">008 DANCE POP</option>
+                        <option value="8">009 16 BEAT 1</option>
+                        <option value="9">010 16 BEAT 2</option>
+                        <option value="10">011 16 BEAT SHUFFLE 1</option>
+                        <option value="11">012 16 BEAT SHUFFLE 2</option>
                     </optgroup>
-                    <optgroup label="DANCE">
-                        <option value="10">011 DANCE POP</option>
-                        <option value="11">012 CLUB DANCE</option>
-                        <option value="12">013 HOUSE</option>
-                        <option value="13">014 TECHNO</option>
+                    <optgroup label="BALLAD">
+                        <option value="12">013 8 BEAT BALLAD</option>
+                        <option value="13">014 SLOW BALLAD</option>
+                        <option value="14">015 16 BEAT BALLAD</option>
+                        <option value="15">016 POP BALLAD 1</option>
+                        <option value="17">018 POP BALLAD 2</option>
+                        <option value="18">019 MODERN BALLAD</option>
+                        <option value="19">020 ROCK BALLAD 1</option>
+                        <option value="20">021 ROCK BALLAD 2</option>
                     </optgroup>
-                    <optgroup label="LATIN">
-                        <option value="29">030 BOSSA NOVA</option>
-                        <option value="30">031 SAMBA</option>
-                        <option value="31">032 RUMBA</option>
-                        <option value="32">033 SALSA</option>
+                    <optgroup label="R&B/SOUL">
+                        <option value="21">022 HIP-HOP</option>
+                        <option value="22">023 RAP POP</option>
+                        <option value="23">024 MODERN R&B</option>
+                        <option value="24">025 DISCO POP</option>
+                        <option value="25">026 TECHNO POP</option>
+                        <option value="26">027 TRANCE</option>
+                        <option value="27">028 MODERN R&B 1</option>
+                        <option value="28">029 MODERN R&B 2</option>
+                        <option value="29">030 MODERN DANCE</option>
+                        <option value="30">031 DISCO SOUL</option>
+                    </optgroup>
+                    <optgroup label="ROCK">
+                        <option value="31">032 POP 1</option>
+                        <option value="32">033 POP 2</option>
+                        <option value="33">034 POP ROCK</option>
+                        <option value="34">035 GUITAR POP</option>
+                        <option value="35">036 FAST SOUL</option>
+                        <option value="36">037 OLDIES</option>
+                        <option value="37">038 60's SOUL</option>
+                    </optgroup>
+                    <optgroup label="HARD ROCK">
+                        <option value="38">039 HARD ROCK</option>
+                        <option value="39">040 SHUFFLE ROCK 1</option>
+                        <option value="40">041 SHUFFLE ROCK 2</option>
+                        <option value="41">042 BLUES</option>
+                        <option value="42">043 SOFT ROCK</option>
+                        <option value="43">044 LATIN ROCK</option>
+                        <option value="44">045 ROCK TWIST</option>
+                        <option value="45">046 SLOW ROCK</option>
+                        <option value="46">047 50's ROCK</option>
+                        <option value="47">048 ROCK 'N' ROLL R&B</option>
+                        <option value="48">049 ROCK WALTZ</option>
+                    </optgroup>
+                    <optgroup label="JAZZ">
+                        <option value="49">050 JAZZ 1</option>
+                        <option value="50">051 MIDDLE BIG BAND</option>
+                        <option value="51">052 FAST BIG BAND</option>
+                        <option value="52">053 SWING 1</option>
+                        <option value="53">054 SWING 2</option>
+                        <option value="54">055 SLOW SWING</option>
+                        <option value="55">056 JAZZ WALTZ 1</option>
+                        <option value="56">057 JAZZ WALTZ 2</option>
+                        <option value="57">058 FOX TROT</option>
+                        <option value="58">059 FAST 4 BEAT</option>
+                        <option value="59">060 JAZZ COMBO 1</option>
+                    </optgroup>
+                    <optgroup label="EUROPEAN">
+                        <option value="60">061 POLKA 1</option>
+                        <option value="61">062 POLKA 2</option>
+                        <option value="62">063 POP POLKA</option>
+                        <option value="63">064 FAST WALTZ</option>
+                        <option value="64">065 SLOW WALTZ</option>
+                        <option value="65">066 VIENNESE WALTZ</option>
+                        <option value="66">067 GERMAN WALTZ</option>
+                        <option value="67">068 SERENADE</option>
+                        <option value="68">069 FOLK</option>
+                        <option value="69">070 MARCH 1</option>
+                        <option value="70">071 MARCH 2</option>
+                    </optgroup>
+                    <optgroup label="LATIN I">
+                        <option value="71">072 BOSSA NOVA 1</option>
+                        <option value="72">073 BOSSA NOVA 2</option>
+                        <option value="73">074 BEGUINE</option>
+                        <option value="74">075 SAMBA 1</option>
+                        <option value="75">076 SAMBA 2</option>
+                        <option value="76">077 MAMBO</option>
+                        <option value="77">078 RUMBA</option>
+                        <option value="78">079 CHA-CHA-CHA</option>
+                        <option value="79">080 MERENGUE</option>
+                        <option value="80">081 TANGO</option>
+                        <option value="81">082 SALSA</option>
+                        <option value="82">083 REGGAE</option>
+                        <option value="83">084 SKA/REGGAE</option>
+                        <option value="84">085 SKA</option>
+                    </optgroup>
+                    <optgroup label="LATIN II">
+                        <option value="85">086 REGGAETON</option>
+                        <option value="86">087 SOCA</option>
+                        <option value="87">088 CALYPSO</option>
+                        <option value="88">089 PASILLO</option>
+                        <option value="89">090 ZAPATEADO</option>
+                        <option value="90">091 BACHATA</option>
+                    </optgroup>
+                    <optgroup label="WORLD I">
+                        <option value="91">092 COUNTRY BEAT</option>
+                        <option value="92">093 COUNTRY SHUFFLE</option>
+                        <option value="93">094 COUNTRY BALLAD</option>
+                        <option value="94">095 COUNTRY WALTZ</option>
+                        <option value="95">096 BLUEGRASS</option>
+                        <option value="96">097 DIXIE</option>
+                        <option value="97">098 TEX-MEX</option>
+                        <option value="98">099 GOSPEL 1</option>
+                        <option value="99">100 SLOW GOSPEL</option>
+                        <option value="100">101 HAWAIIAN</option>
+                    </optgroup>
+                    <optgroup label="WORLD II">
+                        <option value="101">102 FADO/COIMBRA</option>
+                        <option value="102">103 FADO/LÍSBOA</option>
+                        <option value="103">104 POLKARIN</option>
+                        <option value="104">105 RUSSIAN MARCH</option>
+                        <option value="105">106 RUSSIAN CHANSON</option>
+                        <option value="106">107 POLISH WALTZ</option>
+                        <option value="107">108 OBERTAS/MAZUR</option>
+                        <option value="108">109 ADANI</option>
+                        <option value="109">110 SIRTAKI</option>
+                        <option value="110">111 MUN</option>
+                        <option value="111">112 KASAP</option>
+                        <option value="112">113 BALADI</option>
+                        <option value="113">114 HALAILI</option>
+                        <option value="114">115 INDIAN</option>
+                        <option value="115">116 BHANGRA</option>
+                        <option value="116">117 DADRA</option>
+                        <option value="117">118 GARBA</option>
+                        <option value="118">119 KEHERWA</option>
+                        <option value="119">120 TEEN TAL</option>
+                    </optgroup>
+                    <optgroup label="CHINESE">
+                        <option value="120">121 JIANGNAN</option>
+                        <option value="121">122 DONGBEI/YANGGE</option>
+                        <option value="122">123 TIBETAN</option>
+                        <option value="123">124 HUAGUOMEIXI</option>
+                        <option value="124">125 MIAOZI</option>
+                        <option value="125">126 LIUZHOU</option>
+                    </optgroup>
+                    <optgroup label="SOUTHEAST ASIAN">
+                        <option value="126">127 KRONCONG</option>
+                        <option value="127">128 DANGDUT</option>
+                    </optgroup>
+                    <optgroup label="JAPANESE">
+                        <option value="128">129 ENKA 1</option>
+                        <option value="129">130 ENKA 2</option>
+                    </optgroup>
+                    <optgroup label="OTHER">
+                        <option value="130">131 CHRISTMAS SONG</option>
+                        <option value="131">132 CHRISTMAS WALTZ</option>
+                        <option value="132">133 BIRTHDAY SONG</option>
+                        <option value="133">134 SOLO QUARTET</option>
+                    </optgroup>
+                    <optgroup label="PIANO">
+                        <option value="134">135 PIANO RHYTHMS</option>
+                        <option value="135">136 PIANO</option>
+                        <option value="136">137 PIANO BALLAD 1</option>
+                        <option value="137">138 PIANO BALLAD 2</option>
+                        <option value="138">139 PIANO MARCH</option>
+                        <option value="139">140 EP BALLAD 2</option>
+                        <option value="140">141 BLUES BALLAD</option>
+                        <option value="141">142 JAZZ COMBO 2</option>
+                        <option value="142">143 JAZZ COMBO 3</option>
+                        <option value="143">144 RAGTIME</option>
+                        <option value="144">145 ROCK 'N' ROLL</option>
+                        <option value="145">146 BOOGIE WOOGIE</option>
+                        <option value="146">147 ARPEGGIO 1</option>
+                        <option value="147">148 ARPEGGIO 2</option>
+                        <option value="148">149 ARPEGGIO 3</option>
+                        <option value="149">150 WALTZ 3</option>
                     </optgroup>
                 </select>
                 <div class="rhythm-controls">
@@ -532,116 +694,121 @@
         let tempo = 120;
         let currentRhythm = 0;
 
-        // Drum Sets from CTK-3200 Manual
+        // Drum Sets from CTK-3200 Manual with correct MIDI notes
         const drumSets = [
-            {
+            { // STANDARD SET (Program 0)
                 name: 'STANDARD',
+                program: 0,
                 class: 'drum-standard',
                 pads: [
+                    { note: 35, label: 'Kick 2', full: 'BASS DRUM 2' },
                     { note: 36, label: 'Kick 1', full: 'BASS DRUM 1' },
                     { note: 38, label: 'Snare', full: 'ACOUSTIC SNARE' },
                     { note: 40, label: 'E-Snare', full: 'ELECTRIC SNARE' },
-                    { note: 41, label: 'Tom L2', full: 'LOW TOM 2' },
                     { note: 42, label: 'HH Close', full: 'CLOSED HI-HAT' },
+                    { note: 44, label: 'HH Pedal', full: 'PEDAL HI-HAT' },
+                    { note: 46, label: 'HH Open', full: 'OPEN HI-HAT' },
+                    { note: 41, label: 'Tom L2', full: 'LOW TOM 2' },
                     { note: 43, label: 'Tom L1', full: 'LOW TOM 1' },
                     { note: 45, label: 'Tom M2', full: 'MID TOM 2' },
-                    { note: 46, label: 'HH Open', full: 'OPEN HI-HAT' },
                     { note: 47, label: 'Tom M1', full: 'MID TOM 1' },
                     { note: 48, label: 'Tom H2', full: 'HIGH TOM 2' },
-                    { note: 49, label: 'Crash 1', full: 'CRASH CYMBAL 1' },
                     { note: 50, label: 'Tom H1', full: 'HIGH TOM 1' },
+                    { note: 49, label: 'Crash 1', full: 'CRASH CYMBAL 1' },
                     { note: 51, label: 'Ride', full: 'RIDE CYMBAL 1' },
-                    { note: 52, label: 'China', full: 'CHINESE CYMBAL' },
-                    { note: 53, label: 'Bell', full: 'RIDE BELL' },
-                    { note: 54, label: 'Tamb', full: 'TAMBOURINE' }
+                    { note: 53, label: 'Bell', full: 'RIDE BELL' }
                 ]
             },
-            {
+            { // ROOM SET (Program 8)
                 name: 'ROOM',
+                program: 8,
                 class: 'drum-room',
                 pads: [
-                    { note: 36, label: 'Kick', full: 'BASS DRUM 1' },
+                    { note: 35, label: 'Kick 2', full: 'BASS DRUM 2' },
+                    { note: 36, label: 'Kick 1', full: 'BASS DRUM 1' },
                     { note: 38, label: 'R-Snare', full: 'ROOM SNARE' },
                     { note: 40, label: 'E-Snare', full: 'ELECTRIC SNARE' },
-                    { note: 41, label: 'Tom L2', full: 'ROOM LOW TOM 2' },
                     { note: 42, label: 'HH Close', full: 'CLOSED HI-HAT' },
+                    { note: 44, label: 'HH Pedal', full: 'PEDAL HI-HAT' },
+                    { note: 46, label: 'HH Open', full: 'OPEN HI-HAT' },
+                    { note: 41, label: 'Tom L2', full: 'ROOM LOW TOM 2' },
                     { note: 43, label: 'Tom L1', full: 'ROOM LOW TOM 1' },
                     { note: 45, label: 'Tom M2', full: 'ROOM MID TOM 2' },
-                    { note: 46, label: 'HH Open', full: 'OPEN HI-HAT' },
                     { note: 47, label: 'Tom M1', full: 'ROOM MID TOM 1' },
                     { note: 48, label: 'Tom H2', full: 'ROOM HIGH TOM 2' },
-                    { note: 49, label: 'Crash', full: 'CRASH CYMBAL 1' },
                     { note: 50, label: 'Tom H1', full: 'ROOM HIGH TOM 1' },
+                    { note: 49, label: 'Crash', full: 'CRASH CYMBAL 1' },
                     { note: 51, label: 'Ride', full: 'RIDE CYMBAL 1' },
-                    { note: 52, label: 'China', full: 'CHINESE CYMBAL' },
-                    { note: 53, label: 'Bell', full: 'RIDE BELL' },
-                    { note: 54, label: 'Tamb', full: 'TAMBOURINE' }
+                    { note: 53, label: 'Bell', full: 'RIDE BELL' }
                 ]
             },
-            {
+            { // POWER SET (Program 16)
                 name: 'POWER',
+                program: 16,
                 class: 'drum-power',
                 pads: [
-                    { note: 36, label: 'Kick', full: 'BASS DRUM 1' },
+                    { note: 35, label: 'Kick 2', full: 'BASS DRUM 2' },
+                    { note: 36, label: 'Kick 1', full: 'BASS DRUM 1' },
                     { note: 38, label: 'P-Snare', full: 'POWER SNARE' },
                     { note: 40, label: 'E-Snare', full: 'ELECTRIC SNARE' },
-                    { note: 41, label: 'Tom L2', full: 'POWER LOW TOM 2' },
                     { note: 42, label: 'HH Close', full: 'CLOSED HI-HAT' },
+                    { note: 44, label: 'HH Pedal', full: 'PEDAL HI-HAT' },
+                    { note: 46, label: 'HH Open', full: 'OPEN HI-HAT' },
+                    { note: 41, label: 'Tom L2', full: 'POWER LOW TOM 2' },
                     { note: 43, label: 'Tom L1', full: 'POWER LOW TOM 1' },
                     { note: 45, label: 'Tom M2', full: 'POWER MID TOM 2' },
-                    { note: 46, label: 'HH Open', full: 'OPEN HI-HAT' },
                     { note: 47, label: 'Tom M1', full: 'POWER MID TOM 1' },
                     { note: 48, label: 'Tom H2', full: 'POWER HIGH TOM 2' },
-                    { note: 49, label: 'Crash', full: 'CRASH CYMBAL 1' },
                     { note: 50, label: 'Tom H1', full: 'POWER HIGH TOM 1' },
+                    { note: 49, label: 'Crash', full: 'CRASH CYMBAL 1' },
                     { note: 51, label: 'Ride', full: 'RIDE CYMBAL 1' },
-                    { note: 52, label: 'China', full: 'CHINESE CYMBAL' },
-                    { note: 53, label: 'Bell', full: 'RIDE BELL' },
-                    { note: 54, label: 'Tamb', full: 'TAMBOURINE' }
+                    { note: 53, label: 'Bell', full: 'RIDE BELL' }
                 ]
             },
-            {
+            { // SYNTH/ELECTRONIC SET (Program 24)
                 name: 'SYNTH',
+                program: 24,
                 class: 'drum-synth',
                 pads: [
-                    { note: 36, label: 'Kick 2', full: 'BASS DRUM 2' },
+                    { note: 35, label: 'Kick 2', full: 'BASS DRUM 2' },
+                    { note: 36, label: 'Kick 1', full: 'BASS DRUM 1' },
                     { note: 38, label: 'Snare 2', full: 'SNARE DRUM 2' },
                     { note: 40, label: 'E-Snare', full: 'ELECTRIC SNARE' },
-                    { note: 41, label: 'Tom L2', full: 'LOW TOM 2' },
                     { note: 42, label: 'HH Cl 2', full: 'CLOSED HI-HAT 2' },
+                    { note: 44, label: 'HH Pedal', full: 'PEDAL HI-HAT' },
+                    { note: 46, label: 'HH Op 2', full: 'OPEN HI-HAT 2' },
+                    { note: 41, label: 'Tom L2', full: 'LOW TOM 2' },
                     { note: 43, label: 'Tom L1', full: 'LOW TOM 1' },
                     { note: 45, label: 'Tom M2', full: 'MID TOM 2' },
-                    { note: 46, label: 'HH Op 2', full: 'OPEN HI-HAT 2' },
                     { note: 47, label: 'Tom M1', full: 'MID TOM 1' },
                     { note: 48, label: 'Tom H2', full: 'HIGH TOM 2' },
-                    { note: 49, label: 'Crash 2', full: 'CRASH CYMBAL 2' },
                     { note: 50, label: 'Tom H1', full: 'HIGH TOM 1' },
+                    { note: 49, label: 'Crash 2', full: 'CRASH CYMBAL 2' },
                     { note: 51, label: 'Ride 2', full: 'RIDE CYMBAL 2' },
-                    { note: 52, label: 'China', full: 'CHINESE CYMBAL' },
-                    { note: 53, label: 'Bell', full: 'RIDE BELL' },
-                    { note: 54, label: 'Tamb', full: 'TAMBOURINE' }
+                    { note: 53, label: 'Bell', full: 'RIDE BELL' }
                 ]
             },
-            {
+            { // BRUSH/ORCHESTRA SET (Program 32 or 40)
                 name: 'BRUSH',
+                program: 40,
                 class: 'drum-brush',
                 pads: [
-                    { note: 36, label: 'Kick', full: 'BASS DRUM 1' },
+                    { note: 35, label: 'Kick 2', full: 'BASS DRUM 2' },
+                    { note: 36, label: 'Kick 1', full: 'BASS DRUM 1' },
                     { note: 38, label: 'Brush', full: 'BRUSH TAP' },
+                    { note: 39, label: 'B-Swirl', full: 'BRUSH SWIRL' },
                     { note: 40, label: 'B-Slap', full: 'BRUSH SLAP' },
-                    { note: 41, label: 'Tom L2', full: 'LOW TOM 2' },
                     { note: 42, label: 'HH Close', full: 'CLOSED HI-HAT' },
+                    { note: 44, label: 'HH Pedal', full: 'PEDAL HI-HAT' },
+                    { note: 46, label: 'HH Open', full: 'OPEN HI-HAT' },
+                    { note: 41, label: 'Tom L2', full: 'LOW TOM 2' },
                     { note: 43, label: 'Tom L1', full: 'LOW TOM 1' },
                     { note: 45, label: 'Tom M2', full: 'MID TOM 2' },
-                    { note: 46, label: 'HH Open', full: 'OPEN HI-HAT' },
                     { note: 47, label: 'Tom M1', full: 'MID TOM 1' },
                     { note: 48, label: 'Tom H2', full: 'HIGH TOM 2' },
-                    { note: 49, label: 'Crash', full: 'CRASH CYMBAL 1' },
                     { note: 50, label: 'Tom H1', full: 'HIGH TOM 1' },
-                    { note: 51, label: 'Ride', full: 'RIDE CYMBAL 1' },
-                    { note: 52, label: 'China', full: 'CHINESE CYMBAL' },
-                    { note: 53, label: 'Bell', full: 'RIDE BELL' },
-                    { note: 54, label: 'Tamb', full: 'TAMBOURINE' }
+                    { note: 49, label: 'Crash', full: 'CRASH CYMBAL 1' },
+                    { note: 51, label: 'Ride', full: 'RIDE CYMBAL 1' }
                 ]
             }
         ];
@@ -847,16 +1014,48 @@
                     <div class="pad-note">N${pad.note}</div>
                 `;
                 
-                // Touch
+                // Touch events with slide support
+                let lastTouchedPad = null;
+                
                 padEl.addEventListener('touchstart', (e) => {
                     e.preventDefault();
                     padEl.classList.add('active');
+                    lastTouchedPad = index;
                     sendMIDI(pad.note, velocity);
+                });
+                
+                padEl.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    // Check if touch moved to this pad
+                    const touch = e.touches[0];
+                    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                    
+                    if (element && element.classList.contains('pad')) {
+                        const padIndex = Array.from(container.children).indexOf(element);
+                        if (padIndex !== lastTouchedPad && padIndex >= 0) {
+                            // Deactivate previous pad
+                            if (lastTouchedPad >= 0) {
+                                container.children[lastTouchedPad].classList.remove('active');
+                            }
+                            // Activate new pad
+                            element.classList.add('active');
+                            const newPad = drumSet.pads[padIndex];
+                            sendMIDI(newPad.note, velocity);
+                            lastTouchedPad = padIndex;
+                        }
+                    }
                 });
                 
                 padEl.addEventListener('touchend', (e) => {
                     e.preventDefault();
                     padEl.classList.remove('active');
+                    lastTouchedPad = null;
+                });
+                
+                padEl.addEventListener('touchcancel', (e) => {
+                    e.preventDefault();
+                    padEl.classList.remove('active');
+                    lastTouchedPad = null;
                 });
                 
                 // Mouse
@@ -888,10 +1087,13 @@
             });
             
             generatePads();
-            showToast(`🥁 ${drumSets[index].name} SET`);
+            showToast(`🥁 ${drumSets[index].name} SET activé`);
             
+            // Send Program Change on channel 10 (drums)
             if (midiOutput) {
-                midiOutput.send([0xC9, index]);
+                const program = drumSets[index].program;
+                midiOutput.send([0xC9, program]); // Program Change on channel 10
+                console.log(`Drum Set Program Change: ${program} (${drumSets[index].name})`);
             }
         }
 
@@ -900,22 +1102,52 @@
             const select = document.getElementById('rhythmSelect');
             currentRhythm = parseInt(select.value);
             const name = select.options[select.selectedIndex].text;
+            
+            if (midiOutput) {
+                // Send Program Change on channel 1 to select rhythm (0xC0 = Program Change channel 1)
+                midiOutput.send([0xC0, currentRhythm]);
+                console.log(`Rhythm selected: ${currentRhythm} - ${name}`);
+            }
+            
             showToast(`🎵 ${name}`);
         }
 
         function startRhythm() {
             if (!midiOutput) {
-                showToast('⚠️ Connecte le MIDI');
+                showToast('⚠️ Connecte le MIDI d\'abord');
                 return;
             }
-            midiOutput.send([0xFA]);
-            showToast('▶ Rythme démarré');
+            
+            // First select the rhythm if one is selected
+            if (currentRhythm !== null) {
+                midiOutput.send([0xC0, currentRhythm]);
+            }
+            
+            // Send Control Change 91 (Effects) to activate accompaniment
+            midiOutput.send([0xB0, 91, 127]);
+            
+            // Small delay then send MIDI Start
+            setTimeout(() => {
+                midiOutput.send([0xFA]); // MIDI Start
+                console.log('✅ Rhythm started');
+            }, 100);
+            
+            const select = document.getElementById('rhythmSelect');
+            const name = select.options[select.selectedIndex]?.text || 'Rythme';
+            showToast(`▶ ${name} démarré`);
         }
 
         function stopRhythm() {
             if (!midiOutput) return;
-            midiOutput.send([0xFC]);
-            showToast('⏹ Arrêté');
+            
+            // Send MIDI Stop
+            midiOutput.send([0xFC]); // MIDI Stop
+            
+            // Turn off accompaniment
+            midiOutput.send([0xB0, 91, 0]);
+            
+            console.log('⏹ Rhythm stopped');
+            showToast('⏹ Rythme arrêté');
         }
 
         // Controls
