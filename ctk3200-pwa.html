@@ -640,6 +640,7 @@
                 <div class="rhythm-controls">
                     <button class="rhythm-btn start" onclick="startRhythm()">▶ START</button>
                     <button class="rhythm-btn stop" onclick="stopRhythm()">⏹ STOP</button>
+                    <button class="rhythm-btn" onclick="changeRhythmMethod()" style="font-size: 11px; padding: 8px;">Méthode 1/3</button>
                 </div>
             </div>
 
@@ -983,19 +984,51 @@
         }
 
         // Send MIDI
-        function sendMIDI(note, vel = 127) {
+        let activeChordNotes = []; // Track currently playing chord notes
+        
+        function sendMIDI(note, vel = 127, padIndex = 0) {
             if (!midiOutput) {
                 showToast('⚠️ Connecte d\'abord le MIDI');
                 return;
             }
 
-            // Note On (Channel 10 for drums = 0x99)
-            midiOutput.send([0x99, note, vel]);
-            
-            // Note Off
-            setTimeout(() => {
-                midiOutput.send([0x89, note, 0]);
-            }, 100);
+            // If rhythm is playing, send CHORD instead of drum note
+            if (rhythmPlaying) {
+                // Stop previous chord if any
+                activeChordNotes.forEach(n => {
+                    midiOutput.send([0x80, n, 0]); // Note Off channel 1
+                });
+                activeChordNotes = [];
+                
+                // Get chord for this pad
+                const chord = chords[padIndex % chords.length];
+                
+                // Play the chord on channel 1 (accompaniment zone)
+                chord.notes.forEach(chordNote => {
+                    midiOutput.send([0x90, chordNote, vel]); // Note On channel 1
+                    activeChordNotes.push(chordNote);
+                });
+                
+                console.log(`🎸 Chord: ${chord.name} - Notes: ${chord.notes.join(', ')}`);
+                
+                // Hold chord for a bit, then release
+                setTimeout(() => {
+                    activeChordNotes.forEach(n => {
+                        midiOutput.send([0x80, n, 0]); // Note Off
+                    });
+                    activeChordNotes = [];
+                }, 400);
+            } 
+            // Normal drum mode
+            else {
+                // Note On (Channel 10 for drums = 0x99)
+                midiOutput.send([0x99, note, vel]);
+                
+                // Note Off
+                setTimeout(() => {
+                    midiOutput.send([0x89, note, 0]);
+                }, 100);
+            }
         }
 
         // Generate Pads
@@ -1021,7 +1054,7 @@
                     e.preventDefault();
                     padEl.classList.add('active');
                     lastTouchedPad = index;
-                    sendMIDI(pad.note, velocity);
+                    sendMIDI(pad.note, velocity, index);
                 });
                 
                 padEl.addEventListener('touchmove', (e) => {
@@ -1040,7 +1073,7 @@
                             // Activate new pad
                             element.classList.add('active');
                             const newPad = drumSet.pads[padIndex];
-                            sendMIDI(newPad.note, velocity);
+                            sendMIDI(newPad.note, velocity, padIndex);
                             lastTouchedPad = padIndex;
                         }
                     }
@@ -1061,7 +1094,7 @@
                 // Mouse
                 padEl.addEventListener('mousedown', () => {
                     padEl.classList.add('active');
-                    sendMIDI(pad.note, velocity);
+                    sendMIDI(pad.note, velocity, index);
                 });
                 
                 padEl.addEventListener('mouseup', () => {
@@ -1112,6 +1145,30 @@
             showToast(`🎵 ${name}`);
         }
 
+        let rhythmNotes = [];
+        let rhythmMethod = 1; // Different methods to try
+        let rhythmPlaying = false; // Track if rhythm is active
+        
+        // Define 16 chords for the pads when rhythm is playing
+        const chords = [
+            { name: 'C', notes: [36, 40, 43] },      // C Major (C2, E2, G2)
+            { name: 'Dm', notes: [38, 41, 45] },     // D minor (D2, F2, A2)
+            { name: 'Em', notes: [40, 43, 47] },     // E minor (E2, G2, B2)
+            { name: 'F', notes: [41, 45, 48] },      // F Major (F2, A2, C3)
+            { name: 'G', notes: [43, 47, 50] },      // G Major (G2, B2, D3)
+            { name: 'Am', notes: [45, 48, 52] },     // A minor (A2, C3, E3)
+            { name: 'Bdim', notes: [47, 50, 53] },   // B diminished (B2, D3, F3)
+            { name: 'C7', notes: [36, 40, 43, 46] }, // C7 (C2, E2, G2, Bb2)
+            { name: 'G7', notes: [43, 47, 50, 53] }, // G7 (G2, B2, D3, F3)
+            { name: 'D7', notes: [38, 42, 45, 48] }, // D7 (D2, F#2, A2, C3)
+            { name: 'A7', notes: [45, 49, 52, 55] }, // A7 (A2, C#3, E3, G3)
+            { name: 'E7', notes: [40, 44, 47, 50] }, // E7 (E2, G#2, B2, D3)
+            { name: 'Fmaj7', notes: [41, 45, 48, 52] }, // F maj7 (F2, A2, C3, E3)
+            { name: 'Cmaj7', notes: [36, 40, 43, 47] }, // C maj7 (C2, E2, G2, B2)
+            { name: 'Gm', notes: [43, 46, 50] },     // G minor (G2, Bb2, D3)
+            { name: 'Bb', notes: [46, 50, 53] }      // Bb Major (Bb2, D3, F3)
+        ];
+        
         function startRhythm() {
             if (!midiOutput) {
                 showToast('⚠️ Connecte le MIDI d\'abord');
@@ -1121,33 +1178,108 @@
             // First select the rhythm if one is selected
             if (currentRhythm !== null) {
                 midiOutput.send([0xC0, currentRhythm]);
+                console.log(`Rhythm Program Change: ${currentRhythm}`);
             }
-            
-            // Send Control Change 91 (Effects) to activate accompaniment
-            midiOutput.send([0xB0, 91, 127]);
-            
-            // Small delay then send MIDI Start
-            setTimeout(() => {
-                midiOutput.send([0xFA]); // MIDI Start
-                console.log('✅ Rhythm started');
-            }, 100);
             
             const select = document.getElementById('rhythmSelect');
             const name = select.options[select.selectedIndex]?.text || 'Rythme';
-            showToast(`▶ ${name} démarré`);
+            
+            // Enable rhythm playing mode
+            rhythmPlaying = true;
+            
+            // METHOD 1: Play accompaniment chord (most reliable for Casio)
+            if (rhythmMethod === 1) {
+                // Playing C Major chord in accompaniment zone (lower keys)
+                const chordNotes = [36, 40, 43]; // C2, E2, G2
+                
+                setTimeout(() => {
+                    chordNotes.forEach(note => {
+                        midiOutput.send([0x90, note, 80]); // Note On, channel 1
+                        rhythmNotes.push(note);
+                    });
+                    console.log('✅ Method 1: Playing accompaniment chord');
+                }, 50);
+                
+                showToast(`▶ ${name} - MODE ACCORD ! 🎸`);
+            }
+            
+            // METHOD 2: MIDI Sync Start
+            else if (rhythmMethod === 2) {
+                midiOutput.send([0xFA]); // MIDI Start
+                console.log('✅ Method 2: MIDI Start');
+                showToast(`▶ ${name} - MODE ACCORD ! 🎸`);
+            }
+            
+            // METHOD 3: Combined approach
+            else if (rhythmMethod === 3) {
+                // Enable sync
+                midiOutput.send([0xB0, 80, 127]);
+                setTimeout(() => {
+                    midiOutput.send([0xFA]); // MIDI Start
+                    // Also play a note
+                    midiOutput.send([0x90, 36, 80]);
+                    rhythmNotes.push(36);
+                }, 50);
+                console.log('✅ Method 3: Combined');
+                showToast(`▶ ${name} - MODE ACCORD ! 🎸`);
+            }
+            
+            // Update pads to show chord names
+            updatePadsForChordMode();
         }
 
         function stopRhythm() {
             if (!midiOutput) return;
             
+            // Disable rhythm playing mode
+            rhythmPlaying = false;
+            
+            // Stop all rhythm notes
+            rhythmNotes.forEach(note => {
+                midiOutput.send([0x80, note, 0]); // Note Off
+            });
+            rhythmNotes = [];
+            
+            // Stop any active chord notes
+            activeChordNotes.forEach(note => {
+                midiOutput.send([0x80, note, 0]);
+            });
+            activeChordNotes = [];
+            
             // Send MIDI Stop
-            midiOutput.send([0xFC]); // MIDI Stop
+            midiOutput.send([0xFC]);
             
             // Turn off accompaniment
-            midiOutput.send([0xB0, 91, 0]);
+            midiOutput.send([0xB0, 80, 0]);
             
             console.log('⏹ Rhythm stopped');
-            showToast('⏹ Rythme arrêté');
+            showToast('⏹ Rythme arrêté - Mode Drum');
+            
+            // Restore drum pad labels
+            generatePads();
+        }
+        
+        // Update pads to show chord names when rhythm is playing
+        function updatePadsForChordMode() {
+            const container = document.getElementById('padsContainer');
+            const pads = container.querySelectorAll('.pad');
+            
+            pads.forEach((padEl, index) => {
+                const chord = chords[index % chords.length];
+                const labelEl = padEl.querySelector('.pad-label');
+                if (labelEl) {
+                    labelEl.textContent = chord.name;
+                }
+            });
+        }
+        
+        // Function to change rhythm method (for testing)
+        function changeRhythmMethod() {
+            rhythmMethod = (rhythmMethod % 3) + 1;
+            const btn = document.querySelector('.rhythm-controls button:nth-child(3)');
+            if (btn) btn.textContent = `Méthode ${rhythmMethod}/3`;
+            showToast(`Méthode ${rhythmMethod}/3 - Réessaie START`);
+            console.log(`Rhythm method changed to: ${rhythmMethod}`);
         }
 
         // Controls
