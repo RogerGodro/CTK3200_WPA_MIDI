@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="CTK-3200 Controller V3.1 - Pro Design">
+    <meta name="theme-color" content="#1a1a1a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>CTK-3200 Pro Controller</title>
+    
+    <link rel="manifest" href='data:application/manifest+json,{"name":"CTK-3200 Pro","short_name":"CTK Pro","display":"fullscreen","orientation":"landscape","start_url":".","theme_color":"#1a1a1a","background_color":"#000000"}'>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80'%3E🎹%3C/text%3E%3C/svg%3E">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            touch-action: none;
+        }
+
+        .main-container {
+            height: 100vh;
+            width: 100vw;
+            background: linear-gradient(145deg, #1a1a1a 0%, #0d0d0d 100%);
+            display: flex;
+            flex-direction: column;
+            padding: 8px;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .logo span {
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+
+        .status-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .midi-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .status-led {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ff3333;
+            box-shadow: 0 0 6px currentColor;
+        }
+
+        .status-led.connected {
+            background: #33ff33;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 6px currentColor; }
+            50% { opacity: 0.6; box-shadow: 0 0 12px currentColor; }
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-action {
+            padding: 6px 14px;
+            background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-action:hover {
+            background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
+            transform: translateY(-1px);
+        }
+
+        .btn-action:active {
+            transform: translateY(0);
+        }
+
+        .btn-action.primary {
+            background: linear-gradient(145deg, #4a4aff, #3a3aee);
+            border-color: #4a4aff;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            flex: 1;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 10px;
+            min-height: 0;
+        }
+
+        /* Left Controls */
+        .left-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 180px;
+        }
+
+        .control-group {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .control-title {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.6;
+            margin-bottom: 8px;
+        }
+
+        .mode-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .mode-btn {
+            padding: 8px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255,255,255,0.08);
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(145deg, #4a4aff, #3a3aee);
+            border-color: transparent;
+            box-shadow: 0 2px 10px rgba(74, 74, 255, 0.3);
+        }
+
+        .drum-sets {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+        }
+
+        .drum-btn {
+            padding: 6px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .drum-btn:hover {
+            background: rgba(255,255,255,0.08);
+        }
+
+        .drum-btn.active {
+            background: rgba(74, 74, 255, 0.3);
+            border-color: #4a4aff;
+        }
+
+        /* Knobs Section */
+        .knobs-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .knob-group {
+            text-align: center;
+        }
+
+        .knob-label {
+            font-size: 9px;
+            opacity: 0.6;
+            margin-bottom: 4px;
+        }
+
+        .knob {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            margin: 0 auto;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .knob::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 10px;
+            background: #4a4aff;
+            border-radius: 1px;
+        }
+
+        .knob-value {
+            font-size: 10px;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+
+        /* Center - Pads Grid */
+        .pads-section {
+            background: linear-gradient(145deg, #1a1a1a, #0a0a0a);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pads-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 8px;
+            flex: 1;
+        }
+
+        .pad {
+            background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.1s;
+            position: relative;
+            overflow: hidden;
+            min-height: 60px;
+        }
+
+        /* RGB Pad Colors */
+        .pad[data-color="red"] { 
+            border-color: #ff3333;
+            box-shadow: inset 0 0 20px rgba(255, 51, 51, 0.1);
+        }
+        .pad[data-color="green"] { 
+            border-color: #33ff33;
+            box-shadow: inset 0 0 20px rgba(51, 255, 51, 0.1);
+        }
+        .pad[data-color="blue"] { 
+            border-color: #3333ff;
+            box-shadow: inset 0 0 20px rgba(51, 51, 255, 0.1);
+        }
+        .pad[data-color="purple"] { 
+            border-color: #ff33ff;
+            box-shadow: inset 0 0 20px rgba(255, 51, 255, 0.1);
+        }
+        .pad[data-color="yellow"] { 
+            border-color: #ffff33;
+            box-shadow: inset 0 0 20px rgba(255, 255, 51, 0.1);
+        }
+        .pad[data-color="cyan"] { 
+            border-color: #33ffff;
+            box-shadow: inset 0 0 20px rgba(51, 255, 255, 0.1);
+        }
+        .pad[data-color="orange"] { 
+            border-color: #ff9933;
+            box-shadow: inset 0 0 20px rgba(255, 153, 51, 0.1);
+        }
+        .pad[data-color="pink"] { 
+            border-color: #ff99cc;
+            box-shadow: inset 0 0 20px rgba(255, 153, 204, 0.1);
+        }
+
+        .pad:active, .pad.active {
+            transform: scale(0.95);
+            border-width: 3px;
+        }
+
+        .pad[data-color="red"]:active, .pad[data-color="red"].active { 
+            background: linear-gradient(145deg, #ff3333, #cc2222);
+            box-shadow: 0 0 20px rgba(255, 51, 51, 0.6), inset 0 0 20px rgba(255, 51, 51, 0.3);
+        }
+        .pad[data-color="green"]:active, .pad[data-color="green"].active { 
+            background: linear-gradient(145deg, #33ff33, #22cc22);
+            box-shadow: 0 0 20px rgba(51, 255, 51, 0.6), inset 0 0 20px rgba(51, 255, 51, 0.3);
+        }
+        .pad[data-color="blue"]:active, .pad[data-color="blue"].active { 
+            background: linear-gradient(145deg, #3333ff, #2222cc);
+            box-shadow: 0 0 20px rgba(51, 51, 255, 0.6), inset 0 0 20px rgba(51, 51, 255, 0.3);
+        }
+        .pad[data-color="purple"]:active, .pad[data-color="purple"].active { 
+            background: linear-gradient(145deg, #ff33ff, #cc22cc);
+            box-shadow: 0 0 20px rgba(255, 51, 255, 0.6), inset 0 0 20px rgba(255, 51, 255, 0.3);
+        }
+        .pad[data-color="yellow"]:active, .pad[data-color="yellow"].active { 
+            background: linear-gradient(145deg, #ffff33, #cccc22);
+            box-shadow: 0 0 20px rgba(255, 255, 51, 0.6), inset 0 0 20px rgba(255, 255, 51, 0.3);
+        }
+        .pad[data-color="cyan"]:active, .pad[data-color="cyan"].active { 
+            background: linear-gradient(145deg, #33ffff, #22cccc);
+            box-shadow: 0 0 20px rgba(51, 255, 255, 0.6), inset 0 0 20px rgba(51, 255, 255, 0.3);
+        }
+        .pad[data-color="orange"]:active, .pad[data-color="orange"].active { 
+            background: linear-gradient(145deg, #ff9933, #cc7722);
+            box-shadow: 0 0 20px rgba(255, 153, 51, 0.6), inset 0 0 20px rgba(255, 153, 51, 0.3);
+        }
+        .pad[data-color="pink"]:active, .pad[data-color="pink"].active { 
+            background: linear-gradient(145deg, #ff99cc, #cc7799);
+            box-shadow: 0 0 20px rgba(255, 153, 204, 0.6), inset 0 0 20px rgba(255, 153, 204, 0.3);
+        }
+
+        .pad-id {
+            position: absolute;
+            top: 4px;
+            right: 6px;
+            font-size: 9px;
+            opacity: 0.4;
+            font-weight: 600;
+        }
+
+        .pad-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .pad-note {
+            font-size: 9px;
+            opacity: 0.6;
+            margin-top: 2px;
+        }
+
+        /* Right Controls */
+        .right-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 200px;
+        }
+
+        /* Sliders */
+        .sliders-group {
+            display: flex;
+            gap: 6px;
+            padding: 10px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+        }
+
+        .slider-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .slider-track {
+            width: 30px;
+            height: 120px;
+            background: linear-gradient(to top, #1a1a1a, #2a2a2a);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .slider-handle {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 26px;
+            height: 12px;
+            background: linear-gradient(145deg, #4a4aff, #3a3aee);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 2px;
+            cursor: grab;
+        }
+
+        .slider-label {
+            font-size: 9px;
+            margin-top: 6px;
+            opacity: 0.6;
+        }
+
+        /* Loop Control */
+        .loop-section {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .loop-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .loop-btn {
+            padding: 8px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .loop-btn:hover {
+            background: rgba(255,255,255,0.08);
+        }
+
+        .loop-btn.recording {
+            background: #ff3333;
+            animation: recordPulse 1s infinite;
+            border-color: #ff3333;
+        }
+
+        .loop-btn.playing {
+            background: #33ff33;
+            border-color: #33ff33;
+        }
+
+        @keyframes recordPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .bpm-section {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .bpm-input {
+            flex: 1;
+            padding: 4px 8px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 11px;
+            text-align: center;
+        }
+
+        .tap-btn {
+            padding: 4px 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        /* Info Display */
+        .info-display {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .info-text {
+            font-size: 11px;
+            opacity: 0.8;
+        }
+
+        .info-value {
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 4px;
+            color: #4a4aff;
+        }
+
+        /* Rhythm Modal */
+        .rhythm-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .rhythm-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .rhythm-content {
+            background: linear-gradient(145deg, #1a1a1a, #0d0d0d);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .rhythm-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .rhythm-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 6px;
+        }
+
+        .rhythm-item {
+            padding: 8px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 4px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .rhythm-item:hover {
+            background: rgba(74, 74, 255, 0.2);
+            border-color: #4a4aff;
+        }
+
+        .close-modal {
+            width: 30px;
+            height: 30px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Message Toast */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(74, 74, 255, 0.95);
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 12px;
+            font-weight: 500;
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-50%) translateY(-100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .control-panel {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr auto;
+            }
+
+            .left-controls, .right-controls {
+                width: 100%;
+                flex-direction: row;
+                overflow-x: auto;
+            }
+
+            .control-group {
+                min-width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="logo">
+                <span>🎹</span>
+                <span>CTK-3200 PRO</span>
+            </div>
+            
+            <div class="status-area">
+                <div class="midi-status">
+                    <span class="status-led" id="midiLed"></span>
+                    <span id="midiText">MIDI OFF</span>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn-action" onclick="connectMIDI()">Connect</button>
+                    <button class="btn-action" onclick="showRhythms()">Rhythms</button>
+                    <button class="btn-action" onclick="toggleFullscreen()">Fullscreen</button>
+                    <button class="btn-action primary" onclick="showHelp()">?</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <!-- Left Controls -->
+            <div class="left-controls">
+                <div class="control-group">
+                    <div class="control-title">Mode</div>
+                    <div class="mode-buttons">
+                        <button class="mode-btn active" onclick="setMode('drum')">
+                            <span>🥁</span> Drum
+                        </button>
+                        <button class="mode-btn" onclick="setMode('chord')">
+                            <span>🎸</span> Chord
+                        </button>
+                        <button class="mode-btn" onclick="setMode('percussion')">
+                            <span>🔔</span> Percussion
+                        </button>
+                    </div>
+                </div>
+
+                <div class="control-group" id="drumSetGroup">
+                    <div class="control-title">Drum Set</div>
+                    <div class="drum-sets" id="drumSets"></div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-title">Controls</div>
+                    <div class="knobs-container">
+                        <div class="knob-group">
+                            <div class="knob-label">Velocity</div>
+                            <div class="knob" id="velocityKnob"></div>
+                            <div class="knob-value" id="velocityValue">100</div>
+                        </div>
+                        <div class="knob-group">
+                            <div class="knob-label">Octave</div>
+                            <div class="knob" id="octaveKnob"></div>
+                            <div class="knob-value" id="octaveValue">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center - Pads -->
+            <div class="pads-section">
+                <div class="pads-grid" id="padsGrid"></div>
+            </div>
+
+            <!-- Right Controls -->
+            <div class="right-controls">
+                <div class="sliders-group">
+                    <div class="slider-container">
+                        <div class="slider-track" data-slider="1">
+                            <div class="slider-handle"></div>
+                        </div>
+                        <div class="slider-label">F1</div>
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-track" data-slider="2">
+                            <div class="slider-handle"></div>
+                        </div>
+                        <div class="slider-label">F2</div>
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-track" data-slider="3">
+                            <div class="slider-handle"></div>
+                        </div>
+                        <div class="slider-label">F3</div>
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-track" data-slider="4">
+                            <div class="slider-handle"></div>
+                        </div>
+                        <div class="slider-label">F4</div>
+                    </div>
+                </div>
+
+                <div class="loop-section">
+                    <div class="control-title">Beat Loop</div>
+                    <div class="loop-buttons">
+                        <button class="loop-btn" id="recordBtn" onclick="toggleRecord()">⏺ REC</button>
+                        <button class="loop-btn" id="playBtn" onclick="togglePlay()">▶ PLAY</button>
+                        <button class="loop-btn" onclick="clearLoop()">✕ CLEAR</button>
+                        <button class="loop-btn" onclick="quantizeLoop()">⊞ QUANT</button>
+                    </div>
+                    <div class="bpm-section">
+                        <input type="number" class="bpm-input" id="bpmInput" value="120" min="60" max="200">
+                        <button class="tap-btn" onclick="tapTempo()">TAP</button>
+                    </div>
+                </div>
+
+                <div class="info-display">
+                    <div class="info-text">Current Set</div>
+                    <div class="info-value" id="currentInfo">STANDARD 1</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rhythm Modal -->
+    <div class="rhythm-modal" id="rhythmModal">
+        <div class="rhythm-content">
+            <div class="rhythm-header">
+                <h2>📋 150 CTK-3200 Rhythms</h2>
+                <button class="close-modal" onclick="closeRhythms()">×</button>
+            </div>
+            <div class="rhythm-grid" id="rhythmGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        let midiOut = null;
+        let currentMode = 'drum';
+        let currentDrumSet = 0;
+        let velocity = 100;
+        let octaveShift = 0;
+        let audioContext = null;
+        let isRecording = false;
+        let isPlaying = false;
+        let loopData = [];
+        let loopStartTime = 0;
+        let loopInterval = null;
+        let bpm = 120;
+        let tapTimes = [];
+        let touchedPads = new Set();
+
+        // Pad colors pattern
+        const padColors = [
+            'red', 'green', 'blue', 'purple',
+            'yellow', 'cyan', 'orange', 'pink',
+            'red', 'green', 'blue', 'purple',
+            'yellow', 'cyan', 'orange', 'pink'
+        ];
+
+        // Drum sets configuration
+        const drumSets = [
+            {
+                name: "STANDARD 1",
+                notes: [36, 38, 42, 46, 45, 48, 50, 51, 35, 39, 54, 56, 47, 49, 52, 57],
+                labels: ["KICK", "SNARE", "HAT", "OPEN", "TOM L", "TOM M", "TOM H", "RIDE", 
+                        "KICK 2", "CLAP", "TAMB", "COWB", "TOM L2", "CRASH", "BELL", "CRASH2"]
+            },
+            {
+                name: "STANDARD 2", 
+                notes: [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51],
+                labels: ["KICK", "RIM", "SNARE", "CLAP", "E.SNR", "F.TOM", "HAT", "F.TOM2",
+                        "PEDAL", "TOM L", "OPEN", "TOM LM", "TOM M", "CRASH", "TOM H", "RIDE"]
+            },
+            {
+                name: "ROOM",
+                notes: [36, 38, 42, 46, 45, 48, 50, 51, 35, 37, 54, 56, 47, 50, 52, 57],
+                labels: ["R.KICK", "R.SNR", "R.HAT", "R.OPEN", "R.TOM L", "R.TOM M", "R.TOM H", "R.RIDE",
+                        "SOFT", "STICK", "TAMB", "COWB", "R.TOM", "R.CRSH", "BELL", "CRASH"]
+            },
+            {
+                name: "POWER",
+                notes: [36, 38, 42, 46, 45, 48, 50, 51, 35, 40, 54, 56, 47, 50, 52, 57],
+                labels: ["P.KICK", "P.SNR", "P.HAT", "P.OPEN", "P.TOM L", "P.TOM M", "P.TOM H", "P.RIDE",
+                        "HARD", "E.SNR", "TAMB", "COWB", "P.TOM", "P.CRSH", "BELL", "CHINA"]
+            },
+            {
+                name: "ELECTRONIC",
+                notes: [36, 38, 42, 46, 45, 48, 50, 51, 35, 41, 54, 56, 47, 50, 52, 57],
+                labels: ["808 BD", "808 SD", "808 HH", "808 OH", "SYN T1", "SYN T2", "SYN T3", "SYN RD",
+                        "909 BD", "ZAP", "SHAKE", "808 CB", "E.TOM", "NOISE", "SYNTH", "REV"]
+            }
+        ];
+
+        // Percussion pages
+        const percussionPages = [
+            {
+                name: "PERC 1",
+                notes: [35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50],
+                labels: ["AC.BS", "BASS", "STICK", "AC.SN", "CLAP", "EL.SN", "L.TOM", "C.HAT",
+                        "H.TOM", "PD.HH", "L.TOM", "OP.HH", "LM.TM", "HM.TM", "CRASH", "H.TOM"]
+            },
+            {
+                name: "PERC 2",
+                notes: [51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66],
+                labels: ["RIDE", "CHINA", "BELL", "TAMB", "SPLSH", "COWB", "CRSH2", "VIBRA",
+                        "RIDE2", "BONGO", "BONGO", "CONGA", "CONGA", "CONGA", "TIMB", "TIMB"]
+            },
+            {
+                name: "PERC 3",
+                notes: [67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82],
+                labels: ["AGOGO", "AGOGO", "CABSA", "MRCAS", "WHSTL", "WHSTL", "GUIRO", "GUIRO",
+                        "CLAVE", "WOOD", "WOOD", "CUICA", "CUICA", "TRNGL", "TRNGL", "SHAKE"]
+            },
+            {
+                name: "EFFECTS",
+                notes: [83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98],
+                labels: ["JNGLE", "BELLS", "CASTS", "SURDO", "SURDO", "FX1", "FX2", "FX3",
+                        "FX4", "FX5", "FX6", "FX7", "FX8", "FX9", "FX10", "FX11"]
+            }
+        ];
+
+        // Chords configuration
+        const chords = [
+            { name: "C", label: "Do Maj", notes: [60, 64, 67] },
+            { name: "Dm", label: "Ré min", notes: [62, 65, 69] },
+            { name: "Em", label: "Mi min", notes: [64, 67, 71] },
+            { name: "F", label: "Fa Maj", notes: [65, 69, 72] },
+            { name: "G", label: "Sol Maj", notes: [67, 71, 74] },
+            { name: "Am", label: "La min", notes: [69, 72, 76] },
+            { name: "Bdim", label: "Si dim", notes: [71, 74, 77] },
+            { name: "C7", label: "Do 7", notes: [60, 64, 67, 70] },
+            { name: "Dm7", label: "Ré m7", notes: [62, 65, 69, 72] },
+            { name: "Em7", label: "Mi m7", notes: [64, 67, 71, 74] },
+            { name: "FM7", label: "Fa M7", notes: [65, 69, 72, 76] },
+            { name: "G7", label: "Sol 7", notes: [67, 71, 74, 77] },
+            { name: "Am7", label: "La m7", notes: [69, 72, 76, 81] },
+            { name: "Bm7b5", label: "Si m7♭5", notes: [71, 74, 77, 81] },
+            { name: "CM7", label: "Do M7", notes: [60, 64, 67, 71] },
+            { name: "Csus4", label: "Do sus4", notes: [60, 65, 67] }
+        ];
+
+        // Rhythms list (with ADANI at #109)
+        const rhythms = [
+            "001: CLUB 8 BEAT", "002: CLUB 16 BEAT", "003: TECHNO", "004: TRANCE", "005: EURO TRANCE",
+            "006: AMBIENT", "007: DANCE POP 1", "008: DANCE POP 2", "009: DISCO", "010: 70's DISCO",
+            "011: LATIN DISCO", "012: DANCE", "013: 16 BEAT", "014: 8 BEAT MODERN", "015: SHUFFLE",
+            "016: 8 BEAT", "017: 60's 8 BEAT", "018: POP", "019: 16 SHUFFLE", "020: GUITAR POP",
+            "021: KOOL POP", "022: POP ROCK", "023: ROCK", "024: ROCK WALTZ", "025: 60's ROCK",
+            "026: HARD ROCK", "027: HEAVY METAL", "028: SLOW ROCK", "029: R&B", "030: SOUL",
+            "031: DETROIT POP", "032: 6/8 SOUL", "033: CRY", "034: OLDIES", "035: TWIST",
+            "036: SLOW BLUES", "037: BLUES", "038: BOOGIE", "039: COUNTRY", "040: ACOUSTIC GUITAR",
+            "041: UNPLUGGED", "042: FOLK", "043: FOLK ROCK", "044: J-POP", "045: J-WALK",
+            "046: HEAVY 8 BEAT", "047: POP FUSION", "048: FUNK", "049: 16 BEAT FUNK", "050: 8 BEAT FUNK",
+            "051: NEW JACK SWING", "052: BRIT POP", "053: HIP HOP", "054: RAP", "055: INDUSTRIAL",
+            "056: ELECTRIC GROOVE", "057: TRIP HOP", "058: BEBOP", "059: ACID JAZZ", "060: BAND JAZZ",
+            "061: BAND LATIN", "062: BIG BAND", "063: SWING", "064: FOX TROT", "065: COUNTRY WALTZ",
+            "066: RAGTIME", "067: CHARLESTON", "068: MARCH", "069: 6/8 MARCH", "070: GERMAN MARCH",
+            "071: POLKA", "072: TRADITIONAL WALTZ", "073: VIENNESE WALTZ", "074: FRENCH WALTZ", "075: SLOW WALTZ",
+            "076: SAMBA", "077: BOSSA NOVA", "078: MAMBO", "079: RHUMBA", "080: CHA-CHA-CHA",
+            "081: MERENGUE", "082: BOLERO", "083: SALSA", "084: TANGO", "085: HABANERA",
+            "086: REGGAE", "087: POP REGGAE", "088: SKA", "089: CALYPSO", "090: SOCA",
+            "091: BEGUINE", "092: ARABIC", "093: ENKA", "094: MIN'YO", "095: CHINESE",
+            "096: GAMELAN", "097: RAGA", "098: DANGDUT", "099: KERONCONG", "100: PHILIPPINES",
+            "101: SPAIN", "102: GREEK", "103: HAWAIIAN", "104: MUS'ETTE", "105: ADRIA",
+            "106: TRADITIONAL", "107: FOXTROT", "108: CHRISTMAS WALTZ", "109: ADANI", "110: BALADI",
+            "111: SAMBA 2", "112: SA SA", "113: GYPSY", "114: SALON", "115: RHUMBA 2",
+            "116: LATIN", "117: JEWISH", "118: SYMPHONY", "119: STR QUARTET", "120: PIANO WALTZ",
+            "121: PIANO MARCH", "122: PIANO RAGTIME", "123: ARPEGGIO", "124: HABANERA 2", "125: NURSERY",
+            "126: KIDS MARCH", "127: KIDS RANDOM", "128: SYNCHRO A", "129: SYNCHRO B", "130: SYNCHRO C",
+            "131: CLUB LATIN", "132: GARAGE 1", "133: GARAGE 2", "134: GARAGE 3", "135: HOUSE",
+            "136: RAVE", "137: DRUM'N'BASS", "138: INDIAN POP", "139: ARABIC POP", "140: TRADITIONAL SAMBA",
+            "141: NORTENO", "142: TEX-MEX", "143: GRUPERO", "144: BANDA", "145: LOVE SONG",
+            "146: 6/8 MODERN", "147: POP WALTZ", "148: GUITAR SERENADE", "149: BLUEGRASS", "150: DIXIE"
+        ];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initializePads();
+            setupDrumSets();
+            setupKnobs();
+            setupSliders();
+            createRhythmList();
+
+            // BPM input
+            document.getElementById('bpmInput').addEventListener('change', (e) => {
+                bpm = parseInt(e.target.value);
+            });
+        });
+
+        function connectMIDI() {
+            if (navigator.requestMIDIAccess) {
+                navigator.requestMIDIAccess()
+                    .then(onMIDISuccess, onMIDIFailure);
+            } else {
+                showToast("WebMIDI not supported - Test mode activated");
+                initAudioContext();
+            }
+        }
+
+        function onMIDISuccess(midiAccess) {
+            const outputs = Array.from(midiAccess.outputs.values());
+            if (outputs.length > 0) {
+                midiOut = outputs[0];
+                document.getElementById('midiLed').classList.add('connected');
+                document.getElementById('midiText').textContent = midiOut.name;
+                showToast("✅ MIDI Connected: " + midiOut.name);
+            } else {
+                showToast("⚠️ No MIDI device found");
+                initAudioContext();
+            }
+        }
+
+        function onMIDIFailure() {
+            showToast("❌ MIDI Error - Test mode activated");
+            initAudioContext();
+        }
+
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                document.getElementById('midiText').textContent = "TEST MODE";
+            }
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            currentDrumSet = 0;
+            
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            setupDrumSets();
+            initializePads();
+            
+            showToast(`${mode.toUpperCase()} mode activated`);
+        }
+
+        function setupDrumSets() {
+            const container = document.getElementById('drumSets');
+            const group = document.getElementById('drumSetGroup');
+            
+            if (currentMode === 'chord') {
+                group.style.display = 'none';
+                return;
+            }
+            
+            group.style.display = 'block';
+            container.innerHTML = '';
+            
+            const sets = currentMode === 'drum' ? drumSets : percussionPages;
+            
+            sets.forEach((set, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'drum-btn';
+                btn.textContent = set.name;
+                btn.onclick = () => selectDrumSet(index);
+                if (index === 0) btn.classList.add('active');
+                container.appendChild(btn);
+            });
+        }
+
+        function selectDrumSet(index) {
+            currentDrumSet = index;
+            document.querySelectorAll('.drum-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', i === index);
+            });
+            
+            const setName = currentMode === 'drum' ? 
+                drumSets[index].name : 
+                percussionPages[index].name;
+            document.getElementById('currentInfo').textContent = setName;
+            
+            initializePads();
+        }
+
+        function initializePads() {
+            const grid = document.getElementById('padsGrid');
+            grid.innerHTML = '';
+            
+            for (let i = 0; i < 16; i++) {
+                const pad = document.createElement('div');
+                pad.className = 'pad';
+                pad.dataset.index = i;
+                pad.dataset.color = padColors[i];
+                
+                const padId = document.createElement('div');
+                padId.className = 'pad-id';
+                padId.textContent = `PAD ${i + 1}`;
+                pad.appendChild(padId);
+                
+                const padLabel = document.createElement('div');
+                padLabel.className = 'pad-label';
+                
+                const padNote = document.createElement('div');
+                padNote.className = 'pad-note';
+                
+                if (currentMode === 'drum') {
+                    const set = drumSets[currentDrumSet];
+                    padLabel.textContent = set.labels[i];
+                    padNote.textContent = `Note ${set.notes[i]}`;
+                } else if (currentMode === 'percussion') {
+                    const page = percussionPages[currentDrumSet];
+                    padLabel.textContent = page.labels[i];
+                    padNote.textContent = `Note ${page.notes[i]}`;
+                } else if (currentMode === 'chord') {
+                    const chord = chords[i];
+                    padLabel.textContent = chord.name;
+                    padNote.textContent = chord.label;
+                }
+                
+                pad.appendChild(padLabel);
+                pad.appendChild(padNote);
+                
+                // Touch events
+                pad.addEventListener('touchstart', handlePadTouch, { passive: false });
+                pad.addEventListener('touchmove', handlePadMove, { passive: false });
+                pad.addEventListener('touchend', handlePadRelease, { passive: false });
+                
+                // Mouse events
+                pad.addEventListener('mousedown', handlePadTouch);
+                pad.addEventListener('mouseenter', handlePadEnter);
+                pad.addEventListener('mouseup', handlePadRelease);
+                pad.addEventListener('mouseleave', handlePadRelease);
+                
+                grid.appendChild(pad);
+            }
+        }
+
+        let isMouseDown = false;
+
+        function handlePadTouch(e) {
+            e.preventDefault();
+            isMouseDown = true;
+            const pad = e.currentTarget;
+            const index = parseInt(pad.dataset.index);
+            
+            if (!touchedPads.has(index)) {
+                touchedPads.add(index);
+                pad.classList.add('active');
+                playNote(index);
+                
+                if (isRecording) {
+                    recordEvent(index, 'on');
+                }
+            }
+        }
+
+        function handlePadMove(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const element = document.elementFromPoint(touch.clientX, touch.clientY);
+            
+            if (element && element.classList.contains('pad')) {
+                const index = parseInt(element.dataset.index);
+                if (!touchedPads.has(index)) {
+                    touchedPads.forEach(padIndex => {
+                        const prevPad = document.querySelector(`[data-index="${padIndex}"]`);
+                        if (prevPad) prevPad.classList.remove('active');
+                        stopNote(padIndex);
+                    });
+                    touchedPads.clear();
+                    
+                    touchedPads.add(index);
+                    element.classList.add('active');
+                    playNote(index);
+                    
+                    if (isRecording) {
+                        recordEvent(index, 'on');
+                    }
+                }
+            }
+        }
+
+        function handlePadEnter(e) {
+            if (isMouseDown) {
+                handlePadTouch(e);
+            }
+        }
+
+        function handlePadRelease(e) {
+            e.preventDefault();
+            isMouseDown = false;
+            const pad = e.currentTarget;
+            const index = parseInt(pad.dataset.index);
+            
+            pad.classList.remove('active');
+            touchedPads.delete(index);
+            stopNote(index);
+            
+            if (isRecording) {
+                recordEvent(index, 'off');
+            }
+        }
+
+        function playNote(index) {
+            if (currentMode === 'drum' || currentMode === 'percussion') {
+                const notes = currentMode === 'drum' ? 
+                    drumSets[currentDrumSet].notes : 
+                    percussionPages[currentDrumSet].notes;
+                const note = notes[index];
+                
+                if (midiOut) {
+                    midiOut.send([0x99, note, velocity]);
+                } else if (audioContext) {
+                    playTestSound(200 + note * 10);
+                }
+            } else if (currentMode === 'chord') {
+                const chord = chords[index];
+                if (midiOut) {
+                    chord.notes.forEach(note => {
+                        const adjustedNote = note + (octaveShift * 12);
+                        midiOut.send([0x90, adjustedNote, velocity]);
+                    });
+                } else if (audioContext) {
+                    playTestSound(400 + index * 30);
+                }
+            }
+        }
+
+        function stopNote(index) {
+            if (currentMode === 'chord') {
+                const chord = chords[index];
+                if (midiOut) {
+                    chord.notes.forEach(note => {
+                        const adjustedNote = note + (octaveShift * 12);
+                        midiOut.send([0x80, adjustedNote, 0]);
+                    });
+                }
+            }
+        }
+
+        function playTestSound(frequency) {
+            if (!audioContext) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = currentMode === 'drum' ? 'square' : 'sine';
+            
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.15);
+        }
+
+        // Knobs
+        function setupKnobs() {
+            const velocityKnob = document.getElementById('velocityKnob');
+            const octaveKnob = document.getElementById('octaveKnob');
+            
+            let isDragging = false;
+            let startY = 0;
+            let startValue = 0;
+            
+            velocityKnob.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startY = e.clientY;
+                startValue = velocity;
+            });
+            
+            octaveKnob.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startY = e.clientY;
+                startValue = octaveShift;
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                
+                const diff = startY - e.clientY;
+                
+                if (e.target.id === 'velocityKnob' || e.target.parentElement?.id === 'velocityKnob') {
+                    velocity = Math.max(1, Math.min(127, startValue + diff));
+                    document.getElementById('velocityValue').textContent = velocity;
+                    velocityKnob.style.transform = `rotate(${(velocity / 127) * 270 - 135}deg)`;
+                } else if (e.target.id === 'octaveKnob' || e.target.parentElement?.id === 'octaveKnob') {
+                    octaveShift = Math.max(-3, Math.min(3, Math.round((startValue + diff / 20))));
+                    document.getElementById('octaveValue').textContent = octaveShift > 0 ? `+${octaveShift}` : octaveShift;
+                    octaveKnob.style.transform = `rotate(${(octaveShift + 3) * 45 - 135}deg)`;
+                }
+            });
+            
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+        }
+
+        // Sliders
+        function setupSliders() {
+            const sliders = document.querySelectorAll('.slider-track');
+            
+            sliders.forEach(slider => {
+                const handle = slider.querySelector('.slider-handle');
+                let isDragging = false;
+                
+                slider.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    updateSlider(e, slider, handle);
+                });
+                
+                document.addEventListener('mousemove', (e) => {
+                    if (isDragging) {
+                        updateSlider(e, slider, handle);
+                    }
+                });
+                
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                });
+            });
+        }
+
+        function updateSlider(e, slider, handle) {
+            const rect = slider.getBoundingClientRect();
+            const y = e.clientY - rect.top;
+            const percent = Math.max(0, Math.min(1, 1 - (y / rect.height)));
+            handle.style.bottom = `${percent * 100}%`;
+            
+            // Send MIDI CC
+            if (midiOut) {
+                const cc = 20 + parseInt(slider.dataset.slider);
+                const value = Math.round(percent * 127);
+                midiOut.send([0xB0, cc, value]);
+            }
+        }
+
+        // Loop functions
+        function toggleRecord() {
+            const btn = document.getElementById('recordBtn');
+            
+            if (!isRecording) {
+                isRecording = true;
+                loopData = [];
+                loopStartTime = Date.now();
+                btn.classList.add('recording');
+                showToast("🔴 Recording...");
+                
+                setTimeout(() => {
+                    if (isRecording) {
+                        stopRecording();
+                    }
+                }, (60000 / bpm) * 4);
+            } else {
+                stopRecording();
+            }
+        }
+
+        function stopRecording() {
+            isRecording = false;
+            document.getElementById('recordBtn').classList.remove('recording');
+            showToast(`✅ Recorded ${loopData.length} events`);
+        }
+
+        function recordEvent(index, type) {
+            if (loopData.length < 64) {
+                loopData.push({
+                    time: Date.now() - loopStartTime,
+                    index: index,
+                    type: type
+                });
+            }
+        }
+
+        function togglePlay() {
+            const btn = document.getElementById('playBtn');
+            
+            if (!isPlaying && loopData.length > 0) {
+                isPlaying = true;
+                btn.classList.add('playing');
+                playLoop();
+            } else {
+                stopLoop();
+            }
+        }
+
+        function playLoop() {
+            if (loopData.length === 0) return;
+            
+            const duration = loopData[loopData.length - 1].time || 2000;
+            let currentIndex = 0;
+            const startTime = Date.now();
+            
+            loopInterval = setInterval(() => {
+                const elapsed = (Date.now() - startTime) % duration;
+                
+                while (currentIndex < loopData.length && loopData[currentIndex].time <= elapsed) {
+                    const event = loopData[currentIndex];
+                    
+                    if (event.type === 'on') {
+                        playNote(event.index);
+                    } else {
+                        stopNote(event.index);
+                    }
+                    
+                    currentIndex++;
+                }
+                
+                if (elapsed < 50) {
+                    currentIndex = 0;
+                }
+            }, 10);
+        }
+
+        function stopLoop() {
+            isPlaying = false;
+            document.getElementById('playBtn').classList.remove('playing');
+            
+            if (loopInterval) {
+                clearInterval(loopInterval);
+                loopInterval = null;
+            }
+        }
+
+        function clearLoop() {
+            stopLoop();
+            loopData = [];
+            showToast("Loop cleared");
+        }
+
+        function quantizeLoop() {
+            if (loopData.length === 0) return;
+            
+            const beatLength = 60000 / bpm / 4;
+            loopData.forEach(event => {
+                event.time = Math.round(event.time / beatLength) * beatLength;
+            });
+            
+            showToast("Loop quantized");
+        }
+
+        // Tap tempo
+        function tapTempo() {
+            const now = Date.now();
+            tapTimes.push(now);
+            
+            if (tapTimes.length > 4) {
+                tapTimes.shift();
+            }
+            
+            if (tapTimes.length >= 2) {
+                const intervals = [];
+                for (let i = 1; i < tapTimes.length; i++) {
+                    intervals.push(tapTimes[i] - tapTimes[i-1]);
+                }
+                
+                const avgInterval = intervals.reduce((a, b) => a + b) / intervals.length;
+                const newBpm = Math.round(60000 / avgInterval);
+                
+                if (newBpm >= 60 && newBpm <= 200) {
+                    bpm = newBpm;
+                    document.getElementById('bpmInput').value = bpm;
+                    showToast(`BPM: ${bpm}`);
+                }
+            }
+        }
+
+        // Rhythm modal
+        function createRhythmList() {
+            const grid = document.getElementById('rhythmGrid');
+            rhythms.forEach(rhythm => {
+                const item = document.createElement('div');
+                item.className = 'rhythm-item';
+                item.textContent = rhythm;
+                item.onclick = () => {
+                    showToast(`Select ${rhythm} on CTK-3200`);
+                    closeRhythms();
+                };
+                grid.appendChild(item);
+            });
+        }
+
+        function showRhythms() {
+            document.getElementById('rhythmModal').classList.add('active');
+        }
+
+        function closeRhythms() {
+            document.getElementById('rhythmModal').classList.remove('active');
+        }
+
+        // Fullscreen
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    showToast("Fullscreen error: " + err.message);
+                });
+                
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(() => {});
+                }
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Help
+        function showHelp() {
+            showToast("CTK-3200 PRO v3.1 - Touch pads to play!");
+        }
+
+        // Toast message
+        function showToast(message) {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+
+        // Prevent scrolling
+        document.addEventListener('touchmove', (e) => {
+            if (e.target.closest('.pads-grid')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html>
