@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTK3200 v5 - MIDI Monitor + Control</title>
+<style>
+  body { background:#111; color:#eee; font-family:Arial, sans-serif; margin:0; padding:0; overflow-x:hidden; }
+  .top-bar { display:flex; align-items:center; justify-content:space-between; background:#222; padding:10px 16px; }
+  .top-bar button { background:#333; color:#fff; border:none; border-radius:6px; padding:8px 12px; cursor:pointer; }
+  .top-bar button:hover { background:#444; }
+  .status-dot { width:10px; height:10px; border-radius:50%; background:#400; display:inline-block; margin-right:6px; }
+  .status-dot.active { background:#0f0; }
+  .content { padding:16px; }
+  .card { background:#1c1c1c; border-radius:10px; padding:12px; margin-bottom:16px; box-shadow:0 0 6px #000; }
+  .card h3 { margin-top:0; }
+</style>
+</head>
+<body>
+  <div class="top-bar">
+    <div><span id="midiDot" class="status-dot"></span><span id="midiStatus">MIDI OFF</span></div>
+    <button id="connectBtn">CONNECT</button>
+  </div>
+
+  <div class="content">
+    <div class="card">
+      <h3>CTK3200 Controller</h3>
+      <p>Utilisez les boutons ci-dessous pour envoyer des commandes MIDI au clavier.</p>
+      <button onclick="sendNoteOn(60,100)">NOTE ON C4</button>
+      <button onclick="sendNoteOff(60)">NOTE OFF C4</button>
+      <button onclick="sendCC(7,100)">Volume 100</button>
+      <button onclick="sendProgramChange(5)">Program 5</button>
+    </div>
+  </div>
+
+  <!-- MIDI Monitor (v5) -->
+  <div id="midiMonitor" style="position:fixed; right:12px; top:64px; width:340px; max-height:48vh; background:rgba(10,10,10,0.92); border:1px solid #222; border-radius:8px; padding:8px; color:#fff; z-index:4000; font-family:monospace; font-size:12px;">
+    <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px;">
+      <strong style="flex:1; font-size:13px;">MIDI MONITOR</strong>
+      <select id="midiInputSelect" style="background:#111; color:#fff; border:1px solid #333; padding:4px; border-radius:4px;"></select>
+      <button id="toggleMonitorBtn" style="margin-left:6px;padding:4px 6px;border-radius:4px;background:#2a2a2a;color:#fff;border:1px solid #333;">PAUSE</button>
+    </div>
+    <div style="display:flex; gap:6px; margin-bottom:6px;">
+      <button id="clearMidiLogBtn" style="flex:1;padding:6px;border-radius:6px;background:#1a1a1a;border:1px solid #333;">CLEAR</button>
+      <button id="copyMidiLogBtn" style="flex:1;padding:6px;border-radius:6px;background:#1a1a1a;border:1px solid #333;">COPY</button>
+    </div>
+    <div id="midiLog" style="overflow:auto; max-height:36vh; padding:6px; background:rgba(0,0,0,0.25); border-radius:6px;"></div>
+  </div>
+
+<script>
+let midiOut = null;
+let midiAccessGlobal = null;
+
+function showToast(msg) {
+  console.log(msg);
+}
+
+function sendNoteOn(note, velocity=100, channel=0) {
+  if (midiOut) midiOut.send([0x90 + channel, note, velocity]);
+}
+function sendNoteOff(note, channel=0) {
+  if (midiOut) midiOut.send([0x80 + channel, note, 0]);
+}
+function sendCC(cc, value, channel=0) {
+  if (midiOut) midiOut.send([0xB0 + channel, cc, value]);
+}
+function sendProgramChange(pc, channel=0) {
+  if (midiOut) midiOut.send([0xC0 + channel, pc]);
+}
+
+// === MIDI MONITOR ===
+let midiMonitorPaused = false;
+let activeMidiInputId = null;
+const midiInputSelect = document.getElementById('midiInputSelect');
+const toggleMonitorBtn = document.getElementById('toggleMonitorBtn');
+const clearMidiLogBtn = document.getElementById('clearMidiLogBtn');
+const copyMidiLogBtn = document.getElementById('copyMidiLogBtn');
+
+function midiNumberToName(n) {
+  const names = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const octave = Math.floor(n / 12) - 1;
+  return `${names[n % 12]}${octave}`;
+}
+
+function updateMidiLogLine(line) {
+  const log = document.getElementById('midiLog');
+  const el = document.createElement('div');
+  el.textContent = line;
+  el.style.padding = '2px 0';
+  log.appendChild(el);
+  while (log.childElementCount > 200) log.removeChild(log.firstChild);
+  log.scrollTop = log.scrollHeight;
+}
+
+function formatMidiMessage(e) {
+  const d = e.data;
+  const status = d[0];
+  const type = status & 0xF0;
+  const channel = (status & 0x0F) + 1;
+  const ts = new Date().toLocaleTimeString();
+  if (type === 0x90 && d[2] !== 0) return `${ts} | NoteOn  ch:${channel} note:${d[1]} (${midiNumberToName(d[1])}) vel:${d[2]} | [${d}]`;
+  if (type === 0x80 || (type === 0x90 && d[2] === 0)) return `${ts} | NoteOff ch:${channel} note:${d[1]} (${midiNumberToName(d[1])}) vel:${d[2]} | [${d}]`;
+  if (type === 0xB0) return `${ts} | CC      ch:${channel} cc:${d[1]} val:${d[2]} | [${d}]`;
+  if (type === 0xC0) return `${ts} | ProgCh  ch:${channel} pc:${d[1]} | [${d}]`;
+  if (type === 0xE0) return `${ts} | PitchB  ch:${channel} value:${(d[2]<<7)+d[1]} | [${d}]`;
+  return `${ts} | OTHER   status:0x${status.toString(16)} bytes:[${d}]`;
+}
+
+function onMIDIMessageMonitor(e) {
+  if (midiMonitorPaused) return;
+  updateMidiLogLine(formatMidiMessage(e));
+}
+
+function populateMidiInputs(midiAccess) {
+  midiInputSelect.innerHTML = '';
+  const inputs = Array.from(midiAccess.inputs.values());
+  inputs.forEach(i => {
+    const opt = document.createElement('option');
+    opt.value = i.id;
+    opt.textContent = i.name || i.manufacturer || i.id;
+    midiInputSelect.appendChild(opt);
+  });
+  if (inputs.length > 0) {
+    midiInputSelect.value = inputs[0].id;
+    selectMidiInputById(inputs[0].id, midiAccess);
+  }
+  midiInputSelect.onchange = ev => selectMidiInputById(ev.target.value, midiAccess);
+}
+
+function selectMidiInputById(id, midiAccess) {
+  if (activeMidiInputId && midiAccess.inputs.get(activeMidiInputId)) midiAccess.inputs.get(activeMidiInputId).onmidimessage = null;
+  activeMidiInputId = id;
+  const input = midiAccess.inputs.get(id);
+  if (input) {
+    input.onmidimessage = onMIDIMessageMonitor;
+    updateMidiLogLine(`[${new Date().toLocaleTimeString()}] Monitoring: ${input.name}`);
+  }
+}
+
+toggleMonitorBtn.onclick = () => {
+  midiMonitorPaused = !midiMonitorPaused;
+  toggleMonitorBtn.textContent = midiMonitorPaused ? 'RESUME' : 'PAUSE';
+  updateMidiLogLine(`[${new Date().toLocaleTimeString()}] Monitor ${midiMonitorPaused ? 'paused' : 'resumed'}`);
+};
+clearMidiLogBtn.onclick = () => document.getElementById('midiLog').innerHTML = '';
+copyMidiLogBtn.onclick = () => {
+  const txt = Array.from(document.getElementById('midiLog').children).map(c=>c.textContent).join('\n');
+  navigator.clipboard.writeText(txt).then(()=>showToast('copied'));
+};
+
+// === MIDI Connection ===
+function onMIDISuccess(midiAccess) {
+  midiAccessGlobal = midiAccess;
+  const outputs = Array.from(midiAccess.outputs.values());
+  if (outputs.length > 0) {
+    midiOut = outputs[0];
+    document.getElementById('midiDot').classList.add('active');
+    document.getElementById('midiStatus').textContent = 'MIDI ON';
+    showToast(`Connected: ${midiOut.name}`);
+  }
+  populateMidiInputs(midiAccess);
+  midiAccess.onstatechange = e => populateMidiInputs(midiAccess);
+}
+function onMIDIFailure() { showToast('MIDI not supported or access denied'); }
+
+function connectMIDI() {
+  if (navigator.requestMIDIAccess) navigator.requestMIDIAccess({sysex:false}).then(onMIDISuccess,onMIDIFailure);
+  else showToast('WebMIDI not supported');
+}
+
+document.getElementById('connectBtn').onclick = connectMIDI;
+</script>
+</body>
+</html>
