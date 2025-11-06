@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="CTK-3200 Controller V4 - AKAI Style">
+    <meta name="theme-color" content="#1a1a1a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>CTK-3200 AKAI Style</title>
+    
+    <link rel="manifest" href='data:application/manifest+json,{"name":"CTK-3200 AKAI","short_name":"CTK AKAI","display":"fullscreen","orientation":"landscape","start_url":".","theme_color":"#1a1a1a","background_color":"#000000"}'>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            touch-action: none;
+        }
+
+        .device-container {
+            height: 100vh;
+            width: 100vw;
+            background: linear-gradient(145deg, #1a1a1a 0%, #0a0a0a 100%);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Red accent border */
+        .device-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #ff3030, #ff6060);
+        }
+
+        /* Top Control Bar */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 15px;
+            background: #0a0a0a;
+            border-bottom: 1px solid #222;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .logo .brand {
+            color: #ff3030;
+        }
+
+        .midi-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: #1a1a1a;
+            border-radius: 4px;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+
+        .midi-dot {
+            width: 6px;
+            height: 6px;
+            background: #666;
+            border-radius: 50%;
+        }
+
+        .midi-dot.active {
+            background: #30ff30;
+            box-shadow: 0 0 8px #30ff30;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .ctrl-btn {
+            padding: 5px 12px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            color: #aaa;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .ctrl-btn:hover {
+            background: #2a2a2a;
+            color: #fff;
+            border-color: #555;
+        }
+
+        .ctrl-btn.active {
+            background: #ff3030;
+            color: #fff;
+            border-color: #ff3030;
+        }
+
+        /* Main Control Panel */
+        .main-panel {
+            flex: 1;
+            display: flex;
+            padding: 10px;
+            gap: 10px;
+            min-height: 0;
+        }
+
+        /* Left Side Controls */
+        .side-controls {
+            width: 120px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .knobs-section {
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .knob-row {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .knob-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .knob {
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle at 30% 30%, #3a3a3a, #1a1a1a);
+            border: 2px solid #444;
+            border-radius: 50%;
+            position: relative;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .knob::after {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 12px;
+            background: #ff3030;
+            border-radius: 1px;
+        }
+
+        .knob-label {
+            font-size: 9px;
+            color: #888;
+            margin-top: 5px;
+            text-transform: uppercase;
+        }
+
+        .knob-value {
+            font-size: 10px;
+            color: #ff3030;
+            font-weight: 600;
+        }
+
+        /* Center Area */
+        .center-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* Pads Section */
+        .pads-container {
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 8px;
+            padding: 12px;
+            flex: 1;
+        }
+
+        .pads-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 6px;
+            height: 100%;
+        }
+
+        .pad {
+            background: #2a2a2a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: 600;
+            overflow: hidden;
+        }
+
+        /* RGB Pad Colors - Pastel Rainbow */
+        .pad:nth-child(8n+1) { background: linear-gradient(145deg, #ff9999, #ff6666); border-color: #ff6666; }
+        .pad:nth-child(8n+2) { background: linear-gradient(145deg, #ffcc99, #ff9966); border-color: #ff9966; }
+        .pad:nth-child(8n+3) { background: linear-gradient(145deg, #ffff99, #ffff66); border-color: #ffff66; }
+        .pad:nth-child(8n+4) { background: linear-gradient(145deg, #99ff99, #66ff66); border-color: #66ff66; }
+        .pad:nth-child(8n+5) { background: linear-gradient(145deg, #99ffff, #66ffff); border-color: #66ffff; }
+        .pad:nth-child(8n+6) { background: linear-gradient(145deg, #9999ff, #6666ff); border-color: #6666ff; }
+        .pad:nth-child(8n+7) { background: linear-gradient(145deg, #ff99ff, #ff66ff); border-color: #ff66ff; }
+        .pad:nth-child(8n+8) { background: linear-gradient(145deg, #ffccff, #ff99ff); border-color: #ff99ff; }
+
+        .pad:active, .pad.active {
+            transform: scale(0.95);
+            box-shadow: 0 0 15px currentColor, inset 0 0 20px rgba(255,255,255,0.3);
+            filter: brightness(1.5);
+        }
+
+        .pad-label {
+            color: rgba(0,0,0,0.7);
+            text-shadow: 0 0 2px rgba(255,255,255,0.5);
+            pointer-events: none;
+        }
+
+        /* Mode control pads (last row) */
+        .pad.mode-pad {
+            background: #1a1a1a;
+            border-color: #444;
+            color: #888;
+        }
+
+        .pad.mode-pad.active {
+            background: #ff3030;
+            border-color: #ff3030;
+            color: #fff;
+        }
+
+        /* Keyboard Section */
+        .keyboard-container {
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 8px;
+            padding: 10px;
+            height: 120px;
+        }
+
+        .keyboard {
+            display: flex;
+            height: 100%;
+            gap: 2px;
+            position: relative;
+        }
+
+        .key {
+            flex: 1;
+            background: linear-gradient(to bottom, #f5f5f5, #e0e0e0);
+            border: 1px solid #ccc;
+            border-radius: 0 0 4px 4px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.1s;
+        }
+
+        .key:active, .key.active {
+            background: linear-gradient(to bottom, #ddd, #bbb);
+            transform: translateY(2px);
+        }
+
+        .key.black {
+            background: linear-gradient(to bottom, #333, #000);
+            border-color: #000;
+            width: 60%;
+            height: 60%;
+            position: absolute;
+            z-index: 2;
+            border-radius: 0 0 3px 3px;
+        }
+
+        .key.black:active, .key.black.active {
+            background: linear-gradient(to bottom, #222, #000);
+        }
+
+        /* Black keys positioning */
+        .key.black.cs { left: 5.5%; }
+        .key.black.ds { left: 11.5%; }
+        .key.black.fs { left: 23.5%; }
+        .key.black.gs { left: 29.5%; }
+        .key.black.as { left: 35.5%; }
+        .key.black.cs2 { left: 47.5%; }
+        .key.black.ds2 { left: 53.5%; }
+        .key.black.fs2 { left: 65.5%; }
+        .key.black.gs2 { left: 71.5%; }
+        .key.black.as2 { left: 77.5%; }
+
+        /* Right Side Controls */
+        .right-controls {
+            width: 180px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .mode-selector {
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 6px;
+            padding: 8px;
+        }
+
+        .mode-title {
+            font-size: 10px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .mode-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .mode-btn {
+            padding: 6px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            color: #888;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .mode-btn:hover {
+            background: #2a2a2a;
+            color: #fff;
+        }
+
+        .mode-btn.active {
+            background: #ff3030;
+            border-color: #ff3030;
+            color: #fff;
+        }
+
+        .loop-control {
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 6px;
+            padding: 8px;
+        }
+
+        .transport-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .transport-btn {
+            padding: 8px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            color: #888;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .transport-btn:hover {
+            background: #2a2a2a;
+            color: #fff;
+        }
+
+        .transport-btn.recording {
+            background: #ff3030;
+            color: #fff;
+            animation: pulse 1s infinite;
+        }
+
+        .transport-btn.playing {
+            background: #30ff30;
+            color: #000;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .bpm-control {
+            display: flex;
+            gap: 4px;
+        }
+
+        .bpm-input {
+            flex: 1;
+            padding: 4px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 11px;
+            text-align: center;
+        }
+
+        .tap-tempo {
+            padding: 4px 8px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            color: #888;
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        /* Info Section */
+        .info-section {
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .info-display {
+            font-size: 12px;
+            color: #ff3030;
+            font-weight: 600;
+        }
+
+        .info-label {
+            font-size: 9px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 48, 48, 0.9);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+            z-index: 2000;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Help Modal */
+        .help-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 3000;
+            padding: 20px;
+        }
+
+        .help-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .help-content {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .help-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+
+        .help-title {
+            font-size: 16px;
+            color: #ff3030;
+        }
+
+        .close-help {
+            width: 24px;
+            height: 24px;
+            background: #333;
+            border: none;
+            border-radius: 50%;
+            color: #999;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .help-text {
+            font-size: 12px;
+            line-height: 1.5;
+            color: #aaa;
+        }
+
+        .help-section {
+            margin-bottom: 15px;
+        }
+
+        .help-section h3 {
+            color: #ff3030;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .main-panel {
+                flex-direction: column;
+            }
+
+            .side-controls, .right-controls {
+                width: 100%;
+                flex-direction: row;
+            }
+
+            .pads-grid {
+                grid-template-columns: repeat(8, 1fr);
+                grid-template-rows: repeat(5, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="device-container">
+        <!-- Top Control Bar -->
+        <div class="top-bar">
+            <div class="logo-section">
+                <div class="logo">
+                    <span class="brand">CTK</span>
+                    <span>3200</span>
+                </div>
+                <div class="midi-indicator">
+                    <span class="midi-dot" id="midiDot"></span>
+                    <span id="midiStatus">MIDI OFF</span>
+                </div>
+            </div>
+            
+            <div class="control-buttons">
+                <button class="ctrl-btn" onclick="connectMIDI()">CONNECT</button>
+                <button class="ctrl-btn" onclick="toggleFullscreen()">FULLSCREEN</button>
+                <button class="ctrl-btn" onclick="showHelp()">HELP</button>
+            </div>
+        </div>
+
+        <!-- Main Panel -->
+        <div class="main-panel">
+            <!-- Left Side Controls -->
+            <div class="side-controls">
+                <div class="knobs-section">
+                    <div class="knob-row">
+                        <div class="knob" id="velocityKnob"></div>
+                        <div class="knob-label">VELOCITY</div>
+                        <div class="knob-value" id="velocityValue">100</div>
+                    </div>
+                    <div class="knob-row">
+                        <div class="knob" id="octaveKnob"></div>
+                        <div class="knob-label">OCTAVE</div>
+                        <div class="knob-value" id="octaveValue">0</div>
+                    </div>
+                    <div class="knob-row">
+                        <div class="knob" id="swingKnob"></div>
+                        <div class="knob-label">SWING</div>
+                        <div class="knob-value" id="swingValue">50%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Area -->
+            <div class="center-area">
+                <!-- Pads Section -->
+                <div class="pads-container">
+                    <div class="pads-grid" id="padsGrid"></div>
+                </div>
+
+                <!-- Keyboard Section -->
+                <div class="keyboard-container">
+                    <div class="keyboard" id="keyboard"></div>
+                </div>
+            </div>
+
+            <!-- Right Controls -->
+            <div class="right-controls">
+                <div class="mode-selector">
+                    <div class="mode-title">MODE</div>
+                    <div class="mode-buttons">
+                        <button class="mode-btn active" onclick="setMode('drum')">
+                            <span>🥁</span> DRUM
+                        </button>
+                        <button class="mode-btn" onclick="setMode('chord')">
+                            <span>🎸</span> CHORD
+                        </button>
+                        <button class="mode-btn" onclick="setMode('scale')">
+                            <span>🎹</span> SCALE
+                        </button>
+                        <button class="mode-btn" onclick="setMode('perc')">
+                            <span>🔔</span> PERC
+                        </button>
+                    </div>
+                </div>
+
+                <div class="loop-control">
+                    <div class="mode-title">LOOP</div>
+                    <div class="transport-buttons">
+                        <button class="transport-btn" id="recBtn" onclick="toggleRecord()">●</button>
+                        <button class="transport-btn" id="playBtn" onclick="togglePlay()">▶</button>
+                        <button class="transport-btn" onclick="stopLoop()">■</button>
+                        <button class="transport-btn" onclick="clearLoop()">✕</button>
+                        <button class="transport-btn" onclick="undoLast()">↶</button>
+                        <button class="transport-btn" onclick="quantizeLoop()">⊞</button>
+                    </div>
+                    <div class="bpm-control">
+                        <input type="number" class="bpm-input" id="bpmInput" value="120" min="60" max="200">
+                        <button class="tap-tempo" onclick="tapTempo()">TAP</button>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-display" id="infoDisplay">READY</div>
+                    <div class="info-label" id="infoLabel">32 PADS + 25 KEYS</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div class="help-modal" id="helpModal">
+        <div class="help-content">
+            <div class="help-header">
+                <h2 class="help-title">CTK-3200 AKAI Style</h2>
+                <button class="close-help" onclick="closeHelp()">×</button>
+            </div>
+            <div class="help-text">
+                <div class="help-section">
+                    <h3>🥁 DRUM MODE</h3>
+                    Jouez les sons de batterie sur les 32 pads colorés. Utilisez les boutons du bas pour changer de drum set.
+                </div>
+                <div class="help-section">
+                    <h3>🎸 CHORD MODE</h3>
+                    Les pads jouent des accords complets. Activez CASIO CHORD sur votre CTK-3200 pour l'accompagnement automatique.
+                </div>
+                <div class="help-section">
+                    <h3>🎹 SCALE MODE</h3>
+                    Les pads jouent des notes de gamme. Le clavier du bas montre les notes jouées.
+                </div>
+                <div class="help-section">
+                    <h3>⚠️ IMPORTANT - RYTHMES</h3>
+                    Les rythmes du CTK-3200 ne peuvent PAS être contrôlés par MIDI. Vous devez :
+                    <br>1. Sélectionner le rythme sur le CTK-3200
+                    <br>2. Appuyer sur START/STOP sur le clavier
+                    <br>3. Jouer les accords avec l'app
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let midiOut = null;
+        let audioContext = null;
+        let currentMode = 'drum';
+        let velocity = 100;
+        let octaveShift = 0;
+        let swing = 50;
+        let isRecording = false;
+        let isPlaying = false;
+        let loopData = [];
+        let loopStartTime = 0;
+        let loopInterval = null;
+        let bpm = 120;
+        let tapTimes = [];
+        let activePads = new Set();
+        let activeKeys = new Set();
+        let currentDrumSet = 0;
+
+        // Drum sets
+        const drumSets = [
+            {
+                name: "STANDARD",
+                notes: [36, 38, 42, 46, 45, 48, 50, 51, 35, 39, 54, 56, 47, 49, 52, 57,
+                       37, 40, 41, 43, 44, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69],
+                labels: ["KCK", "SNR", "HAT", "OPN", "TM1", "TM2", "TM3", "RDE", 
+                        "K2", "CLP", "TMB", "COW", "TM4", "CRS", "BEL", "CR2",
+                        "RIM", "ESN", "FT1", "FT2", "PDL", "RD2", "HB", "LB",
+                        "MC1", "MC2", "MC3", "HTM", "LTM", "AG1", "AG2", "CAB"]
+            },
+            {
+                name: "ELECTRONIC",
+                notes: [36, 38, 42, 46, 45, 48, 50, 51, 35, 40, 54, 56, 47, 49, 52, 57,
+                       37, 41, 39, 43, 44, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69],
+                labels: ["808", "SN8", "HH8", "OH8", "SY1", "SY2", "SY3", "SYR",
+                        "909", "ZAP", "SHK", "CB8", "ETM", "NSE", "SYN", "REV",
+                        "CLK", "LZR", "BLP", "POP", "TIC", "RD3", "H2", "L2",
+                        "FX1", "FX2", "FX3", "FX4", "FX5", "FX6", "FX7", "FX8"]
+            }
+        ];
+
+        // Scales
+        const scales = {
+            major: [0, 2, 4, 5, 7, 9, 11],
+            minor: [0, 2, 3, 5, 7, 8, 10],
+            pentatonic: [0, 2, 4, 7, 9],
+            blues: [0, 3, 5, 6, 7, 10]
+        };
+
+        // Chords
+        const chords = [
+            { name: "C", notes: [60, 64, 67] },
+            { name: "Dm", notes: [62, 65, 69] },
+            { name: "Em", notes: [64, 67, 71] },
+            { name: "F", notes: [65, 69, 72] },
+            { name: "G", notes: [67, 71, 74] },
+            { name: "Am", notes: [69, 72, 76] },
+            { name: "Bdim", notes: [71, 74, 77] },
+            { name: "C7", notes: [60, 64, 67, 70] },
+            { name: "Dm7", notes: [62, 65, 69, 72] },
+            { name: "Em7", notes: [64, 67, 71, 74] },
+            { name: "FM7", notes: [65, 69, 72, 76] },
+            { name: "G7", notes: [67, 71, 74, 77] },
+            { name: "Am7", notes: [69, 72, 76, 81] },
+            { name: "Bm7b5", notes: [71, 74, 77, 81] },
+            { name: "CM7", notes: [60, 64, 67, 71] },
+            { name: "Csus4", notes: [60, 65, 67] },
+            { name: "Cadd9", notes: [60, 64, 67, 62] },
+            { name: "Dm9", notes: [62, 65, 69, 64] },
+            { name: "Em9", notes: [64, 67, 71, 66] },
+            { name: "Fadd9", notes: [65, 69, 72, 67] },
+            { name: "G6", notes: [67, 71, 74, 64] },
+            { name: "Am6", notes: [69, 72, 76, 66] },
+            { name: "C/E", notes: [64, 60, 67] },
+            { name: "G/B", notes: [71, 67, 74] },
+            { name: "F/A", notes: [69, 65, 72] },
+            { name: "Dm/F", notes: [65, 62, 69] },
+            { name: "C5", notes: [60, 67] },
+            { name: "D5", notes: [62, 69] },
+            { name: "E5", notes: [64, 71] },
+            { name: "F5", notes: [65, 72] },
+            { name: "G5", notes: [67, 74] },
+            { name: "A5", notes: [69, 76] }
+        ];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initializePads();
+            initializeKeyboard();
+            setupKnobs();
+            
+            document.getElementById('bpmInput').addEventListener('change', (e) => {
+                bpm = parseInt(e.target.value);
+            });
+        });
+
+        function initializePads() {
+            const grid = document.getElementById('padsGrid');
+            grid.innerHTML = '';
+            
+            // Create 32 main pads (4 rows of 8)
+            for (let i = 0; i < 32; i++) {
+                const pad = document.createElement('div');
+                pad.className = 'pad';
+                pad.dataset.index = i;
+                
+                const label = document.createElement('span');
+                label.className = 'pad-label';
+                
+                if (currentMode === 'drum') {
+                    label.textContent = drumSets[currentDrumSet].labels[i];
+                } else if (currentMode === 'chord' && i < chords.length) {
+                    label.textContent = chords[i].name;
+                } else if (currentMode === 'scale') {
+                    const scaleNotes = scales.major;
+                    const noteIndex = i % scaleNotes.length;
+                    const octave = Math.floor(i / scaleNotes.length);
+                    label.textContent = `${noteIndex + 1}`;
+                } else {
+                    label.textContent = `P${i + 1}`;
+                }
+                
+                pad.appendChild(label);
+                
+                // Events
+                pad.addEventListener('touchstart', handlePadTouch, { passive: false });
+                pad.addEventListener('touchend', handlePadRelease, { passive: false });
+                pad.addEventListener('mousedown', handlePadTouch);
+                pad.addEventListener('mouseup', handlePadRelease);
+                pad.addEventListener('mouseleave', handlePadRelease);
+                
+                grid.appendChild(pad);
+            }
+            
+            // Create 8 control pads (bottom row)
+            for (let i = 0; i < 8; i++) {
+                const pad = document.createElement('div');
+                pad.className = 'pad mode-pad';
+                pad.dataset.control = i;
+                
+                const labels = ['SET1', 'SET2', 'SET3', 'SET4', 'SHIFT', 'BANK', 'MUTE', 'SOLO'];
+                pad.textContent = labels[i];
+                
+                pad.addEventListener('click', () => handleControlPad(i));
+                
+                if (i === 0) pad.classList.add('active');
+                
+                grid.appendChild(pad);
+            }
+        }
+
+        function initializeKeyboard() {
+            const keyboard = document.getElementById('keyboard');
+            keyboard.innerHTML = '';
+            
+            // White keys
+            const whiteKeys = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'C2', 'D2', 'E2', 'F2', 'G2', 'A2', 'B2', 'C3'];
+            const whiteNotes = [60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79, 81, 83, 84];
+            
+            whiteKeys.forEach((key, i) => {
+                const keyEl = document.createElement('div');
+                keyEl.className = 'key white';
+                keyEl.dataset.note = whiteNotes[i];
+                
+                keyEl.addEventListener('touchstart', handleKeyTouch, { passive: false });
+                keyEl.addEventListener('touchend', handleKeyRelease, { passive: false });
+                keyEl.addEventListener('mousedown', handleKeyTouch);
+                keyEl.addEventListener('mouseup', handleKeyRelease);
+                keyEl.addEventListener('mouseleave', handleKeyRelease);
+                
+                keyboard.appendChild(keyEl);
+            });
+            
+            // Black keys
+            const blackKeys = [
+                { class: 'cs', note: 61 },
+                { class: 'ds', note: 63 },
+                { class: 'fs', note: 66 },
+                { class: 'gs', note: 68 },
+                { class: 'as', note: 70 },
+                { class: 'cs2', note: 73 },
+                { class: 'ds2', note: 75 },
+                { class: 'fs2', note: 78 },
+                { class: 'gs2', note: 80 },
+                { class: 'as2', note: 82 }
+            ];
+            
+            blackKeys.forEach(key => {
+                const keyEl = document.createElement('div');
+                keyEl.className = `key black ${key.class}`;
+                keyEl.dataset.note = key.note;
+                
+                keyEl.addEventListener('touchstart', handleKeyTouch, { passive: false });
+                keyEl.addEventListener('touchend', handleKeyRelease, { passive: false });
+                keyEl.addEventListener('mousedown', handleKeyTouch);
+                keyEl.addEventListener('mouseup', handleKeyRelease);
+                keyEl.addEventListener('mouseleave', handleKeyRelease);
+                
+                keyboard.appendChild(keyEl);
+            });
+        }
+
+        function handlePadTouch(e) {
+            e.preventDefault();
+            const pad = e.currentTarget;
+            const index = parseInt(pad.dataset.index);
+            
+            if (!activePads.has(index)) {
+                activePads.add(index);
+                pad.classList.add('active');
+                playPadNote(index);
+                
+                if (isRecording) {
+                    recordEvent('pad', index, 'on');
+                }
+            }
+        }
+
+        function handlePadRelease(e) {
+            e.preventDefault();
+            const pad = e.currentTarget;
+            const index = parseInt(pad.dataset.index);
+            
+            pad.classList.remove('active');
+            activePads.delete(index);
+            stopPadNote(index);
+            
+            if (isRecording) {
+                recordEvent('pad', index, 'off');
+            }
+        }
+
+        function handleKeyTouch(e) {
+            e.preventDefault();
+            const key = e.currentTarget;
+            const note = parseInt(key.dataset.note);
+            
+            if (!activeKeys.has(note)) {
+                activeKeys.add(note);
+                key.classList.add('active');
+                playKeyNote(note);
+                
+                if (isRecording) {
+                    recordEvent('key', note, 'on');
+                }
+            }
+        }
+
+        function handleKeyRelease(e) {
+            e.preventDefault();
+            const key = e.currentTarget;
+            const note = parseInt(key.dataset.note);
+            
+            key.classList.remove('active');
+            activeKeys.delete(note);
+            stopKeyNote(note);
+            
+            if (isRecording) {
+                recordEvent('key', note, 'off');
+            }
+        }
+
+        function handleControlPad(index) {
+            if (index < 4 && currentMode === 'drum') {
+                // Drum set selection
+                currentDrumSet = index < drumSets.length ? index : 0;
+                document.querySelectorAll('.mode-pad').forEach((pad, i) => {
+                    if (i < 4) pad.classList.toggle('active', i === currentDrumSet);
+                });
+                initializePads();
+                showToast(drumSets[currentDrumSet].name);
+            }
+        }
+
+        function playPadNote(index) {
+            if (currentMode === 'drum') {
+                const note = drumSets[currentDrumSet].notes[index];
+                if (midiOut) {
+                    midiOut.send([0x99, note, velocity]); // Channel 10
+                } else {
+                    playTestSound(200 + note * 10);
+                }
+            } else if (currentMode === 'chord' && index < chords.length) {
+                const chord = chords[index];
+                if (midiOut) {
+                    chord.notes.forEach(note => {
+                        midiOut.send([0x90, note + octaveShift * 12, velocity]);
+                    });
+                } else {
+                    playTestSound(400 + index * 20);
+                }
+            } else if (currentMode === 'scale') {
+                const scaleNotes = scales.major;
+                const noteIndex = index % scaleNotes.length;
+                const octave = Math.floor(index / scaleNotes.length);
+                const note = 60 + scaleNotes[noteIndex] + (octave * 12) + (octaveShift * 12);
+                
+                if (midiOut) {
+                    midiOut.send([0x90, note, velocity]);
+                } else {
+                    playTestSound(300 + note * 10);
+                }
+                
+                // Highlight corresponding keyboard key
+                const keyEl = document.querySelector(`.key[data-note="${note}"]`);
+                if (keyEl) keyEl.classList.add('active');
+            } else if (currentMode === 'perc') {
+                const note = 35 + index;
+                if (midiOut) {
+                    midiOut.send([0x99, note, velocity]);
+                } else {
+                    playTestSound(150 + note * 10);
+                }
+            }
+        }
+
+        function stopPadNote(index) {
+            if (currentMode === 'chord' && index < chords.length) {
+                const chord = chords[index];
+                if (midiOut) {
+                    chord.notes.forEach(note => {
+                        midiOut.send([0x80, note + octaveShift * 12, 0]);
+                    });
+                }
+            } else if (currentMode === 'scale') {
+                const scaleNotes = scales.major;
+                const noteIndex = index % scaleNotes.length;
+                const octave = Math.floor(index / scaleNotes.length);
+                const note = 60 + scaleNotes[noteIndex] + (octave * 12) + (octaveShift * 12);
+                
+                if (midiOut) {
+                    midiOut.send([0x80, note, 0]);
+                }
+                
+                // Remove keyboard highlight
+                const keyEl = document.querySelector(`.key[data-note="${note}"]`);
+                if (keyEl) keyEl.classList.remove('active');
+            }
+        }
+
+        function playKeyNote(note) {
+            const adjustedNote = note + octaveShift * 12;
+            if (midiOut) {
+                midiOut.send([0x90, adjustedNote, velocity]);
+            } else {
+                playTestSound(300 + adjustedNote * 10);
+            }
+        }
+
+        function stopKeyNote(note) {
+            const adjustedNote = note + octaveShift * 12;
+            if (midiOut) {
+                midiOut.send([0x80, adjustedNote, 0]);
+            }
+        }
+
+        function playTestSound(frequency) {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'square';
+            
+            gainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+
+        // MIDI Connection
+        function connectMIDI() {
+            if (navigator.requestMIDIAccess) {
+                navigator.requestMIDIAccess()
+                    .then(onMIDISuccess, onMIDIFailure);
+            } else {
+                showToast("WebMIDI not supported");
+            }
+        }
+
+        function onMIDISuccess(midiAccess) {
+            const outputs = Array.from(midiAccess.outputs.values());
+            if (outputs.length > 0) {
+                midiOut = outputs[0];
+                document.getElementById('midiDot').classList.add('active');
+                document.getElementById('midiStatus').textContent = 'MIDI ON';
+                showToast(`Connected: ${midiOut.name}`);
+            } else {
+                showToast("No MIDI device found");
+            }
+        }
+
+        function onMIDIFailure() {
+            showToast("MIDI connection failed");
+        }
+
+        // Mode Selection
+        function setMode(mode) {
+            currentMode = mode;
+            
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            initializePads();
+            
+            const modeNames = {
+                'drum': 'DRUM MODE',
+                'chord': 'CHORD MODE',
+                'scale': 'SCALE MODE',
+                'perc': 'PERCUSSION MODE'
+            };
+            
+            document.getElementById('infoDisplay').textContent = modeNames[mode];
+            showToast(modeNames[mode]);
+        }
+
+        // Knobs
+        function setupKnobs() {
+            setupKnob('velocityKnob', 'velocityValue', 1, 127, 100, (val) => {
+                velocity = val;
+            });
+            
+            setupKnob('octaveKnob', 'octaveValue', -3, 3, 0, (val) => {
+                octaveShift = val;
+            }, true);
+            
+            setupKnob('swingKnob', 'swingValue', 0, 100, 50, (val) => {
+                swing = val;
+                document.getElementById('swingValue').textContent = `${val}%`;
+            });
+        }
+
+        function setupKnob(knobId, valueId, min, max, initial, callback, showSign = false) {
+            const knob = document.getElementById(knobId);
+            const valueEl = document.getElementById(valueId);
+            let value = initial;
+            let isDragging = false;
+            let startY = 0;
+            let startValue = 0;
+            
+            knob.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startY = e.clientY;
+                startValue = value;
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                
+                const diff = startY - e.clientY;
+                const range = max - min;
+                const newValue = Math.max(min, Math.min(max, startValue + Math.round(diff * range / 100)));
+                
+                if (newValue !== value) {
+                    value = newValue;
+                    const angle = ((value - min) / range) * 270 - 135;
+                    knob.style.transform = `rotate(${angle}deg)`;
+                    
+                    if (showSign && value > 0) {
+                        valueEl.textContent = `+${value}`;
+                    } else {
+                        valueEl.textContent = value;
+                    }
+                    
+                    callback(value);
+                }
+            });
+            
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+        }
+
+        // Loop Recording
+        function toggleRecord() {
+            const btn = document.getElementById('recBtn');
+            
+            if (!isRecording) {
+                isRecording = true;
+                loopData = [];
+                loopStartTime = Date.now();
+                btn.classList.add('recording');
+                showToast("RECORDING...");
+            } else {
+                isRecording = false;
+                btn.classList.remove('recording');
+                showToast(`Recorded ${loopData.length} events`);
+            }
+        }
+
+        function togglePlay() {
+            const btn = document.getElementById('playBtn');
+            
+            if (!isPlaying && loopData.length > 0) {
+                isPlaying = true;
+                btn.classList.add('playing');
+                playLoop();
+            } else {
+                stopLoop();
+            }
+        }
+
+        function recordEvent(type, index, action) {
+            if (loopData.length < 128) {
+                loopData.push({
+                    time: Date.now() - loopStartTime,
+                    type: type,
+                    index: index,
+                    action: action
+                });
+            }
+        }
+
+        function playLoop() {
+            if (loopData.length === 0) return;
+            
+            const duration = loopData[loopData.length - 1].time || 2000;
+            let currentIndex = 0;
+            const startTime = Date.now();
+            
+            loopInterval = setInterval(() => {
+                const elapsed = (Date.now() - startTime) % duration;
+                
+                while (currentIndex < loopData.length && loopData[currentIndex].time <= elapsed) {
+                    const event = loopData[currentIndex];
+                    
+                    if (event.type === 'pad') {
+                        if (event.action === 'on') {
+                            playPadNote(event.index);
+                        } else {
+                            stopPadNote(event.index);
+                        }
+                    } else if (event.type === 'key') {
+                        if (event.action === 'on') {
+                            playKeyNote(event.index);
+                        } else {
+                            stopKeyNote(event.index);
+                        }
+                    }
+                    
+                    currentIndex++;
+                }
+                
+                if (elapsed < 50) {
+                    currentIndex = 0;
+                }
+            }, 10);
+        }
+
+        function stopLoop() {
+            isPlaying = false;
+            document.getElementById('playBtn').classList.remove('playing');
+            
+            if (loopInterval) {
+                clearInterval(loopInterval);
+                loopInterval = null;
+            }
+            
+            showToast("STOPPED");
+        }
+
+        function clearLoop() {
+            stopLoop();
+            loopData = [];
+            showToast("LOOP CLEARED");
+        }
+
+        function undoLast() {
+            if (loopData.length > 0) {
+                loopData.pop();
+                showToast(`${loopData.length} events remaining`);
+            }
+        }
+
+        function quantizeLoop() {
+            if (loopData.length === 0) return;
+            
+            const beatLength = 60000 / bpm / 4;
+            loopData.forEach(event => {
+                event.time = Math.round(event.time / beatLength) * beatLength;
+            });
+            
+            showToast("QUANTIZED");
+        }
+
+        // Tap Tempo
+        function tapTempo() {
+            const now = Date.now();
+            tapTimes.push(now);
+            
+            if (tapTimes.length > 4) {
+                tapTimes.shift();
+            }
+            
+            if (tapTimes.length >= 2) {
+                const intervals = [];
+                for (let i = 1; i < tapTimes.length; i++) {
+                    intervals.push(tapTimes[i] - tapTimes[i-1]);
+                }
+                
+                const avgInterval = intervals.reduce((a, b) => a + b) / intervals.length;
+                const newBpm = Math.round(60000 / avgInterval);
+                
+                if (newBpm >= 60 && newBpm <= 200) {
+                    bpm = newBpm;
+                    document.getElementById('bpmInput').value = bpm;
+                    showToast(`BPM: ${bpm}`);
+                }
+            }
+        }
+
+        // Fullscreen
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    showToast("Fullscreen failed");
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Help
+        function showHelp() {
+            document.getElementById('helpModal').classList.add('active');
+        }
+
+        function closeHelp() {
+            document.getElementById('helpModal').classList.remove('active');
+        }
+
+        // Toast
+        function showToast(message) {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideUp 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+
+        // Touch handling
+        document.addEventListener('touchmove', (e) => {
+            if (e.target.closest('.pads-grid') || e.target.closest('.keyboard')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html>
