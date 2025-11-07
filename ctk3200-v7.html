@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>CTK-3200 v7 - Touch Friendly MIDI Arranger</title>
+<style>
+:root{--bg:#0b0b10;--panel:#0f1116;--muted:#9aa0a6;--accent:#00ff88;--accent2:#00aaff;--card:#14141a}
+html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial}
+.container{height:100vh;display:grid;grid-template-rows:56px 1fr 140px;gap:10px;padding:8px}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:8px;background:var(--panel);border-radius:10px}
+.leftTop{display:flex;gap:12px;align-items:center}
+.logo{font-weight:800;letter-spacing:0.6px}
+.badge{background:#0e0f12;padding:6px 10px;border-radius:8px;border:1px solid #1f2130;color:var(--accent)}
+.statusArea{display:flex;gap:8px;align-items:center}
+.midiLed{width:12px;height:12px;border-radius:50%;background:#444;box-shadow:none;transition:box-shadow 0.12s,background 0.12s}
+.midiLed.on{background:var(--accent);box-shadow:0 0 10px rgba(0,255,136,0.35)}
+.btn{padding:10px 14px;border-radius:10px;background:#121217;border:1px solid #23242b;color:var(--muted);font-weight:700;min-width:78px;text-align:center;box-shadow:none}
+.btn.primary{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#001}
+.grid{display:grid;grid-template-columns:200px 1fr 200px;gap:10px;min-height:0}
+.panel{background:var(--card);border-radius:10px;padding:10px;overflow:hidden}
+.center{display:flex;flex-direction:column;gap:10px}
+.chordDisplay{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;border-radius:8px;background:#09090b;border:1px solid #20202a}
+.currentChord{font-size:48px;font-weight:900;color:var(--accent)}
+.chordType{color:var(--accent2)}
+.progression{display:flex;gap:8px;overflow-x:auto;padding:8px}
+.chordGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.pad{aspect-ratio:1;background:#0f1014;border-radius:10px;border:1px solid #222;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;touch-action:manipulation}
+.pad:active{transform:scale(0.98)}
+.controls{display:flex;flex-direction:column;gap:8px}
+.controlRow{display:flex;gap:8px;align-items:center}
+.small{font-size:12px;color:var(--muted)}
+.bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px;background:var(--panel);border-radius:10px}
+.transport{display:flex;gap:8px;align-items:center}
+.transport .tbtn{width:64px;height:52px;border-radius:12px;font-size:16px}
+.sliders input[type=range]{width:100%}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:var(--accent);color:#001;padding:8px 14px;border-radius:18px;font-weight:800}
+@media(max-width:900px){.grid{grid-template-columns:1fr} .leftTop{flex-wrap:wrap} .btn{min-width:64px}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="topbar">
+    <div class="leftTop">
+      <div class="logo">CTK-3200</div>
+      <div class="badge" id="styleDisplay">8 BEAT POP</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="small" style="color:var(--muted)">BPM</div>
+        <div id="tempoValue" style="font-weight:900;color:var(--accent2)">120</div>
+      </div>
+    </div>
+    <div class="statusArea">
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;background:#0d0e12;border:1px solid #1b1c22">
+        <div id="midiLed" class="midiLed"></div>
+        <div id="midiText" style="font-weight:700;color:var(--muted)">MIDI OFF</div>
+      </div>
+      <button class="btn" id="connectBtn">CONNECT</button>
+      <button class="btn" id="fsBtn">FULLSCREEN</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="panel" style="display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:12px;color:var(--muted)">SECTIONS</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn" onclick="playSection('intro')">INTRO</button>
+        <button class="btn" onclick="playSection('main')">MAIN</button>
+        <button class="btn" onclick="playSection('fill')">FILL</button>
+        <button class="btn" onclick="playSection('ending')">ENDING</button>
+      </div>
+      <div style="height:8px"></div>
+      <div style="font-size:12px;color:var(--muted)">VARIATIONS</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="setVariation(1)">A</button>
+        <button class="btn" onclick="setVariation(2)">B</button>
+        <button class="btn" onclick="setVariation(3)">C</button>
+        <button class="btn" onclick="setVariation(4)">D</button>
+      </div>
+    </div>
+
+    <div class="center panel">
+      <div class="chordDisplay">
+        <div id="currentChord" class="currentChord">C</div>
+        <div id="chordType" class="chordType">Major</div>
+      </div>
+
+      <div class="progression" id="progressionDisplay"></div>
+
+      <div class="chordGrid" id="chordGrid"></div>
+    </div>
+
+    <div class="panel controls">
+      <div style="font-size:12px;color:var(--muted)">TRANSPOSE / OCTAVE</div>
+      <div class="controlRow">
+        <button class="btn" onclick="transpose(-1)">-</button>
+        <div id="transposeValue" style="min-width:60px;text-align:center">0</div>
+        <button class="btn" onclick="transpose(1)">+</button>
+      </div>
+
+      <div style="font-size:12px;color:var(--muted)">VOLUME</div>
+      <div class="sliders">
+        <input type="range" id="masterVol" min="0" max="127" value="100">
+        <div class="small">MASTER: <span id="masterVal">100</span></div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn" id="bassBtn" onclick="toggle('bass')">BASS</button>
+        <button class="btn" id="splitBtn" onclick="toggle('split')">SPLIT</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="transport">
+      <button class="btn tbtn" id="stopBtn" onclick="stopAll()">STOP</button>
+      <button class="btn tbtn primary" id="playBtn" onclick="togglePlay()">PLAY</button>
+      <button class="btn tbtn" id="recBtn" onclick="toggleRecord()">REC</button>
+      <button class="btn" onclick="tapTempo()">TAP</button>
+    </div>
+    <div style="color:var(--muted)">Pattern • 16 steps</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div style="color:var(--muted)">Style</div>
+      <div class="badge">8 BEAT</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ======= Core app state =======
+let midiAccess = null;
+let midiOut = null;
+let midiIn = null;
+let lastReceived = null;
+let isPlaying=false, isRecording=false, tempo=120, transposeVal=0, masterVol=100;
+
+// Simple chord/type definitions
+const chordTypes = {
+  maj:{symbol:'',name:'Major',intervals:[0,4,7]},
+  min:{symbol:'m',name:'Minor',intervals:[0,3,7]},
+  '7':{symbol:'7',name:'7',intervals:[0,4,7,10]},
+  maj7:{symbol:'M7',name:'Maj7',intervals:[0,4,7,11]},
+  sus4:{symbol:'sus4',name:'Sus4',intervals:[0,5,7]}
+};
+const roots = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+// ======= Utility =======
+function showToast(msg, time=1600){
+  const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t);
+  setTimeout(()=>t.remove(),time);
+}
+function midiPretty(data){
+  try{
+    const arr=Array.from(data); const s=arr[0]; const t=s&0xF0; const ch=(s&0x0F)+1;
+    if(t===0x90 && arr[2]!==0) return `NoteOn ch${ch} n${arr[1]} v${arr[2]}`;
+    if(t===0x80 || (t===0x90 && arr[2]===0)) return `NoteOff ch${ch} n${arr[1]} v${arr[2]}`;
+    if(t===0xB0) return `CC ch${ch} cc${arr[1]} v${arr[2]}`;
+    return 'Other '+arr.join(',');
+  }catch(e){return String(data)}
+}
+
+// ======= MIDI Connection (stable) =======
+async function connectMIDI(){
+  if(!navigator.requestMIDIAccess){ showToast('WebMIDI non supporté'); return; }
+  try{
+    midiAccess = await navigator.requestMIDIAccess({sysex:false});
+    midiAccess.onstatechange = (e)=>{ console.log('statechange',e.port); evaluateDevices(); };
+    evaluateDevices();
+    showToast('Accès MIDI OK');
+    // Try to enter fullscreen on user gesture (improves visibility on tablet)
+    requestFullscreen();
+  }catch(err){
+    console.error('MIDI access failed',err);
+    showToast('Échec accès MIDI');
+  }
+}
+function evaluateDevices(){
+  if(!midiAccess) return;
+  const outs = Array.from(midiAccess.outputs.values());
+  const ins = Array.from(midiAccess.inputs.values());
+  console.log('Outputs', outs.map(o=>o.name), 'Inputs', ins.map(i=>i.name));
+
+  // Prefer Casio by name else first device
+  const chosenOut = outs.find(o=>o.name && o.name.toLowerCase().includes('casio')) || outs[0] || null;
+  if(chosenOut){ midiOut = chosenOut; document.getElementById('midiLed').classList.add('on'); document.getElementById('midiText').textContent='MIDI ON'; showToast('Sortie: '+(midiOut.name||'device')); }
+  else { midiOut=null; document.getElementById('midiLed').classList.remove('on'); document.getElementById('midiText').textContent='MIDI OFF'; showToast('Aucune sortie MIDI'); }
+
+  // Attach light-weight input listener (no monitor UI)
+  if(midiIn && midiIn.onmidimessage) midiIn.onmidimessage = null;
+  const chosenIn = ins.find(i=>i.name && i.name.toLowerCase().includes('casio')) || ins[0] || null;
+  if(chosenIn){
+    midiIn = chosenIn;
+    midiIn.onmidimessage = (e)=>{ lastReceived = Array.from(e.data); console.log('MIDI IN <-', midiPretty(e.data), lastReceived); flashLed(); };
+    console.log('Input attached', midiIn.name);
+  } else {
+    midiIn = null;
+    console.log('No MIDI inputs');
+  }
+}
+function flashLed(){ const l=document.getElementById('midiLed'); l.style.boxShadow='0 0 16px rgba(0,255,136,0.5)'; setTimeout(()=>l.style.boxShadow='',120); }
+
+// ======= Sending helpers =======
+function sendRaw(bytes){ if(midiOut) midiOut.send(bytes); }
+function sendNoteOn(note, vel=100, ch=0){ if(midiOut) midiOut.send([0x90+ch, note, vel]); }
+function sendNoteOff(note, ch=0){ if(midiOut) midiOut.send([0x80+ch, note, 0]); }
+function sendCC(cc, val, ch=0){ if(midiOut) midiOut.send([0xB0+ch, cc, val]); }
+function sendProgram(pc, ch=0){ if(midiOut) midiOut.send([0xC0+ch, pc]); }
+
+// ======= UI actions and core logic =======
+function requestFullscreen(){ try{ if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{}); }catch(e){} }
+document.getElementById('connectBtn').addEventListener('click', connectMIDI);
+document.getElementById('fsBtn').addEventListener('click', requestFullscreen);
+document.getElementById('masterVol').addEventListener('input', (e)=>{ masterVol=e.target.value; document.getElementById('masterVal').textContent=masterVol; });
+
+// Chord grid init
+function initChordGrid(){
+  const grid=document.getElementById('chordGrid');
+  const layout = [
+    {root:'C',type:'maj'},{root:'D',type:'min'},{root:'E',type:'min'},{root:'F',type:'maj'},{root:'G',type:'maj'},{root:'A',type:'min'},
+    {root:'B',type:'dim'},{root:'C',type:'7'},{root:'D',type:'7'},{root:'E',type:'7'},{root:'F',type:'7'},{root:'G',type:'7'},
+    {root:'C',type:'min'},{root:'D',type:'maj'},{root:'E',type:'maj'},{root:'F',type:'min'},{root:'G',type:'min'},{root:'A',type:'maj'},
+    {root:'B',type:'maj'},{root:'C',type:'sus4'},{root:'D',type:'sus4'},{root:'F',type:'maj7'},{root:'G',type:'sus4'},{root:'A',type:'7'}
+  ];
+  layout.forEach(ch=>{
+    const b=document.createElement('button'); b.className='pad'; b.innerHTML='<div style="font-size:18px">'+ch.root+'</div><div style="font-size:11px;color:var(--muted)">'+(chordTypes[ch.type]?chordTypes[ch.type].name:'')+'</div>';
+    b.addEventListener('touchstart', (ev)=>{ ev.preventDefault(); playChord(ch); }, {passive:false});
+    b.addEventListener('mousedown', ()=>playChord(ch));
+    b.addEventListener('touchend',(ev)=>{ ev.preventDefault(); stopChord(); }, {passive:false});
+    b.addEventListener('mouseup', stopChord);
+    grid.appendChild(b);
+  });
+}
+function playChord(ch){
+  const rootIndex = roots.indexOf(ch.root);
+  const ct = chordTypes[ch.type] || chordTypes.maj;
+  const notes = ct.intervals.map(iv => 60 + rootIndex + iv + transposeVal);
+  document.getElementById('currentChord').textContent = ch.root + (ct.symbol||'');
+  document.getElementById('chordType').textContent = ct.name;
+  // send notes
+  if(midiOut){
+    stopChord(); // ensure previous off
+    notes.forEach(n=> { if(n>=0&&n<=127) sendNoteOn(n, 100, 0); });
+    // optional bass
+    if(isPlaying){ const bass = 36 + rootIndex + transposeVal; sendNoteOn(bass, 90, 1); }
+  } else { playLocalAudio(notes); }
+  if(isRecording) addToProgression(ch);
+  // visual active
+  document.querySelectorAll('.pad').forEach(p=>p.classList.remove('active'));
+}
+function stopChord(){
+  if(midiOut){
+    for(let n=0;n<128;n++){ sendNoteOff(n,0); sendNoteOff(n,1); }
+  }
+  document.querySelectorAll('.pad').forEach(p=>p.classList.remove('active'));
+}
+function playLocalAudio(notes){
+  if(!window.AudioContext) return;
+  const ac = window.ac || (window.ac = new (window.AudioContext||window.webkitAudioContext)());
+  notes.forEach((note,i)=>{
+    const osc = ac.createOscillator(); const g = ac.createGain();
+    osc.type='sawtooth'; osc.frequency.value = 440 * Math.pow(2,(note-69)/12);
+    g.gain.setValueAtTime(0.06, ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime+0.5);
+    osc.connect(g); g.connect(ac.destination);
+    osc.start(ac.currentTime + i*0.01); osc.stop(ac.currentTime + 0.5);
+  });
+}
+
+// Progression & transport
+let progression = [], progIndex=0, loopProg=false, beatInterval=null, beat=0;
+function addToProgression(ch){ progression.push(ch); renderProgression(); }
+function renderProgression(){ const d=document.getElementById('progressionDisplay'); d.innerHTML=''; progression.forEach((c,i)=>{ const e=document.createElement('div'); e.style.padding='8px'; e.style.background='#0e0f12'; e.style.borderRadius='8px'; e.style.color='var(--accent)'; e.textContent=c.root+(chordTypes[c.type]?chordTypes[c.type].symbol:''); d.appendChild(e); }); }
+function togglePlay(){ if(!isPlaying){ isPlaying=true; document.getElementById('playBtn').classList.add('primary'); startPattern(); } else stopAll(); }
+function stopAll(){ isPlaying=false; isRecording=false; stopPattern(); stopChord(); document.getElementById('playBtn').classList.remove('primary'); showToast('Stopped'); }
+function toggleRecord(){ isRecording = !isRecording; document.getElementById('recBtn').classList.toggle('active'); if(isRecording){ progression=[]; renderProgression(); showToast('Recording'); } }
+function startPattern(){ const beatMs = 60000/tempo/4; beatInterval = setInterval(()=>{ beat=(beat+1)%16; // click
+  if(midiOut){ if(beat%4===0) sendNoteOn(76,60,9); } if(loopProg && progression.length>0 && beat%4===0) playProgressionStep(); }, beatMs); }
+function stopPattern(){ if(beatInterval){ clearInterval(beatInterval); beatInterval=null; } }
+function playProgressionStep(){ if(progression.length===0) return; playChord(progression[progIndex]); progIndex=(progIndex+1)%progression.length; renderProgression(); }
+
+// Other controls
+function setVariation(n){ showToast('Variation '+n); if(midiOut) sendCC(32, n-1, 0); }
+function transpose(v){ transposeVal = Math.max(-12, Math.min(12, transposeVal + v)); document.getElementById('transposeValue').textContent = transposeVal>0? '+'+transposeVal:transposeVal; }
+function setTempo(t){ tempo = t; document.getElementById('tempoValue').textContent = tempo; if(beatInterval){ stopPattern(); startPattern(); } }
+function tapTempo(){ const now=Date.now(); window._taps = window._taps||[]; window._taps.push(now); if(window._taps.length>4) window._taps.shift(); if(window._taps.length>=2){ const diffs=[]; for(let i=1;i<window._taps.length;i++) diffs.push(window._taps[i]-window._taps[i-1]); const avg = diffs.reduce((a,b)=>a+b)/diffs.length; setTempo(Math.round(60000/avg)); } }
+function toggle(name){ const el=document.getElementById(name+'Btn'); el.classList.toggle('active'); showToast(name); }
+function playSection(sec){ showToast('Section '+sec); if(midiOut) sendProgram(Math.max(0, {intro:0,main:1,fill:2,ending:3}[sec]||0)); }
+
+// Init
+document.addEventListener('DOMContentLoaded', ()=>{ initChordGrid(); document.getElementById('tempoValue').textContent = tempo; document.getElementById('masterVal').textContent = masterVol; });
+
+// Keyboard shortcuts for debugging (space play)
+document.addEventListener('keydown',(e)=>{ if(e.key===' ') { e.preventDefault(); togglePlay(); } if(e.key==='r') toggleRecord(); if(e.key==='s') stopAll(); if(e.key==='ArrowUp') setTempo(tempo+1); if(e.key==='ArrowDown') setTempo(tempo-1); });
+
+</script>
+</body>
+</html>
