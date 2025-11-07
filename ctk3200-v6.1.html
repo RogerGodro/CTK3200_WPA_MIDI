@@ -8,280 +8,31 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <title>CTK-3200 MIDI Arranger v6.1</title>
-<link rel="manifest" href='data:application/manifest+json,{"name":"CTK MIDI Arranger","short_name":"CTK Arranger","display":"fullscreen","orientation":"landscape","start_url":".","theme_color":"#0a0a14","background_color":"#000000"}'>
 <style>
-/* Keep same styling as v6 for visual parity, but ensure full-screen friendly layout */
-*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif}
-html,body{height:100%;background:#0a0a14;color:#fff}
-.arranger-container{height:100vh;display:grid;grid-template-rows:50px 1fr 140px}
-.top-bar{background:#000;border-bottom:2px solid #2a2a3a;display:flex;align-items:center;justify-content:space-between;padding:0 15px}
-.logo{font-size:18px;font-weight:700;background:linear-gradient(90deg,#00ff88,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.status-area{display:flex;gap:10px;align-items:center}
-.midi-status{display:flex;align-items:center;gap:6px;padding:6px 12px;background:#1a1a2a;border:1px solid #2a2a3a;border-radius:4px;font-size:11px}
-.midi-led{width:8px;height:8px;background:#666;border-radius:50%}
-.midi-led.active{background:#00ff88;box-shadow:0 0 8px #00ff88}
-.action-btn{padding:8px 12px;background:#1a1a2a;border:1px solid #2a2a3a;border-radius:4px;color:#888;font-size:11px;font-weight:600;cursor:pointer}
-.main-area{display:grid;grid-template-columns:200px 1fr 200px;gap:10px;padding:10px;min-height:0}
-.left-panel,.right-panel{display:flex;flex-direction:column;gap:8px}
-.center-panel{display:flex;flex-direction:column;gap:10px}
-.chord-display{background:#000;border:2px solid #2a2a3a;border-radius:8px;padding:15px;text-align:center}
-.current-chord{font-size:48px;font-weight:700;color:#00ff88}
-.progression-area{background:#0a0a14;border:1px solid #2a2a3a;border-radius:6px;padding:10px;flex:1}
-.chord-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
-.chord-pad{aspect-ratio:1;background:linear-gradient(145deg,#1a1a2a,#0a0a14);border:2px solid #2a2a3a;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-weight:600}
-.bottom-panel{background:#000;border-top:2px solid #2a2a3a;display:grid;grid-template-columns:250px 1fr 250px;padding:10px;gap:10px}
-/* Make sure important controls remain visible in fullscreen on Samsung Chrome */
-@media (orientation: portrait) { .arranger-container{grid-template-rows:40px 1fr 100px} .main-area{grid-template-columns:1fr} .left-panel,.right-panel{display:none} }
+body { background:#0a0a14; color:#fff; font-family:sans-serif; margin:0; }
 </style>
 </head>
 <body>
-<div class="arranger-container">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:12px">
-      <div class="logo">CTK-3200 MIDI ARRANGER</div>
-      <div id="styleDisplay" style="padding:6px 12px;background:#1a1a2a;border:1px solid #2a2a3a;border-radius:4px;font-size:12px;color:#00ff88">8 BEAT POP</div>
-      <div style="display:flex;align-items:center;padding:6px 12px;background:#1a1a2a;border:1px solid #2a2a3a;border-radius:4px">
-        <div style="font-size:12px;color:#999;margin-right:8px">BPM</div>
-        <div id="tempoValue" style="font-weight:700;color:#00aaff">120</div>
-      </div>
-    </div>
-    <div class="status-area">
-      <div class="midi-status">
-        <div id="midiLed" class="midi-led"></div>
-        <div id="midiText">MIDI OFF</div>
-      </div>
-      <button class="action-btn" id="connectBtn">CONNECT</button>
-      <button class="action-btn" id="fullscreenBtn">FULLSCREEN</button>
-      <button class="action-btn" onclick="showSettings()">SETTINGS</button>
-    </div>
-  </div>
-
-  <div class="main-area">
-    <div class="left-panel">
-      <!-- condensed left controls (same as v6) -->
-      <div style="background:#0a0a14;border:1px solid #2a2a3a;border-radius:6px;padding:8px">
-        <div style="font-size:10px;color:#666;margin-bottom:6px">SECTIONS</div>
-        <button class="action-btn" onclick="playSection('intro')">INTRO</button>
-        <button class="action-btn" onclick="playSection('main')">MAIN</button>
-        <button class="action-btn" onclick="playSection('fill')">FILL</button>
-        <button class="action-btn" onclick="playSection('ending')">ENDING</button>
-      </div>
-    </div>
-
-    <div class="center-panel">
-      <div class="chord-display">
-        <div id="currentChord" class="current-chord">C</div>
-        <div id="chordType" style="color:#00aaff">Major</div>
-      </div>
-
-      <div class="progression-area">
-        <div id="progressionDisplay" style="display:flex;gap:8px;padding:10px;background:#000;border-radius:4px;overflow-x:auto;min-height:50px"></div>
-      </div>
-
-      <div id="chordGrid" class="chord-grid"></div>
-    </div>
-
-    <div class="right-panel">
-      <div style="background:#0a0a14;border:1px solid #2a2a3a;border-radius:6px;padding:8px">
-        <div style="font-size:10px;color:#666;margin-bottom:6px">TRANSPOSE</div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button class="action-btn" onclick="transpose(-1)">-</button>
-          <div id="transposeValue" style="min-width:36px;text-align:center">0</div>
-          <button class="action-btn" onclick="transpose(1)">+</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="bottom-panel">
-    <div style="display:flex;gap:8px;align-items:center">
-      <button class="action-btn" onclick="stop()">STOP</button>
-      <button class="action-btn" id="playBtn" onclick="togglePlay()">PLAY</button>
-      <button class="action-btn" id="recBtn" onclick="toggleRecord()">REC</button>
-      <button class="action-btn" onclick="tapTempo()">TAP</button>
-    </div>
-
-    <div style="display:flex;align-items:center;justify-content:center;color:#888">Pattern sequencer</div>
-
-    <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px">
-      <div style="color:#666;font-size:12px">Style</div>
-      <div style="background:#1a1a2a;padding:6px 8px;border-radius:6px">8 BEAT</div>
-    </div>
-  </div>
-</div>
-
-<!-- Settings Modal (same as v6) -->
-<div class="modal" id="settingsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);align-items:center;justify-content:center;z-index:1000">
-  <div style="background:#0a0a14;border:2px solid #2a2a3a;border-radius:8px;padding:20px;max-width:600px;width:90%">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
-      <div style="font-size:18px;color:#00ff88">Settings</div>
-      <button style="background:#1a1a2a;border:1px solid #2a2a3a;border-radius:50%;width:30px;height:30px;color:#888" onclick="closeSettings()">×</button>
-    </div>
-    <p style="color:#888;margin-bottom:10px">CTK-3200 MIDI Arranger - v6.1</p>
-    <div style="background:#1a1a2a;padding:10px;border-radius:6px;color:#fff">Pour diagnostic: si votre Casio n'apparait pas, vérifiez que le câble USB est bien branché et que Chrome a l'autorisation MIDI.</div>
-  </div>
-</div>
-
+<h2 style="text-align:center">CTK-3200 MIDI Arranger v6.1</h2>
+<p style="text-align:center">Version simplifiée pour test de connexion MIDI Casio CTK-3200</p>
+<button id="connectBtn" style="display:block;margin:40px auto;padding:12px 24px;">CONNECT</button>
+<p id="status" style="text-align:center;color:#0f0;">MIDI OFF</p>
 <script>
-// === Stable MIDI connection logic (v6.1) ===
-let midiAccessGlobal = null;
-let midiOut = null;
-let lastReceived = null; // keeps last MIDI IN message
-
-// helper: pretty print MIDI data
-function midiToString(data) {
-  try {
-    const arr = Array.from(data);
-    const status = arr[0];
-    const type = status & 0xF0;
-    const ch = (status & 0x0F) + 1;
-    if (type === 0x90 && arr[2] !== 0) return `NoteOn ch:${ch} note:${arr[1]} vel:${arr[2]}`;
-    if (type === 0x80 || (type === 0x90 && arr[2] === 0)) return `NoteOff ch:${ch} note:${arr[1]} vel:${arr[2]}`;
-    if (type === 0xB0) return `CC ch:${ch} cc:${arr[1]} val:${arr[2]}`;
-    if (type === 0xC0) return `ProgCh ch:${ch} pc:${arr[1]}`;
-    if (type === 0xE0) return `PitchB ch:${ch} val:${(arr[2]<<7)+arr[1]}`;
-    return `Other bytes:${arr.join(',')}`;
-  } catch(e) { return String(data); }
+let midiOut=null, midiAccessGlobal=null;
+document.getElementById('connectBtn').onclick=()=>{
+  if(!navigator.requestMIDIAccess){ alert('MIDI non supporté'); return; }
+  navigator.requestMIDIAccess({sysex:false}).then(onSuccess,onFail);
+};
+function onSuccess(access){
+  midiAccessGlobal=access;
+  const outs=[...access.outputs.values()];
+  let casio=outs.find(o=>o.name.toLowerCase().includes('casio'))||outs[0];
+  if(casio){ midiOut=casio; document.getElementById('status').textContent='MIDI ON'; document.getElementById('status').style.color='#0f0'; }
+  const ins=[...access.inputs.values()];
+  let casioIn=ins.find(i=>i.name.toLowerCase().includes('casio'))||ins[0];
+  if(casioIn){ casioIn.onmidimessage=e=>{console.log('IN',e.data);} }
 }
-
-function connectMIDI() {
-  // Request MIDIAccess with sysex:false for compatibility on mobile Chrome
-  if (!navigator.requestMIDIAccess) {
-    showMessage('WebMIDI non supporté par ce navigateur');
-    return;
-  }
-
-  navigator.requestMIDIAccess({ sysex: false }).then(midiSuccess, midiFailure);
-}
-
-function midiSuccess(access) {
-  midiAccessGlobal = access;
-
-  // Attach statechange listener to handle plug/unplug
-  midiAccessGlobal.onstatechange = (e) => {
-    console.log('MIDI state changed', e.port);
-    evaluateDevices();
-  };
-
-  evaluateDevices();
-}
-
-function midiFailure(err) {
-  console.error('MIDI failure', err);
-  showMessage('Échec d\'accès MIDI — vérifiez les permissions');
-}
-
-function evaluateDevices() {
-  if (!midiAccessGlobal) return;
-
-  // Prefer devices that include 'casio' in their name (case-insensitive)
-  const outputs = Array.from(midiAccessGlobal.outputs.values());
-  const inputs = Array.from(midiAccessGlobal.inputs.values());
-
-  console.log('MIDI outputs:', outputs.map(o => o.name));
-  console.log('MIDI inputs:', inputs.map(i => i.name));
-
-  // Find Casio output first
-  let chosenOut = outputs.find(o => o.name && o.name.toLowerCase().includes('casio')) || outputs[0] || null;
-  if (chosenOut) {
-    midiOut = chosenOut;
-    document.getElementById('midiLed').classList.add('active');
-    document.getElementById('midiText').textContent = 'MIDI ON';
-    showMessage('Sortie MIDI connectée: ' + (midiOut.name || 'Device'));
-  } else {
-    midiOut = null;
-    document.getElementById('midiLed').classList.remove('active');
-    document.getElementById('midiText').textContent = 'MIDI OFF';
-    showMessage('Aucun périphérique MIDI de sortie trouvé');
-  }
-
-  // Find Casio input (for reading what the keyboard sends). We'll attach a lightweight listener
-  // but we DO NOT show a monitor UI — we only log to console and save the last message
-  inputs.forEach(inp => inp.onmidimessage = null); // clear previous
-  let chosenIn = inputs.find(i => i.name && i.name.toLowerCase().includes('casio')) || inputs[0] || null;
-  if (chosenIn) {
-    chosenIn.onmidimessage = (e) => {
-      lastReceived = { time: Date.now(), data: Array.from(e.data) };
-      console.log('MIDI IN <-', midiToString(e.data), lastReceived.data);
-      // quick visual + accessibility hint (very small) — not a monitor
-      // we'll flash the MIDI LED briefly to indicate activity
-      flashMidiLed();
-    };
-    console.log('MIDI input attached to', chosenIn.name);
-  } else {
-    console.log('No MIDI inputs available');
-  }
-}
-
-function flashMidiLed() {
-  const led = document.getElementById('midiLed');
-  if (!led) return;
-  led.style.boxShadow = '0 0 14px #00ff88';
-  setTimeout(()=>{ led.style.boxShadow = ''; }, 120);
-}
-
-// Attempt fullscreen to satisfy "visible in Chrome fullscreen on Samsung S9+"
-function enterFullscreenIfAllowed() {
-  try {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(()=>{});
-    }
-  } catch(e) { /* noop */ }
-}
-
-// Wire Connect button
-document.getElementById('connectBtn').addEventListener('click', () => {
-  connectMIDI();
-  // On user gesture, try to open fullscreen for better PWA-like experience
-  enterFullscreenIfAllowed();
-});
-
-// Also wire fullscreen button explicitly
-document.getElementById('fullscreenBtn').addEventListener('click', enterFullscreenIfAllowed);
-
-// Expose send functions (same behavior as v6) — these use midiOut if available
-function sendRaw(bytes) { if (midiOut) midiOut.send(bytes); }
-function sendNoteOn(note, velocity=100, channel=0) { if (midiOut) midiOut.send([0x90 + channel, note, velocity]); }
-function sendNoteOff(note, channel=0) { if (midiOut) midiOut.send([0x80 + channel, note, 0]); }
-function sendCC(cc, value, channel=0) { if (midiOut) midiOut.send([0xB0 + channel, cc, value]); }
-function sendProgramChange(pc, channel=0) { if (midiOut) midiOut.send([0xC0 + channel, pc]); }
-
-// Keep other app logic from v6 (chords, UI, tempo) — shortened here for clarity but compatible
-let audioContext=null,isPlaying=false,isRecording=false,tempo=120,transpose=0,octave=0,progression=[],progressionIndex=0,loopProgression=false,currentBeat=0,patternInterval=null,lastTap=[];
-const chordTypes={maj:{symbol:'',name:'Major',intervals:[0,4,7]},min:{symbol:'m',name:'Minor',intervals:[0,3,7]},'7':{symbol:'7',name:'7',intervals:[0,4,7,10]},sus4:{symbol:'sus4',name:'sus4',intervals:[0,5,7]},maj7:{symbol:'M7',name:'maj7',intervals:[0,4,7,11]},dim:{symbol:'°',name:'dim',intervals:[0,3,6]}};
-const roots=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-
-function initializeChordGrid(){ const grid=document.getElementById('chordGrid'); grid.innerHTML=''; const layouts=[{root:'C',type:'maj'},{root:'D',type:'min'},{root:'E',type:'min'},{root:'F',type:'maj'},{root:'G',type:'maj'},{root:'A',type:'min'},{root:'B',type:'dim'},{root:'C',type:'7'},{root:'D',type:'7'},{root:'E',type:'7'},{root:'F',type:'7'},{root:'G',type:'7'},{root:'C',type:'min'},{root:'D',type:'maj'},{root:'E',type:'maj'},{root:'F',type:'min'},{root:'G',type:'min'},{root:'A',type:'maj'},{root:'B',type:'maj'},{root:'C',type:'sus4'},{root:'D',type:'sus4'},{root:'F',type:'maj7'},{root:'G',type:'sus2'},{root:'A',type:'7'}]; layouts.forEach(chord=>{const pad=document.createElement('div');pad.className='chord-pad';pad.dataset.root=chord.root;pad.dataset.type=chord.type;const rootEl=document.createElement('div');rootEl.className='chord-root';rootEl.textContent=chord.root+(chordTypes[chord.type]?chordTypes[chord.type].symbol:'');const qualityEl=document.createElement('div');qualityEl.className='chord-quality';qualityEl.textContent=(chordTypes[chord.type]?chordTypes[chord.type].name:'');pad.appendChild(rootEl);pad.appendChild(qualityEl);pad.addEventListener('mousedown',()=>playChord(chord));pad.addEventListener('mouseup',()=>stopChord());pad.addEventListener('touchstart',e=>{e.preventDefault();playChord(chord);},{passive:false});pad.addEventListener('touchend',e=>{e.preventDefault();stopChord();},{passive:false});grid.appendChild(pad); }); }
-
-function playChord(chord){ const rootIndex=roots.indexOf(chord.root); const ct=chordTypes[chord.type]||chordTypes['maj']; const notes=ct.intervals.map(iv=>60+rootIndex+iv+transpose+(octave*12)); document.getElementById('currentChord').textContent=chord.root+ct.symbol; document.getElementById('chordType').textContent=ct.name; if (midiOut){ stopChord(); notes.forEach(n=>{ if(n>=0&&n<=127) midiOut.send([0x90,n,100]); }); if (isPlaying){ const bass=36+rootIndex+transpose; midiOut.send([0x91,bass,80]); } } else playTestChord(notes); if (isRecording) addToProgression(chord); document.querySelectorAll('.chord-pad').forEach(p=>{ if(p.dataset.root===chord.root && p.dataset.type===chord.type) p.classList.add('active'); else p.classList.remove('active'); }); }
-function stopChord(){ if (midiOut && !holdAll) { for(let n=0;n<128;n++){ midiOut.send([0x80,n,0]); midiOut.send([0x81,n,0]); } } document.querySelectorAll('.chord-pad').forEach(p=>p.classList.remove('active')); }
-function playTestChord(notes){ if(!audioContext) audioContext=new (window.AudioContext||window.webkitAudioContext)(); notes.forEach((note,i)=>{ const osc=audioContext.createOscillator(); const gain=audioContext.createGain(); osc.connect(gain); gain.connect(audioContext.destination); osc.frequency.value=440*Math.pow(2,(note-69)/12); osc.type='sawtooth'; gain.gain.setValueAtTime(0.05,audioContext.currentTime); gain.gain.exponentialRampToValueAtTime(0.01,audioContext.currentTime+0.5); osc.start(audioContext.currentTime+i*0.01); osc.stop(audioContext.currentTime+0.5); }); }
-
-function togglePlay(){ const btn=document.getElementById('playBtn'); if(!isPlaying){ isPlaying=true; btn.classList.add('playing'); btn.textContent='PAUSE'; startPattern(); } else stop(); }
-function stop(){ isPlaying=false; isRecording=false; currentBeat=0; document.getElementById('playBtn').classList.remove('playing'); document.getElementById('playBtn').textContent='PLAY'; stopPattern(); stopChord(); document.querySelectorAll('.beat-cell').forEach(c=>c.classList.remove('playing','active')); }
-function toggleRecord(){ const btn=document.getElementById('recBtn'); isRecording=!isRecording; btn.classList.toggle('active'); if(isRecording){ progression=[]; updateProgressionDisplay(); } }
-function startPattern(){ const beatDuration=60000/tempo/4; patternInterval=setInterval(()=>{ currentBeat=(currentBeat+1)%16; if(midiOut && currentBeat%4===0) midiOut.send([0x99, 76, 60]); if(loopProgression && progression.length>0 && currentBeat%4===0) playProgressionStep(); }, beatDuration); }
-function stopPattern(){ if(patternInterval){ clearInterval(patternInterval); patternInterval=null; } }
-function addToProgression(chord){ progression.push(chord); updateProgressionDisplay(); }
-function updateProgressionDisplay(){ const display=document.getElementById('progressionDisplay'); display.innerHTML=''; progression.forEach((c,i)=>{ const el=document.createElement('div'); el.style.padding='8px'; el.style.background='#1a1a2a'; el.style.border='1px solid #2a2a3a'; el.style.borderRadius='6px'; el.style.color='#00ff88'; el.textContent=c.root + (chordTypes[c.type]?chordTypes[c.type].symbol:''); if(i===progressionIndex) el.style.opacity='0.7'; display.appendChild(el); }); }
-function playProgressionStep(){ if(progression.length===0) return; const ch=progression[progressionIndex]; playChord(ch); progressionIndex=(progressionIndex+1)%progression.length; updateProgressionDisplay(); }
-function clearProgression(){ progression=[]; progressionIndex=0; updateProgressionDisplay(); }
-function changeTempo(delta){ tempo=Math.max(40,Math.min(240,tempo+delta)); document.getElementById('tempoValue').textContent=tempo; if(isPlaying){ stopPattern(); startPattern(); } }
-function tapTempo(){ const now=Date.now(); lastTap.push(now); if(lastTap.length>4) lastTap.shift(); if(lastTap.length>=2){ const intervals=[]; for(let i=1;i<lastTap.length;i++) intervals.push(lastTap[i]-lastTap[i-1]); const avg=intervals.reduce((a,b)=>a+b)/intervals.length; const newT=Math.round(60000/avg); if(newT>=40&&newT<=240){ tempo=newT; document.getElementById('tempoValue').textContent=tempo; if(isPlaying){ stopPattern(); startPattern(); } } } }
-function transpose(delta){ transpose=Math.max(-12,Math.min(12,transpose+delta)); document.getElementById('transposeValue').textContent = transpose>0?`+${transpose}`:transpose; }
-function playSection(section){ currentSection=section; showMessage('Section: '+section); }
-function showSettings(){ document.getElementById('settingsModal').style.display='flex'; }
-function closeSettings(){ document.getElementById('settingsModal').style.display='none'; }
-
-// Keyboard shortcuts
-document.addEventListener('keydown',(e)=>{ if(e.key===' ') { e.preventDefault(); togglePlay(); } if(e.key==='r') toggleRecord(); if(e.key==='s') stop(); if(e.key==='ArrowUp') changeTempo(1); if(e.key==='ArrowDown') changeTempo(-1); });
-
-// Initialize UI
-document.addEventListener('DOMContentLoaded', ()=>{ initializeChordGrid(); });
-
-// Small user messages (non-blocking)
-function showMessage(text){ console.log('MSG:',text); const t=document.createElement('div'); t.textContent=text; t.style.cssText='position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#00ff88;color:#000;padding:8px 14px;border-radius:20px;font-weight:700;z-index:2000;'; document.body.appendChild(t); setTimeout(()=>t.remove(),2000); }
-
+function onFail(){ alert('Échec de la connexion MIDI'); }
 </script>
 </body>
 </html>
