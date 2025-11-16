@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monotron Duo Synth</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef, useEffect } = React;
+
+        const MonotronSynth = () => {
+          const [isPlaying, setIsPlaying] = useState(false);
+          const [isPoweredOn, setIsPoweredOn] = useState(false);
+          
+          // Oscillator parameters
+          const [osc1Wave, setOsc1Wave] = useState('sawtooth');
+          const [osc2Wave, setOsc2Wave] = useState('square');
+          const [osc1Pitch, setOsc1Pitch] = useState(0);
+          const [osc2Pitch, setOsc2Pitch] = useState(-12);
+          const [osc2Mix, setOsc2Mix] = useState(0.5);
+          
+          // Filter parameters
+          const [cutoff, setCutoff] = useState(2000);
+          const [resonance, setResonance] = useState(1);
+          const [peak, setPeak] = useState(0);
+          
+          // LFO parameters
+          const [lfoRate, setLfoRate] = useState(5);
+          const [lfoDepth, setLfoDepth] = useState(0);
+          const [lfoTarget, setLfoTarget] = useState('pitch');
+          
+          // Master volume
+          const [volume, setVolume] = useState(0.5);
+          
+          // Audio context refs
+          const audioContextRef = useRef(null);
+          const osc1Ref = useRef(null);
+          const osc2Ref = useRef(null);
+          const filterRef = useRef(null);
+          const lfoRef = useRef(null);
+          const lfoGainRef = useRef(null);
+          const gainNodeRef = useRef(null);
+          const masterGainRef = useRef(null);
+          
+          // Initialize audio context
+          useEffect(() => {
+            if (isPoweredOn && !audioContextRef.current) {
+              audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            return () => {
+              if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+                audioContextRef.current.close();
+                audioContextRef.current = null;
+              }
+            };
+          }, [isPoweredOn]);
+          
+          const startNote = (frequency) => {
+            if (!isPoweredOn || !audioContextRef.current) return;
+            
+            const ctx = audioContextRef.current;
+            
+            // Stop existing oscillators
+            stopNote();
+            
+            // Create oscillators
+            osc1Ref.current = ctx.createOscillator();
+            osc2Ref.current = ctx.createOscillator();
+            
+            // Create filter
+            filterRef.current = ctx.createBiquadFilter();
+            filterRef.current.type = 'lowpass';
+            filterRef.current.frequency.value = cutoff + (peak * 1000);
+            filterRef.current.Q.value = resonance;
+            
+            // Create LFO
+            lfoRef.current = ctx.createOscillator();
+            lfoRef.current.frequency.value = lfoRate;
+            lfoGainRef.current = ctx.createGain();
+            lfoGainRef.current.gain.value = lfoDepth;
+            
+            // Create gain nodes
+            const osc1Gain = ctx.createGain();
+            const osc2Gain = ctx.createGain();
+            gainNodeRef.current = ctx.createGain();
+            masterGainRef.current = ctx.createGain();
+            
+            // Set oscillator parameters
+            osc1Ref.current.type = osc1Wave;
+            osc2Ref.current.type = osc2Wave;
+            osc1Ref.current.frequency.value = frequency * Math.pow(2, osc1Pitch / 12);
+            osc2Ref.current.frequency.value = frequency * Math.pow(2, osc2Pitch / 12);
+            
+            // Set mix levels
+            osc1Gain.gain.value = 1 - osc2Mix;
+            osc2Gain.gain.value = osc2Mix;
+            gainNodeRef.current.gain.value = 0.3;
+            masterGainRef.current.gain.value = volume;
+            
+            // Connect LFO
+            lfoRef.current.connect(lfoGainRef.current);
+            
+            if (lfoTarget === 'pitch') {
+              lfoGainRef.current.connect(osc1Ref.current.frequency);
+              lfoGainRef.current.connect(osc2Ref.current.frequency);
+            } else if (lfoTarget === 'filter') {
+              lfoGainRef.current.connect(filterRef.current.frequency);
+            }
+            
+            // Connect audio graph
+            osc1Ref.current.connect(osc1Gain);
+            osc2Ref.current.connect(osc2Gain);
+            osc1Gain.connect(gainNodeRef.current);
+            osc2Gain.connect(gainNodeRef.current);
+            gainNodeRef.current.connect(filterRef.current);
+            filterRef.current.connect(masterGainRef.current);
+            masterGainRef.current.connect(ctx.destination);
+            
+            // Start oscillators
+            osc1Ref.current.start();
+            osc2Ref.current.start();
+            lfoRef.current.start();
+            
+            setIsPlaying(true);
+          };
+          
+          const stopNote = () => {
+            if (osc1Ref.current) {
+              try {
+                osc1Ref.current.stop();
+              } catch (e) {}
+              osc1Ref.current = null;
+            }
+            if (osc2Ref.current) {
+              try {
+                osc2Ref.current.stop();
+              } catch (e) {}
+              osc2Ref.current = null;
+            }
+            if (lfoRef.current) {
+              try {
+                lfoRef.current.stop();
+              } catch (e) {}
+              lfoRef.current = null;
+            }
+            setIsPlaying(false);
+          };
+          
+          const updateFilter = () => {
+            if (filterRef.current) {
+              filterRef.current.frequency.value = cutoff + (peak * 1000);
+              filterRef.current.Q.value = resonance;
+            }
+          };
+          
+          const updateLFO = () => {
+            if (lfoRef.current) {
+              lfoRef.current.frequency.value = lfoRate;
+            }
+            if (lfoGainRef.current) {
+              lfoGainRef.current.gain.value = lfoDepth;
+            }
+          };
+          
+          const updateVolume = () => {
+            if (masterGainRef.current) {
+              masterGainRef.current.gain.value = volume;
+            }
+          };
+          
+          useEffect(() => {
+            updateFilter();
+          }, [cutoff, resonance, peak]);
+          
+          useEffect(() => {
+            updateLFO();
+          }, [lfoRate, lfoDepth]);
+          
+          useEffect(() => {
+            updateVolume();
+          }, [volume]);
+          
+          const handleRibbonTouch = (e) => {
+            if (!isPoweredOn) return;
+            
+            e.preventDefault();
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.touches ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
+            const ratio = Math.max(0, Math.min(1, x / rect.width));
+            
+            // Map to frequency range (C2 to C6)
+            const minFreq = 65.41; // C2
+            const maxFreq = 1046.5; // C6
+            const frequency = minFreq * Math.pow(maxFreq / minFreq, ratio);
+            
+            startNote(frequency);
+          };
+          
+          const handleRibbonRelease = () => {
+            stopNote();
+          };
+          
+          const Knob = ({ label, value, onChange, min, max, step = 1, unit = '' }) => {
+            const percentage = ((value - min) / (max - min)) * 100;
+            const rotation = (percentage * 2.7) - 135; // -135° to +135°
+            
+            return React.createElement('div', { className: "flex flex-col items-center gap-1" },
+              React.createElement('div', { className: "relative w-16 h-16" },
+                React.createElement('div', { className: "absolute inset-0 rounded-full bg-gray-800 border-2 border-gray-600 shadow-inner" }),
+                React.createElement('div', { 
+                  className: "absolute inset-2 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg cursor-pointer",
+                  style: { transform: `rotate(${rotation}deg)` }
+                },
+                  React.createElement('div', { className: "absolute top-1 left-1/2 w-1 h-4 bg-white rounded-full -translate-x-1/2" })
+                ),
+                React.createElement('input', {
+                  type: "range",
+                  min: min,
+                  max: max,
+                  step: step,
+                  value: value,
+                  onChange: (e) => onChange(parseFloat(e.target.value)),
+                  className: "absolute inset-0 opacity-0 cursor-pointer"
+                })
+              ),
+              React.createElement('div', { className: "text-xs text-blue-200 font-mono text-center" },
+                label,
+                React.createElement('div', { className: "text-white" }, value + unit)
+              )
+            );
+          };
+          
+          const PowerIcon = () => React.createElement('svg', {
+            width: "24",
+            height: "24",
+            viewBox: "0 0 24 24",
+            fill: "none",
+            stroke: "currentColor",
+            strokeWidth: "2"
+          },
+            React.createElement('path', { d: "M18.36 6.64a9 9 0 1 1-12.73 0" }),
+            React.createElement('line', { x1: "12", y1: "2", x2: "12", y2: "12" })
+          );
+          
+          const VolumeIcon = () => React.createElement('svg', {
+            width: "24",
+            height: "24",
+            viewBox: "0 0 24 24",
+            fill: "none",
+            stroke: "currentColor",
+            strokeWidth: "2"
+          },
+            React.createElement('polygon', { points: "11 5 6 9 2 9 2 15 6 15 11 19 11 5" }),
+            React.createElement('path', { d: "M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" })
+          );
+          
+          return React.createElement('div', { className: "min-h-screen bg-gradient-to-br from-gray-900 to-black p-4 flex items-center justify-center" },
+            React.createElement('div', { className: "w-full max-w-4xl bg-gradient-to-br from-blue-900 to-blue-800 rounded-3xl shadow-2xl p-8 border-4 border-blue-700" },
+              
+              // Header
+              React.createElement('div', { className: "flex justify-between items-center mb-6" },
+                React.createElement('div', null,
+                  React.createElement('h1', { className: "text-4xl font-bold text-white tracking-wider" }, "MONOTRON"),
+                  React.createElement('p', { className: "text-blue-200 text-sm" }, "DUO SYNTH")
+                ),
+                React.createElement('button', {
+                  onClick: () => setIsPoweredOn(!isPoweredOn),
+                  className: `p-4 rounded-full ${isPoweredOn ? 'bg-green-500' : 'bg-red-500'} shadow-lg hover:scale-110 transition-transform`
+                },
+                  React.createElement(PowerIcon)
+                )
+              ),
+              
+              // Ribbon Controller
+              React.createElement('div', { className: "mb-8" },
+                React.createElement('div', { className: "text-white text-sm mb-2 text-center" }, "RIBBON CONTROLLER"),
+                React.createElement('div', {
+                  className: `h-24 rounded-lg ${isPoweredOn ? 'bg-gradient-to-r from-blue-300 via-blue-400 to-blue-500' : 'bg-gray-600'} shadow-inner cursor-pointer relative overflow-hidden`,
+                  onMouseDown: handleRibbonTouch,
+                  onMouseMove: (e) => e.buttons === 1 && handleRibbonTouch(e),
+                  onMouseUp: handleRibbonRelease,
+                  onMouseLeave: handleRibbonRelease,
+                  onTouchStart: handleRibbonTouch,
+                  onTouchMove: handleRibbonTouch,
+                  onTouchEnd: handleRibbonRelease
+                },
+                  isPoweredOn && React.createElement('div', { className: "absolute inset-0 flex items-center justify-center text-white text-lg font-bold opacity-50" }, "TOUCHER POUR JOUER"),
+                  isPlaying && React.createElement('div', { className: "absolute inset-0 bg-white opacity-20 animate-pulse" })
+                )
+              ),
+              
+              // Oscillators
+              React.createElement('div', { className: "grid grid-cols-2 gap-6 mb-6" },
+                // VCO 1
+                React.createElement('div', { className: "bg-blue-950 bg-opacity-50 rounded-lg p-4" },
+                  React.createElement('h3', { className: "text-white text-sm mb-3 text-center border-b border-blue-500 pb-2" }, "VCO 1"),
+                  React.createElement('div', { className: "space-y-3" },
+                    React.createElement('div', null,
+                      React.createElement('label', { className: "text-blue-200 text-xs block mb-1" }, "Waveform"),
+                      React.createElement('select', {
+                        value: osc1Wave,
+                        onChange: (e) => setOsc1Wave(e.target.value),
+                        className: "w-full bg-blue-900 text-white rounded px-2 py-1 text-sm",
+                        disabled: !isPoweredOn
+                      },
+                        React.createElement('option', { value: "sine" }, "Sine"),
+                        React.createElement('option', { value: "sawtooth" }, "Sawtooth"),
+                        React.createElement('option', { value: "square" }, "Square"),
+                        React.createElement('option', { value: "triangle" }, "Triangle")
+                      )
+                    ),
+                    React.createElement(Knob, { label: "PITCH", value: osc1Pitch, onChange: setOsc1Pitch, min: -24, max: 24, step: 1 })
+                  )
+                ),
+                
+                // VCO 2
+                React.createElement('div', { className: "bg-blue-950 bg-opacity-50 rounded-lg p-4" },
+                  React.createElement('h3', { className: "text-white text-sm mb-3 text-center border-b border-blue-500 pb-2" }, "VCO 2"),
+                  React.createElement('div', { className: "space-y-3" },
+                    React.createElement('div', null,
+                      React.createElement('label', { className: "text-blue-200 text-xs block mb-1" }, "Waveform"),
+                      React.createElement('select', {
+                        value: osc2Wave,
+                        onChange: (e) => setOsc2Wave(e.target.value),
+                        className: "w-full bg-blue-900 text-white rounded px-2 py-1 text-sm",
+                        disabled: !isPoweredOn
+                      },
+                        React.createElement('option', { value: "sine" }, "Sine"),
+                        React.createElement('option', { value: "sawtooth" }, "Sawtooth"),
+                        React.createElement('option', { value: "square" }, "Square"),
+                        React.createElement('option', { value: "triangle" }, "Triangle")
+                      )
+                    ),
+                    React.createElement(Knob, { label: "PITCH", value: osc2Pitch, onChange: setOsc2Pitch, min: -24, max: 24, step: 1 }),
+                    React.createElement(Knob, { label: "MIX", value: osc2Mix, onChange: setOsc2Mix, min: 0, max: 1, step: 0.01 })
+                  )
+                )
+              ),
+              
+              // Filter
+              React.createElement('div', { className: "bg-blue-950 bg-opacity-50 rounded-lg p-4 mb-6" },
+                React.createElement('h3', { className: "text-white text-sm mb-3 text-center border-b border-blue-500 pb-2" }, "VCF (MS-20 FILTER)"),
+                React.createElement('div', { className: "flex justify-around items-start" },
+                  React.createElement(Knob, { label: "CUTOFF", value: cutoff, onChange: setCutoff, min: 50, max: 8000, step: 10, unit: "Hz" }),
+                  React.createElement(Knob, { label: "PEAK", value: peak, onChange: setPeak, min: 0, max: 5, step: 0.1 }),
+                  React.createElement(Knob, { label: "RES", value: resonance, onChange: setResonance, min: 0.1, max: 30, step: 0.1 })
+                )
+              ),
+              
+              // LFO
+              React.createElement('div', { className: "bg-blue-950 bg-opacity-50 rounded-lg p-4 mb-6" },
+                React.createElement('h3', { className: "text-white text-sm mb-3 text-center border-b border-blue-500 pb-2" }, "LFO"),
+                React.createElement('div', { className: "flex justify-around items-start" },
+                  React.createElement(Knob, { label: "RATE", value: lfoRate, onChange: setLfoRate, min: 0.1, max: 20, step: 0.1, unit: "Hz" }),
+                  React.createElement(Knob, { label: "DEPTH", value: lfoDepth, onChange: setLfoDepth, min: 0, max: 100, step: 1 }),
+                  React.createElement('div', { className: "flex flex-col items-center gap-1" },
+                    React.createElement('div', { className: "text-xs text-blue-200 mb-1" }, "TARGET"),
+                    React.createElement('select', {
+                      value: lfoTarget,
+                      onChange: (e) => setLfoTarget(e.target.value),
+                      className: "bg-blue-900 text-white rounded px-3 py-2 text-sm",
+                      disabled: !isPoweredOn
+                    },
+                      React.createElement('option', { value: "pitch" }, "Pitch"),
+                      React.createElement('option', { value: "filter" }, "Filter")
+                    )
+                  )
+                )
+              ),
+              
+              // Master Volume
+              React.createElement('div', { className: "bg-blue-950 bg-opacity-50 rounded-lg p-4" },
+                React.createElement('div', { className: "flex items-center justify-center gap-4" },
+                  React.createElement(VolumeIcon, { className: "text-blue-200 w-6 h-6" }),
+                  React.createElement('div', { className: "flex-1" },
+                    React.createElement(Knob, { label: "VOLUME", value: volume, onChange: setVolume, min: 0, max: 1, step: 0.01 })
+                  )
+                )
+              ),
+              
+              // Status
+              React.createElement('div', { className: "mt-4 text-center" },
+                React.createElement('div', { className: `inline-block px-4 py-2 rounded-full ${isPoweredOn ? 'bg-green-500' : 'bg-gray-500'}` },
+                  React.createElement('span', { className: "text-white text-sm font-bold" },
+                    isPoweredOn ? (isPlaying ? '♪ PLAYING' : 'READY') : 'OFF'
+                  )
+                )
+              )
+            )
+          );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(MonotronSynth));
+    </script>
+</body>
+</html>
