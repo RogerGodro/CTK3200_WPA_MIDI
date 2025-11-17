@@ -209,28 +209,33 @@
             setIsPlaying(true);
           };
           
-          const stopNote = () => {
-            if (osc1Ref.current) {
-              try {
-                osc1Ref.current.stop();
-              } catch (e) {}
-              osc1Ref.current = null;
-            }
-            if (osc2Ref.current) {
-              try {
-                osc2Ref.current.stop();
-              } catch (e) {}
-              osc2Ref.current = null;
-            }
-            if (lfoRef.current) {
-              try {
-                lfoRef.current.stop();
-              } catch (e) {}
-              lfoRef.current = null;
-            }
-            setIsPlaying(false);
-            setCurrentNote('');
-          };
+         const stopNote = () => {
+  if (masterGainRef.current && audioContextRef.current) {
+    const ctx = audioContextRef.current;
+    const fadeTime = 0.03; // 30ms fade out
+    
+    masterGainRef.current.gain.cancelScheduledValues(ctx.currentTime);
+    masterGainRef.current.gain.setValueAtTime(masterGainRef.current.gain.value, ctx.currentTime);
+    masterGainRef.current.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + fadeTime);
+    
+    setTimeout(() => {
+      if (osc1Ref.current) {
+        try { osc1Ref.current.stop(); } catch (e) {}
+        osc1Ref.current = null;
+      }
+      if (osc2Ref.current) {
+        try { osc2Ref.current.stop(); } catch (e) {}
+        osc2Ref.current = null;
+      }
+      if (lfoRef.current) {
+        try { lfoRef.current.stop(); } catch (e) {}
+        lfoRef.current = null;
+      }
+    }, fadeTime * 1000);
+  }
+  setIsPlaying(false);
+  setCurrentNote('');
+};
           
           const updateFilter = () => {
             if (filterRef.current) {
