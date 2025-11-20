@@ -368,7 +368,7 @@
                     }),
                     React.createElement('select', {
                       value: selectedPreset,
-                      onChange: (e) => { setSelectedPreset(e.target.value); if (e.target.value) loadPreset(e.target.value); },
+                      onChange: (e) => { setSelectedPreset(e.target.value), setPresetName(e.target.value); if (e.target.value) loadPreset(e.target.value); },
                       className: "bg-blue-900 text-white rounded px-2 py-1 text-[10px]"
                     },
                       React.createElement('option', { value: "" }, "-- Choisir un preset --"),
