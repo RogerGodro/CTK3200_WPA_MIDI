@@ -281,7 +281,7 @@
             
             // Map to frequency range (C2 to C6)
             const minFreq = 65.41; // C2
-            const maxFreq = 2046.5; // C6
+            const maxFreq = 1046.5; // C6
             const frequency = minFreq * Math.pow(maxFreq / minFreq, ratio);
             
             startNote(frequency);
@@ -454,11 +454,11 @@
                   React.createElement('h3', { className: "text-white text-xs mb-2 text-center border-b border-blue-500 pb-1" }, "VCO 1"),
                   React.createElement('div', { className: "space-y-2" },
                     React.createElement('div', null,
-                      React.createElement('label', { className: "text-blue-200 text-[9px] block mb-1" }, "Wave"),
+                      React.createElement('label', { className: "text-blue-200 text-[20px] block mb-1" }, "Wave"),
                       React.createElement('select', {
                         value: osc1Wave,
                         onChange: (e) => setOsc1Wave(e.target.value),
-                        className: "w-full bg-blue-900 text-white rounded px-1 py-0.5 text-[10px]",
+                        className: "w-full bg-blue-900 text-white rounded px-1 py-0.5 text-[20px]",
                         disabled: !isPoweredOn
                       },
                         React.createElement('option', { value: "sine" }, "Sine"),
@@ -467,7 +467,56 @@
                         React.createElement('option', { value: "triangle" }, "Tri")
                       )
                     ),
-                    React.createElement(Knob, { label: "PITCH", value: osc1Pitch, onChange: setOsc1Pitch, min: -24, max: 24, step: 1 })
+                    React.createElement(Knob, { label: "PITCH", value: osc1Pitch, onChange: setOsc1Pitch, min: -24, max: 24, step: 1 }),
+                                      <div className="bg-blue-950 bg-opacity-50 rounded-lg p-2">
+  <h3 className="text-white text-xs mb-2 text-center border-b border-blue-500 pb-1">PRESETS</h3>
+  <div className="flex flex-col gap-2">
+    <input
+      type="text"
+      value={presetName}
+      onChange={(e) => setPresetName(e.target.value)}
+      placeholder="Nom du preset"
+      className="bg-blue-900 text-white rounded px-2 py-1 text-[10px]"
+    />
+    <select
+      value={selectedPreset}
+      onChange={(e) => {
+        setSelectedPreset(e.target.value);
+        loadPreset(e.target.value);
+      }}
+      className="bg-blue-900 text-white rounded px-2 py-1 text-[10px]"
+    >
+      <option value="">-- Choisir un preset --</option>
+      {Object.keys(localStorage)
+        .filter((key) => key.startsWith('preset-'))
+        .map((key) => {
+          const name = key.replace('preset-', '');
+          return <option key={name} value={name}>{name}</option>;
+        })}
+    </select>
+    <div className="flex gap-1">
+      <button
+        onClick={() => savePreset(presetName)}
+        className="bg-green-600 text-white px-2 py-1 rounded text-[10px]"
+      >
+        💾 Save
+      </button>
+      <button
+        onClick={() => loadPreset(presetName)}
+        className="bg-blue-600 text-white px-2 py-1 rounded text-[10px]"
+      >
+        📥 Load
+      </button>
+      <button
+        onClick={() => deletePreset(presetName)}
+        className="bg-red-600 text-white px-2 py-1 rounded text-[10px]"
+      >
+        🗑️ Delete
+      </button>
+    </div>
+  </div>
+</div>
+
                   )
                 ),
                 
@@ -476,11 +525,11 @@
                   React.createElement('h3', { className: "text-white text-xs mb-2 text-center border-b border-blue-500 pb-1" }, "VCO 2"),
                   React.createElement('div', { className: "space-y-2" },
                     React.createElement('div', null,
-                      React.createElement('label', { className: "text-blue-200 text-[9px] block mb-1" }, "Wave"),
+                      React.createElement('label', { className: "text-blue-200 text-[20px] block mb-1" }, "Wave"),
                       React.createElement('select', {
                         value: osc2Wave,
                         onChange: (e) => setOsc2Wave(e.target.value),
-                        className: "w-full bg-blue-900 text-white rounded px-1 py-0.5 text-[10px]",
+                        className: "w-full bg-blue-900 text-white rounded px-1 py-0.5 text-[20px]",
                         disabled: !isPoweredOn
                       },
                         React.createElement('option', { value: "sine" }, "Sine"),
