@@ -50,7 +50,6 @@
           const [currentNote, setCurrentNote] = useState('');
           const [isFullscreen, setIsFullscreen] = useState(false);
           const [yAxisFilterEnabled, setYAxisFilterEnabled] = useState(true);
-          const [yAxisFilterEnabled, setYAxisFilterEnabled] = useState(true);
           
           // Oscillator parameters
           const [osc1Wave, setOsc1Wave] = useState('sawtooth');
@@ -77,8 +76,6 @@
           const osc1Ref = useRef(null);
           const osc2Ref = useRef(null);
           const filterRef = useRef(null);
-          const lowpassYRef = useRef(null);
-          const highpassYRef = useRef(null);
           const lfoRef = useRef(null);
           const lfoGainRef = useRef(null);
           const gainNodeRef = useRef(null);
@@ -132,7 +129,7 @@
             };
           }, [isPoweredOn]);
           
-          const startNote = (frequency, yRatio = null) => {
+          const startNote = (frequency) => {
             if (!isPoweredOn || !audioContextRef.current) return;
             
             const ctx = audioContextRef.current;
@@ -148,12 +145,6 @@
                 frequency * Math.pow(2, osc2Pitch / 12),
                 ctx.currentTime
               );
-              
-              // Update Y filters if they exist and yRatio is provided
-              if (yRatio !== null && lowpassYRef.current && highpassYRef.current) {
-                updateYFilters(yRatio);
-              }
-              
               return;
             }
             
@@ -166,20 +157,6 @@
             filterRef.current.type = 'lowpass';
             filterRef.current.frequency.value = cutoff + (peak * 1000);
             filterRef.current.Q.value = resonance;
-            
-            // Create Y-axis filters
-            lowpassYRef.current = ctx.createBiquadFilter();
-            lowpassYRef.current.type = 'lowpass';
-            lowpassYRef.current.frequency.value = 20000;
-            
-            highpassYRef.current = ctx.createBiquadFilter();
-            highpassYRef.current.type = 'highpass';
-            highpassYRef.current.frequency.value = 20;
-            
-            // Update Y filters if yRatio provided
-            if (yRatio !== null) {
-              updateYFilters(yRatio);
-            }
             
             // Create LFO
             lfoRef.current = ctx.createOscillator();
@@ -215,15 +192,13 @@
               lfoGainRef.current.connect(filterRef.current.frequency);
             }
             
-            // Connect audio graph with Y filters
+            // Connect audio graph
             osc1Ref.current.connect(osc1Gain);
             osc2Ref.current.connect(osc2Gain);
             osc1Gain.connect(gainNodeRef.current);
             osc2Gain.connect(gainNodeRef.current);
             gainNodeRef.current.connect(filterRef.current);
-            filterRef.current.connect(lowpassYRef.current);
-            lowpassYRef.current.connect(highpassYRef.current);
-            highpassYRef.current.connect(masterGainRef.current);
+            filterRef.current.connect(masterGainRef.current);
             masterGainRef.current.connect(ctx.destination);
             
             // Start oscillators
@@ -234,54 +209,33 @@
             setIsPlaying(true);
           };
           
-          const updateYFilters = (yRatio) => {
-            if (!lowpassYRef.current || !highpassYRef.current || !audioContextRef.current) return;
-            
-            const ctx = audioContextRef.current;
-            
-            if (yRatio < 0.5) {
-              // Top half: highpass
-              const amount = (0.5 - yRatio) * 2;
-              const hpFreq = 20 + (amount * 2000);
-              highpassYRef.current.frequency.setValueAtTime(hpFreq, ctx.currentTime);
-              lowpassYRef.current.frequency.setValueAtTime(20000, ctx.currentTime);
-            } else if (yRatio > 0.5) {
-              // Bottom half: lowpass
-              const amount = (yRatio - 0.5) * 2;
-              const lpFreq = 20000 - (amount * 18000);
-              lowpassYRef.current.frequency.setValueAtTime(lpFreq, ctx.currentTime);
-              highpassYRef.current.frequency.setValueAtTime(20, ctx.currentTime);
-            } else {
-              // Center: no filter
-              lowpassYRef.current.frequency.setValueAtTime(20000, ctx.currentTime);
-              highpassYRef.current.frequency.setValueAtTime(20, ctx.currentTime);
-            }
-          };
-          
-          const stopNote = () => {
-            if (osc1Ref.current) {
-              try {
-                osc1Ref.current.stop();
-              } catch (e) {}
-              osc1Ref.current = null;
-            }
-            if (osc2Ref.current) {
-              try {
-                osc2Ref.current.stop();
-              } catch (e) {}
-              osc2Ref.current = null;
-            }
-            if (lfoRef.current) {
-              try {
-                lfoRef.current.stop();
-              } catch (e) {}
-              lfoRef.current = null;
-            }
-            lowpassYRef.current = null;
-            highpassYRef.current = null;
-            setIsPlaying(false);
-            setCurrentNote('');
-          };
+         const stopNote = () => {
+  if (masterGainRef.current && audioContextRef.current) {
+    const ctx = audioContextRef.current;
+    const fadeTime = 0.03; // 30ms fade out
+    
+    masterGainRef.current.gain.cancelScheduledValues(ctx.currentTime);
+    masterGainRef.current.gain.setValueAtTime(masterGainRef.current.gain.value, ctx.currentTime);
+    masterGainRef.current.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + fadeTime);
+    
+    setTimeout(() => {
+      if (osc1Ref.current) {
+        try { osc1Ref.current.stop(); } catch (e) {}
+        osc1Ref.current = null;
+      }
+      if (osc2Ref.current) {
+        try { osc2Ref.current.stop(); } catch (e) {}
+        osc2Ref.current = null;
+      }
+      if (lfoRef.current) {
+        try { lfoRef.current.stop(); } catch (e) {}
+        lfoRef.current = null;
+      }
+    }, fadeTime * 1000);
+  }
+  setIsPlaying(false);
+  setCurrentNote('');
+};
           
           const updateFilter = () => {
             if (filterRef.current) {
@@ -323,16 +277,14 @@
             e.preventDefault();
             const rect = e.currentTarget.getBoundingClientRect();
             const x = e.touches ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
-            const y = e.touches ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
-            const ratioX = Math.max(0, Math.min(1, x / rect.width));
-            const ratioY = Math.max(0, Math.min(1, y / rect.height));
+            const ratio = Math.max(0, Math.min(1, x / rect.width));
             
             // Map to frequency range (C2 to C6)
             const minFreq = 65.41; // C2
             const maxFreq = 1046.5; // C6
-            const frequency = minFreq * Math.pow(maxFreq / minFreq, ratioX);
+            const frequency = minFreq * Math.pow(maxFreq / minFreq, ratio);
             
-            startNote(frequency, yAxisFilterEnabled ? ratioY : null);
+            startNote(frequency);
           };
           
           const handleRibbonRelease = () => {
@@ -476,14 +428,6 @@
                     React.createElement('div', { className: "text-white text-3xl font-bold font-mono" }, 
                       currentNote || '—'
                     )
-                  ),
-                  React.createElement('button', {
-                    onClick: () => setYAxisFilterEnabled(!yAxisFilterEnabled),
-                    className: `px-3 py-2 rounded-lg ${yAxisFilterEnabled ? 'bg-blue-500' : 'bg-gray-600'} text-white text-xs font-bold shadow-lg transition-all`,
-                    disabled: !isPoweredOn
-                  },
-                    React.createElement('div', null, 'Y-FILTER'),
-                    React.createElement('div', { className: "text-[8px]" }, yAxisFilterEnabled ? 'ON' : 'OFF')
                   )
                 ),
                 React.createElement('div', { className: "flex gap-2" },
