@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Monotron Duo Synth</title>
+  <!-- React + ReactDOM via CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- Tailwind (OK pour démo; en prod, compiler en CSS) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body, html, #root { margin:0; padding:0; width:100%; height:100%; overflow:hidden; }
+    body { position:fixed; overscroll-behavior:none; }
+    .piano-key { transition: background-color 0.05s; }
+    .piano-key:active { filter: brightness(0.8); }
+    .keyboard-area { touch-action: none; }
+    /* Simple modal styles */
+    .modal-backdrop { background: rgba(0,0,0,0.6); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    const { useState, useRef, useEffect } = React;
+
+    function MonotronSynth() {
+      // UI state
+      const [isPlaying, setIsPlaying] = useState(false);
+      const [isPoweredOn, setIsPoweredOn] = useState(true); // ON by default
+      const [currentNote, setCurrentNote] = useState('');
+      const [isFullscreen, setIsFullscreen] = useState(false);
+
+      // Presets state
+      const [selectedPreset, setSelectedPreset] = useState('');
+      const [showSaveModal, setShowSaveModal] = useState(false);
+      const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+      const [presetDraftName, setPresetDraftName] = useState('');
+
+      // Synth params
+      const [osc1Wave, setOsc1Wave] = useState('sine');
+      const [osc2Wave, setOsc2Wave] = useState('sine');
+      const [osc1Pitch, setOsc1Pitch] = useState(0);
+      const [osc2Pitch, setOsc2Pitch] = useState(-12);
+      const [osc2Mix, setOsc2Mix] = useState(0.5);
+
+      const [cutoff, setCutoff] = useState(2000);
+      const [resonance, setResonance] = useState(1);
+      const [peak, setPeak] = useState(0);
+
+      const [lfoRate, setLfoRate] = useState(5);
+      const [lfoDepth, setLfoDepth] = useState(0);
+      const [lfoTarget, setLfoTarget] = useState('pitch');
+
+      const [volume, setVolume] = useState(0.5);
+
+      // Audio refs
+      const audioContextRef = useRef(null);
+      const osc1Ref = useRef(null);
+      const osc2Ref = useRef(null);
+      const filterRef = useRef(null);
+      const lfoRef = useRef(null);
+      const lfoGainRef = useRef(null);
+      const gainNodeRef = useRef(null);
+      const masterGainRef = useRef(null);
+
+      // Icons
+      const PowerIcon = () => React.createElement('svg', {
+        width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2
+      },
+        React.createElement('path', { d: "M18.36 6.64a9 9 0 1 1-12.73 0" }),
+        React.createElement('line', { x1: 12, y1: 2, x2: 12, y2: 12 })
+      );
+      const FullscreenIcon = () => React.createElement('svg', {
+        width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2
+      },
+        isFullscreen
+          ? React.createElement('path', { d: "M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" })
+          : React.createElement('path', { d: "M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" })
+      );
+
+      // Knob
+      const Knob = ({ label, value, onChange, min, max, step = 1, unit = '' }) => {
+        const percentage = ((value - min) / (max - min)) * 100;
+        const rotation = (percentage * 2.7) - 135;
+        return React.createElement('div', { className: "flex flex-col items-center gap-0.5" },
+          React.createElement('div', { className: "relative w-12 h-12" },
+            React.createElement('div', { className: "absolute inset-0 rounded-full bg-gray-800 border-2 border-gray-600 shadow-inner" }),
+            React.createElement('div', {
+              className: "absolute inset-1 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg cursor-pointer",
+              style: { transform: `rotate(${rotation}deg)` }
+            }, React.createElement('div', { className: "absolute top-1 left-1/2 w-0.5 h-3 bg-white rounded-full -translate-x-1/2" })),
+            React.createElement('input', {
+              type: "range", min, max, step, value,
+              onChange: (e) => onChange(parseFloat(e.target.value)),
+              className: "absolute inset-0 opacity-0 cursor-pointer"
+            })
+          ),
+          React.createElement('div', { className: "text-[10px] text-blue-200 font-mono text-center leading-tight" },
+            label,
+            React.createElement('div', { className: "text-white text-[9px]" },
+              typeof value === 'number' ? value.toFixed(step < 1 ? 2 : 0) : value, unit
+            )
+          )
+        );
+      };
+
+      // Fullscreen listener
+      useEffect(() => {
+        const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      }, []);
+      const toggleFullscreen = () => {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+        else document.exitFullscreen();
+      };
+
+      // Audio context init/close
+      useEffect(() => {
+        if (isPoweredOn && !audioContextRef.current) {
+          audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        return () => {
+          if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+            audioContextRef.current.close();
+            audioContextRef.current = null;
+          }
+        };
+      }, [isPoweredOn]);
+
+      // Note display helper
+      const noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+      const frequencyToNote = (frequency) => {
+        const noteNum = 12 * Math.log2(frequency / 440) + 69;
+        const noteIndex = Math.round(noteNum);
+        const octave = Math.floor((noteIndex - 12) / 12);
+        const note = noteNames[noteIndex % 12];
+        return `${note}${octave}`;
+      };
+
+      // Start/Stop note
+      const startNote = (frequency) => {
+        if (!isPoweredOn || !audioContextRef.current) return;
+        const ctx = audioContextRef.current;
+        setCurrentNote(frequencyToNote(frequency));
+
+        // Update if already running
+        if (osc1Ref.current && osc2Ref.current) {
+          osc1Ref.current.frequency.setValueAtTime(frequency * Math.pow(2, osc1Pitch / 12), ctx.currentTime);
+          osc2Ref.current.frequency.setValueAtTime(frequency * Math.pow(2, osc2Pitch / 12), ctx.currentTime);
+          return;
+        }
+
+        // Create nodes
+        osc1Ref.current = ctx.createOscillator();
+        osc2Ref.current = ctx.createOscillator();
+
+        filterRef.current = ctx.createBiquadFilter();
+        filterRef.current.type = 'lowpass';
+        filterRef.current.frequency.value = cutoff + (peak * 1000);
+        filterRef.current.Q.value = resonance;
+
+        lfoRef.current = ctx.createOscillator();
+        lfoRef.current.frequency.value = lfoRate;
+        lfoGainRef.current = ctx.createGain();
+        lfoGainRef.current.gain.value = lfoDepth;
+
+        const osc1Gain = ctx.createGain();
+        const osc2Gain = ctx.createGain();
+        gainNodeRef.current = ctx.createGain();
+        masterGainRef.current = ctx.createGain();
+
+        // Parameters
+        osc1Ref.current.type = osc1Wave;
+        osc2Ref.current.type = osc2Wave;
+        osc1Ref.current.frequency.value = frequency * Math.pow(2, osc1Pitch / 12);
+        osc2Ref.current.frequency.value = frequency * Math.pow(2, osc2Pitch / 12);
+
+        osc1Gain.gain.value = 1 - osc2Mix;
+        osc2Gain.gain.value = osc2Mix;
+        gainNodeRef.current.gain.value = 0.3;
+        masterGainRef.current.gain.value = volume;
+
+        // LFO routing
+        lfoRef.current.connect(lfoGainRef.current);
+        if (lfoTarget === 'pitch') {
+          lfoGainRef.current.connect(osc1Ref.current.frequency);
+          lfoGainRef.current.connect(osc2Ref.current.frequency);
+        } else {
+          lfoGainRef.current.connect(filterRef.current.frequency);
+        }
+
+        // Graph
+        osc1Ref.current.connect(osc1Gain);
+        osc2Ref.current.connect(osc2Gain);
+        osc1Gain.connect(gainNodeRef.current);
+        osc2Gain.connect(gainNodeRef.current);
+        gainNodeRef.current.connect(filterRef.current);
+        filterRef.current.connect(masterGainRef.current);
+        masterGainRef.current.connect(ctx.destination);
+
+        // Start
+        osc1Ref.current.start();
+        osc2Ref.current.start();
+        lfoRef.current.start();
+
+        setIsPlaying(true);
+      };
+
+      const stopNote = () => {
+        if (masterGainRef.current && audioContextRef.current) {
+          const ctx = audioContextRef.current;
+          const fadeTime = 0.03;
+          masterGainRef.current.gain.cancelScheduledValues(ctx.currentTime);
+          masterGainRef.current.gain.setValueAtTime(masterGainRef.current.gain.value, ctx.currentTime);
+          masterGainRef.current.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + fadeTime);
+          setTimeout(() => {
+            if (osc1Ref.current) { try { osc1Ref.current.stop(); } catch(e){} osc1Ref.current = null; }
+            if (osc2Ref.current) { try { osc2Ref.current.stop(); } catch(e){} osc2Ref.current = null; }
+            if (lfoRef.current)  { try { lfoRef.current.stop(); }  catch(e){} lfoRef.current = null; }
+          }, fadeTime * 1000);
+        }
+        setIsPlaying(false);
+        setCurrentNote('');
+      };
+
+      // Live updates
+      useEffect(() => {
+        if (filterRef.current) {
+          filterRef.current.frequency.value = cutoff + (peak * 1000);
+          filterRef.current.Q.value = resonance;
+        }
+      }, [cutoff, resonance, peak]);
+      useEffect(() => {
+        if (lfoRef.current) lfoRef.current.frequency.value = lfoRate;
+        if (lfoGainRef.current) lfoGainRef.current.gain.value = lfoDepth;
+      }, [lfoRate, lfoDepth, lfoTarget]);
+      useEffect(() => {
+        if (masterGainRef.current) masterGainRef.current.gain.value = volume;
+      }, [volume]);
+
+      // Ribbon handlers
+      const handleRibbonTouch = (e) => {
+        if (!isPoweredOn) return;
+        e.preventDefault();
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.touches ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
+        const ratio = Math.max(0, Math.min(1, x / rect.width));
+        const minFreq = 65.41;  // C2
+        const maxFreq = 1046.5; // C6
+        const frequency = minFreq * Math.pow(maxFreq / minFreq, ratio);
+        startNote(frequency);
+      };
+      const handleRibbonRelease = () => stopNote();
+
+      // Keyboard visual
+      const generatePianoKeys = () => {
+        const whiteKeys = [];
+        const blackKeys = [];
+        const whiteNotes = ['C','D','E','F','G','A','B'];
+        const blackPos = { 0:'C#', 1:'D#', 3:'F#', 4:'G#', 5:'A#' };
+        let whiteKeyIndex = 0;
+        for (let octave=2; octave<=5; octave++) {
+          whiteNotes.forEach((note, idx) => {
+            whiteKeys.push(React.createElement('div', {
+              key: `${note}${octave}`, className: 'h-full border-r border-gray-400 bg-white piano-key', style: { flex: 1 }
+            }));
+            if (blackPos[idx]) {
+              const left = ((whiteKeyIndex + 0.7) / 29) * 100;
+              blackKeys.push(React.createElement('div', {
+                key: `${blackPos[idx]}${octave}`, className: 'absolute h-3/5 bg-gray-900 border border-gray-700 z-10 piano-key rounded-b-sm',
+                style: { left: `${left}%`, width: '3%' }
+              }));
+            }
+            whiteKeyIndex++;
+          });
+        }
+        whiteKeys.push(React.createElement('div', {
+          key: 'C6', className: 'h-full border-r border-gray-400 bg-white piano-key', style: { flex: 1 }
+        }));
+        return { whiteKeys, blackKeys };
+      };
+      const { whiteKeys, blackKeys } = generatePianoKeys();
+
+      // Presets helpers
+      const generateDefaultName = () => {
+        let i = 1;
+        while (localStorage.getItem(`preset-Preset-${i}`)) i++;
+        return `Preset-${i}`;
+      };
+      const savePreset = (name) => {
+        const finalName = name && name.trim() ? name.trim() : generateDefaultName();
+        const preset = {
+          osc1Wave, osc2Wave, osc1Pitch, osc2Pitch, osc2Mix,
+          cutoff, resonance, peak, lfoRate, lfoDepth, lfoTarget, volume
+        };
+        localStorage.setItem(`preset-${finalName}`, JSON.stringify(preset));
+        setSelectedPreset(finalName);
+      };
+      const loadPreset = (name) => {
+        const data = localStorage.getItem(`preset-${name}`);
+        if (!data) return;
+        const p = JSON.parse(data);
+        setOsc1Wave(p.osc1Wave); setOsc2Wave(p.osc2Wave);
+        setOsc1Pitch(p.osc1Pitch); setOsc2Pitch(p.osc2Pitch);
+        setOsc2Mix(p.osc2Mix);
+        setCutoff(p.cutoff); setResonance(p.resonance); setPeak(p.peak);
+        setLfoRate(p.lfoRate); setLfoDepth(p.lfoDepth); setLfoTarget(p.lfoTarget);
+        setVolume(p.volume);
+      };
+      const deletePreset = (name) => {
+        if (!name) return;
+        localStorage.removeItem(`preset-${name}`);
+        setSelectedPreset('');
+      };
+
+      // UI
+      return React.createElement('div', { className: "w-full h-full bg-gradient-to-br from-gray-900 to-black flex flex-col overflow-hidden" },
+        React.createElement('div', { className: "flex-1 bg-gradient-to-br from-blue-900 to-blue-800 p-2 flex flex-col" },
+
+          // Header
+          React.createElement('div', { className: "flex justify-between items-center mb-2" },
+            React.createElement('div', { className: "flex items-center gap-3" },
+              React.createElement('div', null,
+                React.createElement('h1', { className: "text-2xl font-bold text-white tracking-wider" }, "MONOTRON"),
+                React.createElement('p', { className: "text-blue-200 text-[10px]" }, "DUO SYNTH")
+              ),
+              React.createElement('div', {
+                className: `px-6 py-3 rounded-lg ${isPlaying ? 'bg-green-500 animate-pulse' : 'bg-gray-700'} min-w-[100px] text-center shadow-lg`
+              }, React.createElement('div', { className: "text-white text-3xl font-bold font-mono" }, currentNote || '—'))
+            ),
+            React.createElement('div', { className: "flex gap-2 items-center" },
+              React.createElement('button', {
+                onClick: toggleFullscreen,
+                className: 'p-2 rounded-full bg-blue-600 shadow-lg hover:scale-110 transition-transform'
+              }, React.createElement(FullscreenIcon)),
+              // Save button (opens modal to enter name)
+              React.createElement('button', {
+                onClick: () => { setPresetDraftName(selectedPreset || ''); setShowSaveModal(true); },
+                className: 'p-2 rounded-full bg-green-600 text-white shadow-lg hover:scale-110 transition-transform',
+                title: "Sauvegarder le preset"
+              }, "💾"),
+              // Delete moved to top bar (asks confirmation)
+              React.createElement('button', {
+                onClick: () => setShowDeleteConfirm(true),
+                className: `p-2 rounded-full ${selectedPreset ? 'bg-red-600' : 'bg-gray-700 opacity-50 cursor-not-allowed'} text-white shadow-lg hover:scale-110 transition-transform`,
+                disabled: !selectedPreset,
+                title: "Supprimer le preset sélectionné"
+              }, "🗑️"),
+              React.createElement('button', {
+                onClick: () => setIsPoweredOn(!isPoweredOn),
+                className: `p-2 rounded-full ${isPoweredOn ? 'bg-green-500' : 'bg-red-500'} shadow-lg hover:scale-110 transition-transform`
+              }, React.createElement(PowerIcon))
+            )
+          ),
+
+          // Controls
+          React.createElement('div', { className: "flex-1 grid grid-cols-4 gap-2 mb-2" },
+
+            // VCO 1
+            React.createElement('div', { className: "bg-blue-950 bg-opacity-50 rounded-lg p-2" },
+              React.createElement('h3', { className: "text-white text-xs mb-2 text-center border-b border-blue-500 pb-1" }, "VCO 1"),
+              React.createElement('div', { className: "space-y-2" },
+                React.createElement('div', null,
+                  React.createElement('div', { className: "text-blue-200 text-[9px] mb-1" }, "Wave"),
+                  React.createElement('select', {
+                    value: osc1Wave, onChange: (e) => setOsc1Wave(e.target.value),
+                    className: "w-full bg-blue-900 text-white rounded px-1 py-0.5 text-[10px]", disabled: !isPoweredOn
+                  },
+                    React.createElement('option', { value: "sine" }, "Sine"),
+                    React.createElement('option', { value: "sawtooth" }, "Saw"),
+                    React.createElement('option', { value: "square" }, "Square"),
+                    React.createElement('option', { value: "triangle" }, "Tri")
+                  )
+                ),
+                React.createElement(Knob, { label: "PITCH", value: osc1Pitch, onChange: setOsc1Pitch, min: -24, max: 24, step: 1 }),
+                // Presets (no text input; load on change; Delete removed from here)
+                React.createElement('div', { className: "bg-blue-950 bg-opacity-50 rounded-lg p-2" },
+                  React.createElement('h3', { className: "text-white text-xs mb-2 text-center border-b border-blue-500 pb-1" }, "PRESETS"),
+                  React.createElement('div', { className: "flex flex-col gap-2" },
+                    React.createElement('select', {
+                      value: selectedPreset,
+                      onChange: (e) => { setSelectedPreset(e.target.value); if (e.target.value) loadPreset(e.target.value); },
+                      className: "bg-blue-900 text-white rounded px-2 py-1 text-[10px]"
+                    },
+                      React.createElement('option', { value: "" }, "-- Choisir un preset --"),
+                      ...Object.keys(localStorage)
+                        .filter((key) => key.startsWith('preset-'))
+                        .map((key) => {
+                          const name = key.replace('preset-', '');
+                          return React.createElement('option', { key: name, value: name }, name);
+                        })
+                    )
+                  )
+                )
+              )
+            ),
+
+            // VCO 2
+            React.createElement('div', { className: "bg-blue-950 bg-opacity-50 rounded-lg p-2" },
+              React.createElement('h3', { className: "text-white text-xs mb-2 text-center border-b border-blue-500 pb-1" }, "VCO 2"),
+              React.createElement('div', { className: "space-y-2" },
+                React.createElement('div', null,
+                  React.createElement('div', { className: "text-blue-200 text-[9px] mb-1" }, "Wave"),
+                  React.createElement('select', {
+                    value: osc2Wave, onChange: (e) => setOsc2Wave(e.target.value),
+                    className: "w-full bg-blue-900 text-white rounded px-1 py-0.5 text-[10px]", disabled: !isPoweredOn
+                  },
+                    React.createElement('option', { value: "sine" }, "Sine"),
+                    React.createElement('option', { value: "sawtooth" }, "Saw"),
+                    React.createElement('option', { value: "square" }, "Square"),
+                    React.createElement('option', { value: "triangle" }, "Tri")
+                  )
+                ),
+                React.createElement(Knob, { label: "PITCH", value: osc2Pitch, onChange: setOsc2Pitch, min: -24, max: 24, step: 1 }),
+                React.createElement(Knob, { label: "MIX", value: osc2Mix, onChange: setOsc2Mix, min: 0, max: 1, step: 0.01 })
+              )
+            ),
+
+            // Filter
+            React.createElement('div', { className: "bg-blue-950 bg-opacity-50 rounded-lg p-2" },
+              React.createElement('h3', { className: "text-white text-xs mb-2 text-center border-b border-blue-500 pb-1" }, "VCF (MS-20)"),
+              React.createElement('div', { className: "flex flex-col gap-2" },
+                React.createElement(Knob, { label: "CUTOFF", value: cutoff, onChange: setCutoff, min: 50, max: 8000, step: 10, unit: "Hz" }),
+                React.createElement(Knob, { label: "PEAK", value: peak, onChange: setPeak, min: 0, max: 5, step: 0.1 }),
+                React.createElement(Knob, { label: "RES", value: resonance, onChange: setResonance, min: 0.1, max: 30, step: 0.1 })
+              )
+            ),
+
+            // LFO + Volume
+            React.createElement('div', { className: "bg-blue-950 bg-opacity-50 rounded-lg p-2" },
+              React.createElement('h3', { className: "text-white text-xs mb-2 text-center border-b border-blue-500 pb-1" }, "LFO & VOL"),
+              React.createElement('div', { className: "flex flex-col gap-2" },
+                React.createElement(Knob, { label: "RATE", value: lfoRate, onChange: setLfoRate, min: 0.1, max: 20, step: 0.1, unit: "Hz" }),
+                React.createElement(Knob, { label: "DEPTH", value: lfoDepth, onChange: setLfoDepth, min: 0, max: 100, step: 1 }),
+                React.createElement('div', { className: "flex flex-col items-center gap-0.5" },
+                  React.createElement('div', { className: "text-[9px] text-blue-200" }, "Target"),
+                  React.createElement('select', {
+                    value: lfoTarget, onChange: (e) => setLfoTarget(e.target.value),
+                    className: "bg-blue-900 text-white rounded px-2 py-1 text-[10px] w-full", disabled: !isPoweredOn
+                  },
+                    React.createElement('option', { value: "pitch" }, "Pitch"),
+                    React.createElement('option', { value: "filter" }, "Filter")
+                  )
+                ),
+                React.createElement(Knob, { label: "VOL", value: volume, onChange: setVolume, min: 0, max: 1, step: 0.01 })
+              )
+            )
+          )
+        ),
+
+        // Ribbon keyboard
+        React.createElement('div', { className: "h-64 relative keyboard-area" },
+          React.createElement('div', {
+            className: `absolute inset-0 ${isPoweredOn ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`,
+            onMouseDown: handleRibbonTouch,
+            onMouseMove: (e) => e.buttons === 1 && handleRibbonTouch(e),
+            onMouseUp: handleRibbonRelease,
+            onMouseLeave: handleRibbonRelease,
+            onTouchStart: handleRibbonTouch,
+            onTouchMove: handleRibbonTouch,
+            onTouchEnd: handleRibbonRelease
+          },
+            React.createElement('div', { className: "absolute inset-0 flex" }, ...whiteKeys),
+            React.createElement('div', { className: "absolute inset-0" }, ...blackKeys)
+          )
+        ),
+
+        // Save modal
+        showSaveModal && React.createElement('div', { className: "fixed inset-0 z-50 flex items-center justify-center modal-backdrop" },
+          React.createElement('div', { className: "bg-white rounded-lg p-4 w-80 shadow-lg" },
+            React.createElement('h2', { className: "text-lg font-bold mb-2" }, "Sauvegarder le preset"),
+            React.createElement('div', { className: "text-sm text-gray-700 mb-2" }, "Entrez un nom pour le preset :"),
+            React.createElement('input', {
+              type: "text",
+              value: presetDraftName,
+              onChange: (e) => setPresetDraftName(e.target.value),
+              placeholder: "Nom du preset",
+              className: "w-full border rounded px-2 py-1 mb-3 text-sm"
+            }),
+            React.createElement('div', { className: "flex justify-end gap-2" },
+              React.createElement('button', {
+                onClick: () => { setShowSaveModal(false); setPresetDraftName(''); },
+                className: "px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
+              }, "Annuler"),
+              React.createElement('button', {
+                onClick: () => {
+                  savePreset(presetDraftName);
+                  setShowSaveModal(false);
+                  setPresetDraftName('');
+                },
+                className: "px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
+              }, "Sauvegarder")
+            )
+          )
+        ),
+
+        // Delete confirmation modal
+        showDeleteConfirm && React.createElement('div', { className: "fixed inset-0 z-50 flex items-center justify-center modal-backdrop" },
+          React.createElement('div', { className: "bg-white rounded-lg p-4 w-96 shadow-lg" },
+            React.createElement('h2', { className: "text-lg font-bold mb-2 text-red-600" }, "Confirmer la suppression"),
+            React.createElement('div', { className: "text-sm text-gray-700 mb-4" },
+              selectedPreset
+                ? `Supprimer le preset "${selectedPreset}" ? Cette action est irréversible.`
+                : "Aucun preset sélectionné."
+            ),
+            React.createElement('div', { className: "flex justify-end gap-2" },
+              React.createElement('button', {
+                onClick: () => setShowDeleteConfirm(false),
+                className: "px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
+              }, "Annuler"),
+              React.createElement('button', {
+                onClick: () => {
+                  if (selectedPreset) {
+                    deletePreset(selectedPreset);
+                  }
+                  setShowDeleteConfirm(false);
+                },
+                className: `px-3 py-1 rounded ${selectedPreset ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 cursor-not-allowed'}`,
+                disabled: !selectedPreset
+              }, "Supprimer")
+            )
+          )
+        )
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(MonotronSynth));
+  </script>
+</body>
+</html>
