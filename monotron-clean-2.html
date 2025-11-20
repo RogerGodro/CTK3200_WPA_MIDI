@@ -81,53 +81,6 @@
       // Note names
       const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-      const [presetName, setPresetName] = useState('');
-const [selectedPreset, setSelectedPreset] = useState('');
-
-const generateDefaultName = () => {
-  let i = 1;
-  while (localStorage.getItem(`preset-Preset-${i}`)) {
-    i++;
-  }
-  return `Preset-${i}`;
-};
-
-const savePreset = (name) => {
-  const finalName = name || generateDefaultName();
-  const preset = {
-    osc1Wave, osc2Wave, osc1Pitch, osc2Pitch, osc2Mix,
-    cutoff, resonance, peak,
-    lfoRate, lfoDepth, lfoTarget,
-    volume
-  };
-  localStorage.setItem(`preset-${finalName}`, JSON.stringify(preset));
-  setSelectedPreset(finalName);
-};
-
-const loadPreset = (name) => {
-  const data = localStorage.getItem(`preset-${name}`);
-  if (!data) return;
-  const preset = JSON.parse(data);
-  setOsc1Wave(preset.osc1Wave);
-  setOsc2Wave(preset.osc2Wave);
-  setOsc1Pitch(preset.osc1Pitch);
-  setOsc2Pitch(preset.osc2Pitch);
-  setOsc2Mix(preset.osc2Mix);
-  setCutoff(preset.cutoff);
-  setResonance(preset.resonance);
-  setPeak(preset.peak);
-  setLfoRate(preset.lfoRate);
-  setLfoDepth(preset.lfoDepth);
-  setLfoTarget(preset.lfoTarget);
-  setVolume(preset.volume);
-};
-
-const deletePreset = (name) => {
-  localStorage.removeItem(`preset-${name}`);
-  setSelectedPreset('');
-};
-
-
       // Fullscreen handling
       useEffect(() => {
         const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
