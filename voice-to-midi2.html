@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice to MIDI - CTK-3200</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .section h2 {
+            font-size: 18px;
+            color: #555;
+            margin-bottom: 15px;
+        }
+
+        .midi-selector {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+            transition: border 0.3s;
+        }
+
+        .midi-selector:hover {
+            border-color: #667eea;
+        }
+
+        .midi-selector:disabled {
+            background: #eee;
+            cursor: not-allowed;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        #startBtn {
+            background: #10b981;
+            color: white;
+        }
+
+        #startBtn:hover:not(:disabled) {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        #stopBtn {
+            background: #ef4444;
+            color: white;
+        }
+
+        #stopBtn:hover:not(:disabled) {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .status {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+
+        .status.inactive {
+            background: #fee;
+            color: #c33;
+        }
+
+        .status.active {
+            background: #efe;
+            color: #3c3;
+        }
+
+        .pitch-display {
+            text-align: center;
+            margin-top: 20px;
+            padding: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            color: white;
+        }
+
+        .pitch-note {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .pitch-frequency {
+            font-size: 24px;
+            opacity: 0.9;
+        }
+
+        .pitch-confidence {
+            font-size: 16px;
+            margin-top: 10px;
+            opacity: 0.8;
+        }
+
+        .settings {
+            display: grid;
+            gap: 15px;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .setting-item label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .setting-item input[type="range"] {
+            flex: 1;
+            margin: 0 15px;
+        }
+
+        .setting-item span {
+            min-width: 50px;
+            text-align: right;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .info {
+            background: #e0e7ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #4338ca;
+            line-height: 1.6;
+        }
+
+        .visualizer {
+            width: 100%;
+            height: 100px;
+            background: #1f2937;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .mic-level {
+            width: 100%;
+            height: 30px;
+            background: #e5e7eb;
+            border-radius: 8px;
+            margin-top: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .mic-level-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981 0%, #f59e0b 50%, #ef4444 100%);
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        .mic-level-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: 600;
+            font-size: 14px;
+            color: #333;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Voice to MIDI Converter</h1>
+        
+        <div class="section">
+            <h2>1. Sélectionner le périphérique MIDI</h2>
+            <select id="midiOutput" class="midi-selector">
+                <option value="">Chargement des périphériques MIDI...</option>
+            </select>
+        </div>
+
+        <div class="section">
+            <h2>2. Paramètres de détection</h2>
+            <div class="settings">
+                <div class="setting-item">
+                    <label>Sensibilité:</label>
+                    <input type="range" id="sensitivity" min="0.1" max="0.9" step="0.1" value="0.3">
+                    <span id="sensitivityValue">0.3</span>
+                </div>
+                <div class="setting-item">
+                    <label>Lissage:</label>
+                    <input type="range" id="smoothing" min="1" max="10" step="1" value="3">
+                    <span id="smoothingValue">3</span>
+                </div>
+                <div class="setting-item">
+                    <label>Canal MIDI:</label>
+                    <input type="range" id="midiChannel" min="1" max="16" step="1" value="1">
+                    <span id="channelValue">1</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>3. Mode de jeu</h2>
+            <div class="settings">
+                <div class="setting-item">
+                    <label>Mode:</label>
+                    <select id="playMode" class="midi-selector" style="flex: 1; margin: 0;">
+                        <option value="single">Note seule</option>
+                        <option value="major">Accord majeur</option>
+                        <option value="minor">Accord mineur</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label>Reverb:</label>
+                    <input type="range" id="reverb" min="0" max="127" step="1" value="40">
+                    <span id="reverbValue">40</span>
+                </div>
+                <div class="setting-item">
+                    <label>Tonalité:</label>
+                    <select id="voiceSelect" class="midi-selector" style="flex: 1; margin: 0;">
+                        <optgroup label="Piano">
+                            <option value="0">Acoustic Grand Piano</option>
+                            <option value="1">Bright Acoustic Piano</option>
+                            <option value="2">Electric Grand Piano</option>
+                            <option value="3">Honky-tonk Piano</option>
+                            <option value="4">Electric Piano 1</option>
+                            <option value="5">Electric Piano 2</option>
+                        </optgroup>
+                        <optgroup label="Orgue">
+                            <option value="16">Drawbar Organ</option>
+                            <option value="17">Percussive Organ</option>
+                            <option value="18">Rock Organ</option>
+                            <option value="19">Church Organ</option>
+                            <option value="20">Reed Organ</option>
+                        </optgroup>
+                        <optgroup label="Guitare">
+                            <option value="24">Acoustic Guitar (nylon)</option>
+                            <option value="25">Acoustic Guitar (steel)</option>
+                            <option value="26">Electric Guitar (jazz)</option>
+                            <option value="27">Electric Guitar (clean)</option>
+                            <option value="28">Electric Guitar (muted)</option>
+                            <option value="29">Overdriven Guitar</option>
+                            <option value="30">Distortion Guitar</option>
+                        </optgroup>
+                        <optgroup label="Basse">
+                            <option value="32">Acoustic Bass</option>
+                            <option value="33">Electric Bass (finger)</option>
+                            <option value="34">Electric Bass (pick)</option>
+                            <option value="35">Fretless Bass</option>
+                            <option value="36">Slap Bass 1</option>
+                            <option value="37">Slap Bass 2</option>
+                            <option value="38">Synth Bass 1</option>
+                            <option value="39">Synth Bass 2</option>
+                        </optgroup>
+                        <optgroup label="Cordes">
+                            <option value="40">Violin</option>
+                            <option value="41">Viola</option>
+                            <option value="42">Cello</option>
+                            <option value="48">String Ensemble 1</option>
+                            <option value="49">String Ensemble 2</option>
+                        </optgroup>
+                        <optgroup label="Ensemble">
+                            <option value="52">Choir Aahs</option>
+                            <option value="53">Voice Oohs</option>
+                            <option value="54">Synth Voice</option>
+                        </optgroup>
+                        <optgroup label="Cuivres">
+                            <option value="56">Trumpet</option>
+                            <option value="57">Trombone</option>
+                            <option value="58">Tuba</option>
+                            <option value="59">Muted Trumpet</option>
+                            <option value="60">French Horn</option>
+                            <option value="61">Brass Section</option>
+                        </optgroup>
+                        <optgroup label="Saxophones">
+                            <option value="64">Soprano Sax</option>
+                            <option value="65">Alto Sax</option>
+                            <option value="66">Tenor Sax</option>
+                            <option value="67">Baritone Sax</option>
+                        </optgroup>
+                        <optgroup label="Vents">
+                            <option value="68">Oboe</option>
+                            <option value="69">English Horn</option>
+                            <option value="70">Bassoon</option>
+                            <option value="71">Clarinet</option>
+                            <option value="72">Piccolo</option>
+                            <option value="73">Flute</option>
+                            <option value="74">Recorder</option>
+                            <option value="75">Pan Flute</option>
+                        </optgroup>
+                        <optgroup label="Synthétiseurs">
+                            <option value="80">Lead 1 (square)</option>
+                            <option value="81">Lead 2 (sawtooth)</option>
+                            <option value="82">Lead 3 (calliope)</option>
+                            <option value="83">Lead 4 (chiff)</option>
+                            <option value="84">Lead 5 (charang)</option>
+                            <option value="85">Lead 6 (voice)</option>
+                            <option value="88">Pad 1 (new age)</option>
+                            <option value="89">Pad 2 (warm)</option>
+                            <option value="90">Pad 3 (polysynth)</option>
+                            <option value="91">Pad 4 (choir)</option>
+                        </optgroup>
+                        <optgroup label="Effets">
+                            <option value="96">FX 1 (rain)</option>
+                            <option value="97">FX 2 (soundtrack)</option>
+                            <option value="98">FX 3 (crystal)</option>
+                            <option value="99">FX 4 (atmosphere)</option>
+                        </optgroup>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>4. Contrôles</h2>
+            <div class="controls">
+                <button id="startBtn">🎙️ Démarrer</button>
+                <button id="stopBtn" disabled>⏹️ Arrêter</button>
+            </div>
+            <div id="status" class="status inactive">
+                ⚫ Inactif - Cliquez sur Démarrer
+            </div>
+        </div>
+
+        <div class="pitch-display" id="pitchDisplay" style="display: none;">
+            <div class="pitch-note" id="pitchNote">--</div>
+            <div class="pitch-frequency" id="pitchFreq">-- Hz</div>
+            <div class="pitch-confidence" id="pitchConf">Confiance: --%</div>
+        </div>
+
+        <canvas id="visualizer" class="visualizer"></canvas>
+
+        <div class="mic-level">
+            <div class="mic-level-bar" id="micLevelBar"></div>
+            <div class="mic-level-label" id="micLevelLabel">Niveau micro: 0%</div>
+        </div>
+
+        <div class="info">
+            <strong>💡 Instructions:</strong><br>
+            1. Connectez votre CTK-3200 via USB<br>
+            2. Sélectionnez-le dans la liste MIDI<br>
+            3. Choisissez le mode (note seule, accord majeur ou mineur)<br>
+            4. Sélectionnez une tonalité et ajustez le reverb<br>
+            5. Cliquez sur Démarrer et chantez/fredonnez<br>
+            6. Les notes/accords MIDI seront envoyés automatiquement
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let midiAccess = null;
+        let midiOutput = null;
+        let audioContext = null;
+        let analyser = null;
+        let microphone = null;
+        let scriptProcessor = null;
+        let isRunning = false;
+        let currentNote = null;
+        let currentChordNotes = [];
+        let noteBuffer = [];
+        let lastNoteTime = 0;
+        
+        // Éléments DOM
+        const midiOutputSelect = document.getElementById('midiOutput');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusDiv = document.getElementById('status');
+        const pitchDisplay = document.getElementById('pitchDisplay');
+        const pitchNote = document.getElementById('pitchNote');
+        const pitchFreq = document.getElementById('pitchFreq');
+        const pitchConf = document.getElementById('pitchConf');
+        const sensitivitySlider = document.getElementById('sensitivity');
+        const smoothingSlider = document.getElementById('smoothing');
+        const midiChannelSlider = document.getElementById('midiChannel');
+        const sensitivityValue = document.getElementById('sensitivityValue');
+        const smoothingValue = document.getElementById('smoothingValue');
+        const channelValue = document.getElementById('channelValue');
+        const playModeSelect = document.getElementById('playMode');
+        const reverbSlider = document.getElementById('reverb');
+        const reverbValue = document.getElementById('reverbValue');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const visualizer = document.getElementById('visualizer');
+        const canvasCtx = visualizer.getContext('2d');
+        const micLevelBar = document.getElementById('micLevelBar');
+        const micLevelLabel = document.getElementById('micLevelLabel');
+
+        // Notes MIDI
+        const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+        // Initialiser Web MIDI API
+        async function initMIDI() {
+            try {
+                midiAccess = await navigator.requestMIDIAccess();
+                updateMIDIDevices();
+                midiAccess.onstatechange = updateMIDIDevices;
+            } catch (err) {
+                console.error('Erreur MIDI:', err);
+                midiOutputSelect.innerHTML = '<option value="">Erreur: MIDI non disponible</option>';
+            }
+        }
+
+        function updateMIDIDevices() {
+            midiOutputSelect.innerHTML = '';
+            const outputs = Array.from(midiAccess.outputs.values());
+            
+            if (outputs.length === 0) {
+                midiOutputSelect.innerHTML = '<option value="">Aucun périphérique MIDI détecté</option>';
+            } else {
+                outputs.forEach((output, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = output.name;
+                    midiOutputSelect.appendChild(option);
+                });
+            }
+        }
+
+        // Convertir fréquence en note MIDI
+        function frequencyToMidi(frequency) {
+            return Math.round(12 * Math.log2(frequency / 440) + 69);
+        }
+
+        function midiToNoteName(midi) {
+            const octave = Math.floor(midi / 12) - 1;
+            const note = noteNames[midi % 12];
+            return `${note}${octave}`;
+        }
+
+        // Autocorrélation pour détection de pitch (méthode YIN améliorée)
+        function autoCorrelate(buffer, sampleRate) {
+            const SIZE = buffer.length;
+            const MAX_SAMPLES = Math.floor(SIZE / 2);
+            let best_offset = -1;
+            let best_correlation = 0;
+            let rms = 0;
+            
+            // Calculer RMS
+            for (let i = 0; i < SIZE; i++) {
+                const val = buffer[i];
+                rms += val * val;
+            }
+            rms = Math.sqrt(rms / SIZE);
+            
+            // Seuil de sensibilité
+            const threshold = parseFloat(sensitivitySlider.value) * 0.1; // Réduire le seuil
+            if (rms < threshold) return -1;
+
+            // Méthode de différence cumulée normalisée (plus précise pour la voix)
+            const diffBuffer = new Array(MAX_SAMPLES).fill(0);
+            
+            for (let tau = 0; tau < MAX_SAMPLES; tau++) {
+                let sum = 0;
+                for (let i = 0; i < MAX_SAMPLES; i++) {
+                    const delta = buffer[i] - buffer[i + tau];
+                    sum += delta * delta;
+                }
+                diffBuffer[tau] = sum;
+            }
+            
+            // Normalisation
+            let cumulativeSum = 0;
+            diffBuffer[0] = 1;
+            
+            for (let tau = 1; tau < MAX_SAMPLES; tau++) {
+                cumulativeSum += diffBuffer[tau];
+                diffBuffer[tau] = diffBuffer[tau] / (cumulativeSum / tau);
+            }
+            
+            // Trouver le premier minimum local sous le seuil
+            const absoluteThreshold = 0.15;
+            let minTau = -1;
+            let minVal = 1;
+            
+            for (let tau = 2; tau < MAX_SAMPLES; tau++) {
+                if (diffBuffer[tau] < absoluteThreshold) {
+                    // Chercher un minimum local
+                    while (tau + 1 < MAX_SAMPLES && diffBuffer[tau + 1] < diffBuffer[tau]) {
+                        tau++;
+                    }
+                    minTau = tau;
+                    minVal = diffBuffer[tau];
+                    break;
+                }
+            }
+            
+            if (minTau !== -1 && minVal < absoluteThreshold) {
+                // Interpolation parabolique pour plus de précision
+                let betterTau = minTau;
+                if (minTau > 0 && minTau < MAX_SAMPLES - 1) {
+                    const s0 = diffBuffer[minTau - 1];
+                    const s1 = diffBuffer[minTau];
+                    const s2 = diffBuffer[minTau + 1];
+                    betterTau = minTau + (s2 - s0) / (2 * (2 * s1 - s2 - s0));
+                }
+                
+                const frequency = sampleRate / betterTau;
+                const confidence = 1 - minVal;
+                
+                return { frequency, confidence };
+            }
+            
+            return -1;
+        }
+
+        // Construire un accord
+        function buildChord(rootNote, mode) {
+            const chordNotes = [rootNote];
+            
+            if (mode === 'major') {
+                chordNotes.push(rootNote + 4);  // Tierce majeure
+                chordNotes.push(rootNote + 7);  // Quinte juste
+            } else if (mode === 'minor') {
+                chordNotes.push(rootNote + 3);  // Tierce mineure
+                chordNotes.push(rootNote + 7);  // Quinte juste
+            }
+            
+            return chordNotes;
+        }
+
+        // Envoyer note ou accord MIDI
+        function sendMidiNote(noteNumber, velocity = 100) {
+            if (!midiOutput) return;
+            
+            const channel = parseInt(midiChannelSlider.value) - 1;
+            const playMode = playModeSelect.value;
+            
+            // Construire les notes à jouer
+            let notesToPlay = [];
+            if (playMode === 'single') {
+                notesToPlay = [noteNumber];
+            } else {
+                notesToPlay = buildChord(noteNumber, playMode);
+            }
+            
+            // Arrêter les notes précédentes qui ne sont plus dans le nouveau chord
+            currentChordNotes.forEach(oldNote => {
+                if (!notesToPlay.includes(oldNote)) {
+                    midiOutput.send([0x80 | channel, oldNote, 0]);
+                }
+            });
+            
+            // Jouer les nouvelles notes
+            notesToPlay.forEach(note => {
+                if (!currentChordNotes.includes(note)) {
+                    midiOutput.send([0x90 | channel, note, velocity]);
+                }
+            });
+            
+            currentChordNotes = notesToPlay;
+            currentNote = noteNumber;
+        }
+
+        function stopCurrentNote() {
+            if (currentChordNotes.length > 0 && midiOutput) {
+                const channel = parseInt(midiChannelSlider.value) - 1;
+                currentChordNotes.forEach(note => {
+                    midiOutput.send([0x80 | channel, note, 0]);
+                });
+                currentChordNotes = [];
+                currentNote = null;
+            }
+        }
+
+        // Changer la tonalité (Program Change)
+        function changeVoice(voiceNumber) {
+            if (!midiOutput) return;
+            const channel = parseInt(midiChannelSlider.value) - 1;
+            midiOutput.send([0xC0 | channel, voiceNumber]);
+        }
+
+        // Changer le reverb (Control Change 91)
+        function changeReverb(reverbLevel) {
+            if (!midiOutput) return;
+            const channel = parseInt(midiChannelSlider.value) - 1;
+            midiOutput.send([0xB0 | channel, 91, reverbLevel]);
+        }
+
+        // Visualiseur
+        function drawVisualizer(dataArray) {
+            const WIDTH = visualizer.width;
+            const HEIGHT = visualizer.height;
+            
+            canvasCtx.fillStyle = '#1f2937';
+            canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+            
+            canvasCtx.lineWidth = 2;
+            canvasCtx.strokeStyle = '#667eea';
+            canvasCtx.beginPath();
+            
+            const sliceWidth = WIDTH / dataArray.length;
+            let x = 0;
+            
+            for (let i = 0; i < dataArray.length; i++) {
+                const v = dataArray[i] / 128.0;
+                const y = v * HEIGHT / 2;
+                
+                if (i === 0) {
+                    canvasCtx.moveTo(x, y);
+                } else {
+                    canvasCtx.lineTo(x, y);
+                }
+                
+                x += sliceWidth;
+            }
+            
+            canvasCtx.lineTo(WIDTH, HEIGHT / 2);
+            canvasCtx.stroke();
+        }
+
+        // Processus audio
+        function processAudio() {
+            if (!isRunning) return;
+            
+            const bufferLength = analyser.fftSize;
+            const buffer = new Float32Array(bufferLength);
+            analyser.getFloatTimeDomainData(buffer);
+            
+            // Visualisation
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteTimeDomainData(dataArray);
+            drawVisualizer(dataArray);
+            
+            // Calculer le niveau audio pour debug
+            let sum = 0;
+            for (let i = 0; i < buffer.length; i++) {
+                sum += Math.abs(buffer[i]);
+            }
+            const avgLevel = sum / buffer.length;
+            
+            // Mettre à jour l'indicateur de niveau
+            const levelPercent = Math.min(avgLevel * 200, 100); // Amplifier pour visibilité
+            micLevelBar.style.width = levelPercent + '%';
+            micLevelLabel.textContent = `Niveau micro: ${levelPercent.toFixed(0)}%`;
+            
+            // Détection de pitch
+            const result = autoCorrelate(buffer, audioContext.sampleRate);
+            
+            if (result !== -1 && result.frequency > 60 && result.frequency < 1500) {
+                const midiNote = frequencyToMidi(result.frequency);
+                
+                // Vérifier que la note est dans une plage valide
+                if (midiNote < 21 || midiNote > 108) {
+                    requestAnimationFrame(processAudio);
+                    return;
+                }
+                
+                // Lissage
+                noteBuffer.push(midiNote);
+                const smoothingAmount = parseInt(smoothingSlider.value);
+                if (noteBuffer.length > smoothingAmount) {
+                    noteBuffer.shift();
+                }
+                
+                // Note la plus fréquente dans le buffer
+                const noteCounts = {};
+                noteBuffer.forEach(note => {
+                    noteCounts[note] = (noteCounts[note] || 0) + 1;
+                });
+                
+                const smoothedNote = parseInt(Object.keys(noteCounts).reduce((a, b) => 
+                    noteCounts[a] > noteCounts[b] ? a : b
+                ));
+                
+                // Affichage
+                pitchNote.textContent = midiToNoteName(smoothedNote);
+                pitchFreq.textContent = `${result.frequency.toFixed(1)} Hz`;
+                pitchConf.textContent = `Confiance: ${(result.confidence * 100).toFixed(0)}% | Niveau: ${(avgLevel * 100).toFixed(1)}%`;
+                
+                // Envoyer MIDI
+                const now = Date.now();
+                if (now - lastNoteTime > 50) { // Éviter trop de messages
+                    sendMidiNote(smoothedNote);
+                    lastNoteTime = now;
+                }
+            } else {
+                // Pas de pitch détecté - afficher le niveau audio
+                pitchNote.textContent = avgLevel > 0.01 ? '🎤' : '--';
+                pitchFreq.textContent = `Niveau: ${(avgLevel * 100).toFixed(1)}%`;
+                pitchConf.textContent = result === -1 ? 'En attente de signal...' : `Freq hors plage: ${result.frequency ? result.frequency.toFixed(1) : '--'} Hz`;
+                
+                // Arrêter les notes en cours
+                if (currentNote !== null) {
+                    const now = Date.now();
+                    if (now - lastNoteTime > 200) {
+                        stopCurrentNote();
+                    }
+                }
+            }
+            
+            requestAnimationFrame(processAudio);
+        }
+
+        // Démarrer
+        async function start() {
+            try {
+                // Vérifier périphérique MIDI
+                const outputIndex = parseInt(midiOutputSelect.value);
+                if (isNaN(outputIndex)) {
+                    alert('Veuillez sélectionner un périphérique MIDI');
+                    return;
+                }
+                
+                const outputs = Array.from(midiAccess.outputs.values());
+                midiOutput = outputs[outputIndex];
+                
+                // Initialiser audio
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 8192; // Augmenter pour plus de précision dans les basses fréquences
+                analyser.smoothingTimeConstant = 0.3; // Réduire le lissage pour plus de réactivité
+                
+                // Demander accès micro
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false
+                    } 
+                });
+                
+                microphone = audioContext.createMediaStreamSource(stream);
+                microphone.connect(analyser);
+                
+                // Démarrer
+                isRunning = true;
+                noteBuffer = [];
+                currentNote = null;
+                currentChordNotes = [];
+                
+                // Initialiser la tonalité et le reverb
+                changeVoice(parseInt(voiceSelect.value));
+                changeReverb(parseInt(reverbSlider.value));
+                
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                statusDiv.textContent = '🟢 Actif - En écoute...';
+                statusDiv.className = 'status active';
+                pitchDisplay.style.display = 'block';
+                
+                // Ajuster taille du canvas
+                visualizer.width = visualizer.offsetWidth;
+                visualizer.height = visualizer.offsetHeight;
+                
+                processAudio();
+                
+            } catch (err) {
+                console.error('Erreur démarrage:', err);
+                alert('Erreur: ' + err.message);
+            }
+        }
+
+        // Arrêter
+        function stop() {
+            isRunning = false;
+            
+            stopCurrentNote();
+            
+            if (microphone) {
+                microphone.disconnect();
+                microphone = null;
+            }
+            
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+            
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            statusDiv.textContent = '⚫ Inactif';
+            statusDiv.className = 'status inactive';
+            pitchDisplay.style.display = 'none';
+            
+            // Effacer canvas
+            canvasCtx.fillStyle = '#1f2937';
+            canvasCtx.fillRect(0, 0, visualizer.width, visualizer.height);
+        }
+
+        // Event listeners
+        startBtn.addEventListener('click', start);
+        stopBtn.addEventListener('click', stop);
+
+        sensitivitySlider.addEventListener('input', (e) => {
+            sensitivityValue.textContent = e.target.value;
+        });
+
+        smoothingSlider.addEventListener('input', (e) => {
+            smoothingValue.textContent = e.target.value;
+        });
+
+        midiChannelSlider.addEventListener('input', (e) => {
+            channelValue.textContent = e.target.value;
+        });
+
+        reverbSlider.addEventListener('input', (e) => {
+            reverbValue.textContent = e.target.value;
+            changeReverb(parseInt(e.target.value));
+        });
+
+        voiceSelect.addEventListener('change', (e) => {
+            changeVoice(parseInt(e.target.value));
+        });
+
+        // Initialisation
+        initMIDI();
+        
+        // Ajuster taille du canvas
+        visualizer.width = visualizer.offsetWidth;
+        visualizer.height = visualizer.offsetHeight;
+    </script>
+</body>
+</html>
