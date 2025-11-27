@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Microphone</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            margin: 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background: #4CAF50;
+            color: white;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .log {
+            background: #f0f0f0;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .level-bar {
+            width: 100%;
+            height: 40px;
+            background: #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .level-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #ff9800, #f44336);
+            width: 0%;
+            transition: width 0.1s;
+        }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Test de Microphone</h1>
+        
+        <button id="testBtn">Tester le Microphone</button>
+        <button id="stopBtn" disabled>Arrêter</button>
+        
+        <div class="level-bar">
+            <div class="level-fill" id="levelFill"></div>
+        </div>
+        
+        <h3>Journal des événements:</h3>
+        <div class="log" id="log"></div>
+        
+        <h3>Informations navigateur:</h3>
+        <div class="log" id="browserInfo"></div>
+    </div>
+
+    <script>
+        const logDiv = document.getElementById('log');
+        const browserInfo = document.getElementById('browserInfo');
+        const testBtn = document.getElementById('testBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const levelFill = document.getElementById('levelFill');
+        
+        let audioContext = null;
+        let analyser = null;
+        let microphone = null;
+        let gainNode = null;
+        let animationId = null;
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(div);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        // Afficher les infos du navigateur
+        browserInfo.innerHTML = `
+            <strong>Navigateur:</strong> ${navigator.userAgent}<br>
+            <strong>HTTPS:</strong> ${window.location.protocol === 'https:' ? '✅ Oui' : '❌ Non (file:// ou http://)'}<br>
+            <strong>getUserMedia disponible:</strong> ${navigator.mediaDevices && navigator.mediaDevices.getUserMedia ? '✅ Oui' : '❌ Non'}<br>
+            <strong>AudioContext disponible:</strong> ${window.AudioContext || window.webkitAudioContext ? '✅ Oui' : '❌ Non'}
+        `;
+        
+        function updateLevel() {
+            if (!analyser) return;
+            
+            const bufferLength = analyser.fftSize;
+            const dataArray = new Float32Array(bufferLength);
+            analyser.getFloatTimeDomainData(dataArray);
+            
+            // Calculer le niveau RMS
+            let sum = 0;
+            for (let i = 0; i < bufferLength; i++) {
+                sum += dataArray[i] * dataArray[i];
+            }
+            const rms = Math.sqrt(sum / bufferLength);
+            
+            // Calculer aussi le peak (maximum)
+            let peak = 0;
+            for (let i = 0; i < bufferLength; i++) {
+                peak = Math.max(peak, Math.abs(dataArray[i]));
+            }
+            
+            // Utiliser le peak avec un gain élevé pour plus de sensibilité
+            const level = Math.min(peak * 100, 100); // Augmenter énormément le gain
+            
+            levelFill.style.width = level + '%';
+            
+            // Log plus fréquent pour debug
+            if (level > 0.5) {
+                log(`📊 Niveau: ${level.toFixed(1)}% | RMS: ${(rms*100).toFixed(3)}% | Peak: ${(peak*100).toFixed(3)}%`, 'success');
+            }
+            
+            animationId = requestAnimationFrame(updateLevel);
+        }
+        
+        async function testMicrophone() {
+            try {
+                log('🔍 Vérification des permissions...', 'info');
+                
+                // Vérifier si getUserMedia existe
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    log('❌ ERREUR: getUserMedia n\'est pas disponible. Utilisez HTTPS ou localhost.', 'error');
+                    return;
+                }
+                
+                log('📋 Demande de permission du microphone...', 'info');
+                
+                // Demander le stream audio
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+                
+                log('✅ Permission accordée! Stream obtenu.', 'success');
+                
+                // Vérifier les tracks
+                const audioTracks = stream.getAudioTracks();
+                log(`🎵 Pistes audio: ${audioTracks.length}`, 'info');
+                audioTracks.forEach((track, i) => {
+                    log(`   Piste ${i+1}: ${track.label} (enabled: ${track.enabled})`, 'info');
+                });
+                
+                // Créer le contexte audio
+                log('🎚️ Création du contexte audio...', 'info');
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                log(`✅ AudioContext créé (sampleRate: ${audioContext.sampleRate} Hz)`, 'success');
+                
+                // Créer l'analyseur
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 2048;
+                analyser.smoothingTimeConstant = 0.3; // Moins de lissage pour plus de réactivité
+                log(`✅ Analyseur créé (fftSize: ${analyser.fftSize})`, 'success');
+                
+                // Créer un gain node pour amplifier le signal
+                gainNode = audioContext.createGain();
+                gainNode.gain.value = 5.0; // Amplification x5
+                log(`✅ Gain créé (amplification: ${gainNode.gain.value}x)`, 'success');
+                
+                // Connecter le microphone
+                log('🔌 Connexion: Microphone -> Gain -> Analyseur...', 'info');
+                microphone = audioContext.createMediaStreamSource(stream);
+                microphone.connect(gainNode);
+                gainNode.connect(analyser);
+                log('✅ Chaîne audio connectée!', 'success');
+                
+                log('🎤 TOUT FONCTIONNE! Parlez dans le micro...', 'success');
+                
+                testBtn.disabled = true;
+                stopBtn.disabled = false;
+                
+                // Démarrer la visualisation
+                updateLevel();
+                
+            } catch (error) {
+                log(`❌ ERREUR: ${error.name} - ${error.message}`, 'error');
+                
+                if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                    log('💡 Solution: Vérifiez les permissions du navigateur (icône 🔒 dans la barre d\'adresse)', 'error');
+                } else if (error.name === 'NotFoundError') {
+                    log('💡 Solution: Aucun microphone détecté. Vérifiez votre matériel.', 'error');
+                } else if (error.name === 'NotReadableError') {
+                    log('💡 Solution: Le micro est peut-être utilisé par une autre application.', 'error');
+                }
+            }
+        }
+        
+        function stopTest() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            
+            if (microphone) {
+                microphone.disconnect();
+                microphone = null;
+            }
+            
+            if (gainNode) {
+                gainNode.disconnect();
+                gainNode = null;
+            }
+            
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+            
+            levelFill.style.width = '0%';
+            testBtn.disabled = false;
+            stopBtn.disabled = true;
+            
+            log('⏹️ Test arrêté', 'info');
+        }
+        
+        testBtn.addEventListener('click', testMicrophone);
+        stopBtn.addEventListener('click', stopTest);
+        
+        log('✨ Prêt à tester! Cliquez sur "Tester le Microphone"', 'info');
+    </script>
+</body>
+</html>
