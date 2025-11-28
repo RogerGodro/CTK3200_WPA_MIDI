@@ -1062,31 +1062,52 @@
         // Arrêter l'arpégiateur
         function stopArpeggiator() {
             if (arpeggiatorInterval) {
-                clearTimeout(arpeggiatorInterval); // Changé de clearInterval à clearTimeout
+                clearTimeout(arpeggiatorInterval);
                 arpeggiatorInterval = null;
-                
-                // Arrêter toutes les notes de l'arpège
-                if (midiOutput && currentArpNotes.length > 0) {
-                    const channel = parseInt(midiChannelSlider.value) - 1;
-                    currentArpNotes.forEach(note => {
-                        midiOutput.send([0x80 | channel, note, 0]);
-                    });
-                }
-                
-                currentArpNotes = [];
-                arpeggiatorIndex = 0;
             }
+            
+            // Arrêter toutes les notes de l'arpège
+            if (midiOutput && currentArpNotes.length > 0) {
+                const channel = parseInt(midiChannelSlider.value) - 1;
+                currentArpNotes.forEach(note => {
+                    // Envoyer Note Off plusieurs fois pour être sûr
+                    midiOutput.send([0x80 | channel, note, 0]);
+                    setTimeout(() => {
+                        if (midiOutput) {
+                            midiOutput.send([0x80 | channel, note, 0]);
+                        }
+                    }, 10);
+                });
+                
+                // Envoyer All Notes Off par sécurité
+                setTimeout(() => {
+                    if (midiOutput) {
+                        midiOutput.send([0xB0 | channel, 123, 0]);
+                    }
+                }, 20);
+            }
+            
+            currentArpNotes = [];
+            arpeggiatorIndex = 0;
         }
 
         function stopCurrentNote() {
             // Arrêter l'arpégiateur si actif
             stopArpeggiator();
             
-            if (currentChordNotes.length > 0 && midiOutput) {
+            if (midiOutput) {
                 const channel = parseInt(midiChannelSlider.value) - 1;
-                currentChordNotes.forEach(note => {
-                    midiOutput.send([0x80 | channel, note, 0]);
-                });
+                
+                // Arrêter les notes du chord actuel
+                if (currentChordNotes.length > 0) {
+                    currentChordNotes.forEach(note => {
+                        midiOutput.send([0x80 | channel, note, 0]);
+                    });
+                }
+                
+                // Par sécurité, envoyer All Notes Off sur le canal actuel
+                midiOutput.send([0xB0 | channel, 123, 0]);
+                
                 currentChordNotes = [];
                 currentNote = null;
             }
@@ -1294,7 +1315,31 @@
         function stop() {
             isRunning = false;
             
+            // Arrêter l'arpégiateur d'abord
+            stopArpeggiator();
+            
+            // Arrêter les notes courantes
             stopCurrentNote();
+            
+            // Envoyer All Notes Off et All Sound Off sur tous les canaux pour être sûr
+            if (midiOutput) {
+                for (let channel = 0; channel < 16; channel++) {
+                    // All Notes Off (CC 123)
+                    midiOutput.send([0xB0 | channel, 123, 0]);
+                    // All Sound Off (CC 120)
+                    midiOutput.send([0xB0 | channel, 120, 0]);
+                }
+                
+                // Attendre un peu puis envoyer Note Off pour toutes les notes MIDI possibles
+                setTimeout(() => {
+                    if (midiOutput) {
+                        const channel = parseInt(midiChannelSlider.value) - 1;
+                        for (let note = 0; note < 128; note++) {
+                            midiOutput.send([0x80 | channel, note, 0]);
+                        }
+                    }
+                }, 50);
+            }
             
             if (microphone) {
                 microphone.disconnect();
@@ -1313,6 +1358,9 @@
             pitchDisplay.style.display = 'none';
             
             // Effacer canvas
+            canvasCtx.fillStyle = '#1f2937';
+            canvasCtx.fillRect(0, 0, visualizer.width, visualizer.height);
+        }
             canvasCtx.fillStyle = '#1f2937';
             canvasCtx.fillRect(0, 0, visualizer.width, visualizer.height);
         }
@@ -1361,12 +1409,16 @@
         
         playModeSelect.addEventListener('change', (e) => {
             const mode = e.target.value;
+            
+            // Arrêter toutes les notes avant de changer de mode
+            stopArpeggiator();
+            stopCurrentNote();
+            
             // Afficher/masquer le contrôle de tempo selon le mode
             if (mode === 'arp3' || mode === 'arp4') {
                 tempoControl.style.display = 'flex';
             } else {
                 tempoControl.style.display = 'none';
-                stopArpeggiator();
             }
         });
 
