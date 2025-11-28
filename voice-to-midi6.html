@@ -625,7 +625,8 @@
             try {
                 const response = await fetch('https://rogergodro.github.io/CTK3200_WPA_MIDI/ctk3200_tones.json');
                 const data = await response.json();
-                tonesData = data.tones || data; // Support both {tones: [...]} and [...]
+                // Le JSON utilise maintenant "voices" au lieu de "tones"
+                tonesData = data.voices || data.tones || data;
                 
                 // Construire le select des tonalités
                 buildVoiceSelect(tonesData);
@@ -637,10 +638,10 @@
         }
         
         function buildVoiceSelect(tones) {
-            // Trier d'abord toutes les tonalités par numéro
+            // Trier d'abord toutes les tonalités par id
             const sortedTones = tones.sort((a, b) => {
-                const numA = a.number || a.id || 0;
-                const numB = b.number || b.id || 0;
+                const numA = a.id || a.number || 0;
+                const numB = b.id || b.number || 0;
                 return numA - numB;
             });
             
@@ -658,10 +659,10 @@
             // Vider le select actuel
             voiceSelect.innerHTML = '';
             
-            // Trier les catégories par le premier numéro de chaque catégorie
+            // Trier les catégories par le premier id de chaque catégorie
             const sortedCategories = Object.keys(categorizedTones).sort((a, b) => {
-                const firstNumA = categorizedTones[a][0].number || categorizedTones[a][0].id || 0;
-                const firstNumB = categorizedTones[b][0].number || categorizedTones[b][0].id || 0;
+                const firstNumA = categorizedTones[a][0].id || categorizedTones[a][0].number || 0;
+                const firstNumB = categorizedTones[b][0].id || categorizedTones[b][0].number || 0;
                 return firstNumA - firstNumB;
             });
             
@@ -672,9 +673,9 @@
                 // Formater le label de la catégorie avec plage de numéros
                 let categoryLabel = category;
                 if (categorizedTones[category].length > 0) {
-                    const firstNum = categorizedTones[category][0].number || categorizedTones[category][0].id || 0;
-                    const lastNum = categorizedTones[category][categorizedTones[category].length - 1].number || 
-                                   categorizedTones[category][categorizedTones[category].length - 1].id || 0;
+                    const firstNum = categorizedTones[category][0].id || categorizedTones[category][0].number || 0;
+                    const lastNum = categorizedTones[category][categorizedTones[category].length - 1].id || 
+                                   categorizedTones[category][categorizedTones[category].length - 1].number || 0;
                     categoryLabel = `${category} (${String(firstNum).padStart(3, '0')}-${String(lastNum).padStart(3, '0')})`;
                 }
                 
@@ -683,14 +684,12 @@
                 // Ajouter les tonalités dans ce groupe (déjà triées)
                 categorizedTones[category].forEach(tone => {
                     const option = document.createElement('option');
-                    // Utiliser program_change ou pc comme value pour MIDI
-                    const pcValue = tone.program_change !== undefined ? tone.program_change : 
-                                   (tone.pc !== undefined ? tone.pc : 
-                                   ((tone.number || tone.id || 1) - 1));
+                    // Utiliser program_change comme value pour MIDI
+                    const pcValue = tone.program_change !== undefined ? tone.program_change : 0;
                     option.value = pcValue;
                     
                     // Formater le texte: "001 NOM DE LA TONALITÉ"
-                    const toneNum = tone.number || tone.id || 0;
+                    const toneNum = tone.id || tone.number || 0;
                     const toneName = tone.name || 'UNKNOWN';
                     option.textContent = `${String(toneNum).padStart(3, '0')} ${toneName}`;
                     
