@@ -932,19 +932,26 @@
             // Quantifier la note à la gamme sélectionnée
             const quantizedNote = quantizeToScale(transposedNote);
             
-            // Arrêter l'arpégiateur si actif
+            // Mode arpégiateur: on stocke la note mais on ne change pas pendant un cycle
+            if (playMode === 'arp3' || playMode === 'arp4') {
+                // Si l'arpégiateur n'est pas actif, le démarrer
+                if (!arpeggiatorInterval) {
+                    const notesToPlay = buildArpChord(quantizedNote, playMode);
+                    startArpeggiator(notesToPlay, channel, quantizedNote);
+                } else {
+                    // Stocker la nouvelle note pour le prochain cycle
+                    currentNote = quantizedNote;
+                }
+                return;
+            }
+            
+            // Arrêter l'arpégiateur si on change de mode
             stopArpeggiator();
             
             // Construire les notes à jouer
             let notesToPlay = [];
             if (playMode === 'single') {
                 notesToPlay = [quantizedNote];
-            } else if (playMode === 'arp3' || playMode === 'arp4') {
-                // Pour l'arpège, construire les notes de l'accord
-                const chordType = playMode === 'arp3' ? 'major' : 'major'; // On peut choisir majeur/mineur
-                notesToPlay = buildArpChord(quantizedNote, playMode);
-                startArpeggiator(notesToPlay, channel);
-                return; // L'arpégiateur gère les notes
             } else {
                 notesToPlay = buildChord(quantizedNote, playMode);
             }
@@ -990,37 +997,28 @@
         }
         
         // Démarrer l'arpégiateur
-        function startArpeggiator(notes, channel) {
+        function startArpeggiator(notes, channel, rootNote) {
             if (notes.length === 0) return;
             
             currentArpNotes = notes;
+            currentNote = rootNote;
             arpeggiatorIndex = 0;
+            
+            const playMode = playModeSelect.value;
+            const cycleLength = playMode === 'arp3' ? 3 : 4;
             
             // Calculer l'intervalle en ms basé sur le tempo
             const bpm = parseInt(tempoSlider.value);
             const intervalMs = (60000 / bpm) / 4; // 4 notes par temps
             
-            // Jouer la première note immédiatement
-            midiOutput.send([0x90 | channel, currentArpNotes[arpeggiatorIndex], 100]);
-            
-            // Arrêter la note après un court délai
-            setTimeout(() => {
-                if (midiOutput) {
-                    midiOutput.send([0x80 | channel, currentArpNotes[arpeggiatorIndex], 0]);
-                }
-            }, intervalMs * 0.8);
-            
-            // Démarrer l'intervalle pour les notes suivantes
-            arpeggiatorInterval = setInterval(() => {
+            // Fonction pour jouer une note de l'arpège
+            function playArpNote() {
                 if (!midiOutput || currentArpNotes.length === 0) {
                     stopArpeggiator();
                     return;
                 }
                 
-                // Passer à la note suivante
-                arpeggiatorIndex = (arpeggiatorIndex + 1) % currentArpNotes.length;
-                
-                // Jouer la note
+                // Jouer la note actuelle
                 midiOutput.send([0x90 | channel, currentArpNotes[arpeggiatorIndex], 100]);
                 
                 // Arrêter la note après un court délai
@@ -1030,7 +1028,30 @@
                     }
                 }, intervalMs * 0.8);
                 
-            }, intervalMs);
+                // Passer à la note suivante
+                arpeggiatorIndex++;
+                
+                // Vérifier si on a complété un cycle
+                if (arpeggiatorIndex >= cycleLength) {
+                    arpeggiatorIndex = 0;
+                    
+                    // À la fin du cycle, vérifier si on doit changer de note
+                    if (currentNote !== null && currentNote !== rootNote) {
+                        // Nouvelle note détectée, reconstruire l'arpège
+                        const newNotes = buildArpChord(currentNote, playMode);
+                        if (newNotes.length > 0) {
+                            currentArpNotes = newNotes;
+                            rootNote = currentNote;
+                        }
+                    }
+                }
+            }
+            
+            // Jouer la première note immédiatement
+            playArpNote();
+            
+            // Démarrer l'intervalle pour les notes suivantes
+            arpeggiatorInterval = setInterval(playArpNote, intervalMs);
         }
         
         // Arrêter l'arpégiateur
