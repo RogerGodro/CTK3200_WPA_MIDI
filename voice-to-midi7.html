@@ -1007,9 +1007,11 @@
             const playMode = playModeSelect.value;
             const cycleLength = playMode === 'arp3' ? 3 : 4;
             
-            // Calculer l'intervalle en ms basé sur le tempo
-            const bpm = parseInt(tempoSlider.value);
-            const intervalMs = (60000 / bpm) / 4; // 4 notes par temps
+            // Fonction pour obtenir l'intervalle actuel basé sur le tempo
+            function getIntervalMs() {
+                const bpm = parseInt(tempoSlider.value);
+                return (60000 / bpm) / 4; // 4 notes par temps
+            }
             
             // Fonction pour jouer une note de l'arpège
             function playArpNote() {
@@ -1017,6 +1019,8 @@
                     stopArpeggiator();
                     return;
                 }
+                
+                const intervalMs = getIntervalMs(); // Recalculer à chaque note
                 
                 // Jouer la note actuelle
                 midiOutput.send([0x90 | channel, currentArpNotes[arpeggiatorIndex], 100]);
@@ -1044,20 +1048,21 @@
                             rootNote = currentNote;
                         }
                     }
+                    // Si currentNote est null ou identique, on continue avec le même arpège
                 }
+                
+                // Programmer la prochaine note avec le tempo actuel
+                arpeggiatorInterval = setTimeout(playArpNote, getIntervalMs());
             }
             
             // Jouer la première note immédiatement
             playArpNote();
-            
-            // Démarrer l'intervalle pour les notes suivantes
-            arpeggiatorInterval = setInterval(playArpNote, intervalMs);
         }
         
         // Arrêter l'arpégiateur
         function stopArpeggiator() {
             if (arpeggiatorInterval) {
-                clearInterval(arpeggiatorInterval);
+                clearTimeout(arpeggiatorInterval); // Changé de clearInterval à clearTimeout
                 arpeggiatorInterval = null;
                 
                 // Arrêter toutes les notes de l'arpège
@@ -1211,13 +1216,15 @@
                 pitchFreq.textContent = `Niveau: ${(avgLevel * 100).toFixed(1)}%`;
                 pitchConf.textContent = result === -1 ? 'En attente de signal...' : `Freq hors plage: ${result.frequency ? result.frequency.toFixed(1) : '--'} Hz`;
                 
-                // Arrêter les notes en cours
-                if (currentNote !== null) {
+                // Arrêter les notes en cours SAUF en mode arpégiateur
+                const playMode = playModeSelect.value;
+                if (currentNote !== null && playMode !== 'arp3' && playMode !== 'arp4') {
                     const now = Date.now();
                     if (now - lastNoteTime > 200) {
                         stopCurrentNote();
                     }
                 }
+                // En mode arpégiateur, on ne fait rien - l'arpège continue
             }
             
             requestAnimationFrame(processAudio);
@@ -1348,12 +1355,8 @@
         
         tempoSlider.addEventListener('input', (e) => {
             tempoValue.textContent = e.target.value;
-            // Si l'arpégiateur est actif, le redémarrer avec le nouveau tempo
-            if (arpeggiatorInterval && currentArpNotes.length > 0) {
-                const channel = parseInt(midiChannelSlider.value) - 1;
-                stopArpeggiator();
-                startArpeggiator(currentArpNotes, channel);
-            }
+            // En mode arpégiateur, le tempo sera pris en compte au prochain cycle
+            // On ne redémarre pas l'arpégiateur pour éviter les coupures
         });
         
         playModeSelect.addEventListener('change', (e) => {
