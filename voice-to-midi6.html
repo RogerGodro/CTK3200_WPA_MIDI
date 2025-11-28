@@ -637,8 +637,12 @@
         }
         
         function buildVoiceSelect(tones) {
-            // Trier d'abord toutes les tonalités par numéro (id)
-            const sortedTones = tones.sort((a, b) => (a.id || 0) - (b.id || 0));
+            // Trier d'abord toutes les tonalités par numéro
+            const sortedTones = tones.sort((a, b) => {
+                const numA = a.number || a.id || 0;
+                const numB = b.number || b.id || 0;
+                return numA - numB;
+            });
             
             // Grouper les tonalités par catégorie
             const categorizedTones = {};
@@ -654,11 +658,11 @@
             // Vider le select actuel
             voiceSelect.innerHTML = '';
             
-            // Trier les catégories par le premier id de chaque catégorie
+            // Trier les catégories par le premier numéro de chaque catégorie
             const sortedCategories = Object.keys(categorizedTones).sort((a, b) => {
-                const firstIdA = categorizedTones[a][0].id || 0;
-                const firstIdB = categorizedTones[b][0].id || 0;
-                return firstIdA - firstIdB;
+                const firstNumA = categorizedTones[a][0].number || categorizedTones[a][0].id || 0;
+                const firstNumB = categorizedTones[b][0].number || categorizedTones[b][0].id || 0;
+                return firstNumA - firstNumB;
             });
             
             // Créer les optgroups
@@ -668,9 +672,10 @@
                 // Formater le label de la catégorie avec plage de numéros
                 let categoryLabel = category;
                 if (categorizedTones[category].length > 0) {
-                    const firstId = categorizedTones[category][0].id || 0;
-                    const lastId = categorizedTones[category][categorizedTones[category].length - 1].id || 0;
-                    categoryLabel = `${category} (${String(firstId).padStart(3, '0')}-${String(lastId).padStart(3, '0')})`;
+                    const firstNum = categorizedTones[category][0].number || categorizedTones[category][0].id || 0;
+                    const lastNum = categorizedTones[category][categorizedTones[category].length - 1].number || 
+                                   categorizedTones[category][categorizedTones[category].length - 1].id || 0;
+                    categoryLabel = `${category} (${String(firstNum).padStart(3, '0')}-${String(lastNum).padStart(3, '0')})`;
                 }
                 
                 optgroup.label = categoryLabel;
@@ -678,14 +683,16 @@
                 // Ajouter les tonalités dans ce groupe (déjà triées)
                 categorizedTones[category].forEach(tone => {
                     const option = document.createElement('option');
-                    // Utiliser pc (Program Change) comme value pour MIDI
-                    const pcValue = tone.pc !== undefined ? tone.pc : (tone.id - 1);
+                    // Utiliser program_change ou pc comme value pour MIDI
+                    const pcValue = tone.program_change !== undefined ? tone.program_change : 
+                                   (tone.pc !== undefined ? tone.pc : 
+                                   ((tone.number || tone.id || 1) - 1));
                     option.value = pcValue;
                     
                     // Formater le texte: "001 NOM DE LA TONALITÉ"
-                    const toneId = tone.id || 0;
+                    const toneNum = tone.number || tone.id || 0;
                     const toneName = tone.name || 'UNKNOWN';
-                    option.textContent = `${String(toneId).padStart(3, '0')} ${toneName}`;
+                    option.textContent = `${String(toneNum).padStart(3, '0')} ${toneName}`;
                     
                     optgroup.appendChild(option);
                 });
