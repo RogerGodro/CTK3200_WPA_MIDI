@@ -416,99 +416,6 @@
             color: #333;
             z-index: 1;
         }
-        
-        .loop-tracks {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        .loop-track {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px;
-            background: white;
-            border-radius: 8px;
-            border: 2px solid #e5e7eb;
-        }
-        
-        .loop-rec-btn, .loop-mute-btn, .loop-clear-btn {
-            padding: 8px 12px;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 600;
-        }
-        
-        .loop-rec-btn {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            color: white;
-            flex: 0 0 100px;
-        }
-        
-        .loop-rec-btn:hover:not(:disabled) {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            transform: translateY(-1px);
-        }
-        
-        .loop-rec-btn.recording {
-            animation: pulse-red 1s infinite;
-        }
-        
-        @keyframes pulse-red {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-        
-        .loop-rec-btn.playing {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        }
-        
-        .loop-mute-btn {
-            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-            color: white;
-            flex: 0 0 40px;
-        }
-        
-        .loop-mute-btn.muted {
-            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-        }
-        
-        .loop-clear-btn {
-            background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
-            color: white;
-            flex: 0 0 40px;
-        }
-        
-        .loop-status {
-            flex: 1;
-            font-size: 13px;
-            color: #6b7280;
-            font-weight: 500;
-        }
-        
-        .loop-rec-btn:disabled, .loop-mute-btn:disabled, .loop-clear-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        @media (max-width: 768px) {
-            .loop-track {
-                flex-wrap: wrap;
-            }
-            
-            .loop-rec-btn {
-                flex: 1 1 auto;
-            }
-            
-            .loop-status {
-                flex: 1 1 100%;
-                margin-top: 5px;
-            }
-        }
     </style>
 </head>
 <body>
@@ -649,55 +556,6 @@
                 </div>
                 
                 <div class="section">
-                    <h2>🔁 Looper (4 Couches)</h2>
-                    <div class="settings">
-                        <div class="setting-item">
-                            <label>BPM Global:</label>
-                            <input type="range" id="globalBpm" min="60" max="180" step="5" value="120">
-                            <span id="globalBpmValue">120</span>
-                        </div>
-                        <div class="setting-item">
-                            <label>Longueur Loop (temps):</label>
-                            <select id="loopLength" class="midi-selector">
-                                <option value="4">4 temps (1 mesure)</option>
-                                <option value="8" selected>8 temps (2 mesures)</option>
-                                <option value="16">16 temps (4 mesures)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="loop-tracks" style="margin-top: 15px;">
-                        <div class="loop-track">
-                            <button class="loop-rec-btn" id="loopRec1" disabled>⏺️ Layer 1</button>
-                            <button class="loop-mute-btn" id="loopMute1" disabled>🔇</button>
-                            <button class="loop-clear-btn" id="loopClear1" disabled>🗑️</button>
-                            <div class="loop-status" id="loopStatus1">Vide</div>
-                        </div>
-                        <div class="loop-track">
-                            <button class="loop-rec-btn" id="loopRec2" disabled>⏺️ Layer 2</button>
-                            <button class="loop-mute-btn" id="loopMute2" disabled>🔇</button>
-                            <button class="loop-clear-btn" id="loopClear2" disabled>🗑️</button>
-                            <div class="loop-status" id="loopStatus2">Vide</div>
-                        </div>
-                        <div class="loop-track">
-                            <button class="loop-rec-btn" id="loopRec3" disabled>⏺️ Layer 3</button>
-                            <button class="loop-mute-btn" id="loopMute3" disabled>🔇</button>
-                            <button class="loop-clear-btn" id="loopClear3" disabled>🗑️</button>
-                            <div class="loop-status" id="loopStatus3">Vide</div>
-                        </div>
-                        <div class="loop-track">
-                            <button class="loop-rec-btn" id="loopRec4" disabled>⏺️ Layer 4</button>
-                            <button class="loop-mute-btn" id="loopMute4" disabled>🔇</button>
-                            <button class="loop-clear-btn" id="loopClear4" disabled>🗑️</button>
-                            <div class="loop-status" id="loopStatus4">Vide</div>
-                        </div>
-                    </div>
-                    <div class="controls" style="margin-top: 15px;">
-                        <button id="loopClearAll" disabled>🗑️ Effacer Tout</button>
-                        <button id="loopStopAll" disabled>⏹️ Stop All</button>
-                    </div>
-                </div>
-                
-                <div class="section">
                     <h2>🎨 Harmoniseur Intelligent</h2>
                     <div class="settings">
                         <div class="setting-item" style="display: block; margin-bottom: 15px;">
@@ -705,6 +563,11 @@
                                 <input type="checkbox" id="harmonizerEnabled" style="width: 20px; height: 20px;">
                                 Activer l'Harmoniseur
                             </label>
+                        </div>
+                        <div class="setting-item">
+                            <label>Vitesse Changement:</label>
+                            <input type="range" id="harmonizerSpeed" min="100" max="2000" step="100" value="500" disabled>
+                            <span id="harmonizerSpeedValue">500ms</span>
                         </div>
                         <div class="setting-item" style="display: block; margin-bottom: 15px;">
                             <label>Mode Harmonie:</label>
@@ -764,6 +627,71 @@
                         </div>
                     </div>
                 </div>
+                
+                <div class="section">
+                    <h2>🎤 Effets Vocaux</h2>
+                    <div class="settings">
+                        <div class="setting-item" style="display: block; margin-bottom: 15px;">
+                            <label style="display: flex; align-items: center; gap: 10px;">
+                                <input type="checkbox" id="autoTuneEnabled" style="width: 20px; height: 20px;">
+                                Auto-Tune
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <label>Force Auto-Tune:</label>
+                            <input type="range" id="autoTuneStrength" min="0" max="100" step="10" value="100" disabled>
+                            <span id="autoTuneStrengthValue">100%</span>
+                        </div>
+                        
+                        <div class="setting-item" style="display: block; margin-bottom: 15px; margin-top: 20px;">
+                            <label style="display: flex; align-items: center; gap: 10px;">
+                                <input type="checkbox" id="octaverEnabled" style="width: 20px; height: 20px;">
+                                Octaver
+                            </label>
+                        </div>
+                        <div class="setting-item" style="display: block; margin-bottom: 10px;">
+                            <label>Direction:</label>
+                            <select id="octaverDirection" class="midi-selector" style="margin-top: 5px;" disabled>
+                                <option value="up">↑ Octave Supérieure</option>
+                                <option value="down">↓ Octave Inférieure</option>
+                                <option value="both">↕️ Les Deux</option>
+                            </select>
+                        </div>
+                        
+                        <div class="setting-item" style="display: block; margin-bottom: 15px; margin-top: 20px;">
+                            <label style="display: flex; align-items: center; gap: 10px;">
+                                <input type="checkbox" id="harmonizerVocalEnabled" style="width: 20px; height: 20px;">
+                                Harmonizer Vocal
+                            </label>
+                        </div>
+                        <div class="setting-item" style="display: block; margin-bottom: 10px;">
+                            <label>Intervalle:</label>
+                            <select id="harmonizerInterval" class="midi-selector" style="margin-top: 5px;" disabled>
+                                <option value="3">Tierce Mineure (3 demi-tons)</option>
+                                <option value="4">Tierce Majeure (4 demi-tons)</option>
+                                <option value="5">Quarte (5 demi-tons)</option>
+                                <option value="7">Quinte (7 demi-tons)</option>
+                                <option value="12">Octave (12 demi-tons)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="setting-item" style="display: block; margin-bottom: 15px; margin-top: 20px;">
+                            <label style="display: flex; align-items: center; gap: 10px;">
+                                <input type="checkbox" id="vocoderEnabled" style="width: 20px; height: 20px;">
+                                Vocoder
+                            </label>
+                        </div>
+                        <div class="setting-item" style="display: block; margin-bottom: 10px;">
+                            <label>Tonalité Porteuse:</label>
+                            <select id="vocoderVoice" class="midi-selector" style="margin-top: 5px;" disabled>
+                                <option value="80">Square Lead</option>
+                                <option value="81">Sawtooth Lead</option>
+                                <option value="88">New Age Pad</option>
+                                <option value="89">Warm Pad</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -811,26 +739,29 @@
         let arpeggiatorIndex = 0;
         let currentArpNotes = [];
         
-        // Variables pour le Looper
-        let loopLayers = [
-            { events: [], isRecording: false, isMuted: false, hasData: false },
-            { events: [], isRecording: false, isMuted: false, hasData: false },
-            { events: [], isRecording: false, isMuted: false, hasData: false },
-            { events: [], isRecording: false, isMuted: false, hasData: false }
-        ];
-        let loopStartTime = null;
-        let loopDuration = 0; // en ms
-        let loopPlaybackInterval = null;
-        let currentLoopTime = 0;
-        let isLooping = false;
-        
         // Variables pour l'Harmoniseur
         let harmonizerEnabled = false;
         let harmonizerMode = 'auto';
+        let harmonizerSpeed = 500; // ms avant changement d'harmonie
+        let lastHarmonyChangeTime = 0;
+        let pendingHarmonyNote = null;
         let noteHistory = []; // Historique des notes pour détection de tonalité
         let currentKey = { root: 60, mode: 'major' }; // Tonalité détectée
         let currentHarmonyNotes = { bass: [], chords: [], pad: [] };
         let harmonyChannels = { bass: 2, chords: 3, pad: 4 }; // Canaux MIDI séparés
+        
+        // Variables pour les Effets Vocaux
+        let autoTuneEnabled = false;
+        let autoTuneStrength = 100;
+        let octaverEnabled = false;
+        let octaverDirection = 'up';
+        let harmonizerVocalEnabled = false;
+        let harmonizerInterval = 7;
+        let vocoderEnabled = false;
+        let vocoderVoice = 80;
+        let currentOctaverNotes = [];
+        let currentHarmonizerNotes = [];
+        let vocalEffectsChannel = 5; // Canal pour les effets vocaux
         
         // Éléments DOM
         const midiOutputSelect = document.getElementById('midiOutput');
@@ -864,39 +795,10 @@
         const tempoValue = document.getElementById('tempoValue');
         const tempoControl = document.getElementById('tempoControl');
         
-        // Éléments DOM pour le Looper
-        const globalBpmSlider = document.getElementById('globalBpm');
-        const globalBpmValue = document.getElementById('globalBpmValue');
-        const loopLengthSelect = document.getElementById('loopLength');
-        const loopRecBtns = [
-            document.getElementById('loopRec1'),
-            document.getElementById('loopRec2'),
-            document.getElementById('loopRec3'),
-            document.getElementById('loopRec4')
-        ];
-        const loopMuteBtns = [
-            document.getElementById('loopMute1'),
-            document.getElementById('loopMute2'),
-            document.getElementById('loopMute3'),
-            document.getElementById('loopMute4')
-        ];
-        const loopClearBtns = [
-            document.getElementById('loopClear1'),
-            document.getElementById('loopClear2'),
-            document.getElementById('loopClear3'),
-            document.getElementById('loopClear4')
-        ];
-        const loopStatusDivs = [
-            document.getElementById('loopStatus1'),
-            document.getElementById('loopStatus2'),
-            document.getElementById('loopStatus3'),
-            document.getElementById('loopStatus4')
-        ];
-        const loopClearAllBtn = document.getElementById('loopClearAll');
-        const loopStopAllBtn = document.getElementById('loopStopAll');
-        
         // Éléments DOM pour l'Harmoniseur
         const harmonizerEnabledCheckbox = document.getElementById('harmonizerEnabled');
+        const harmonizerSpeedSlider = document.getElementById('harmonizerSpeed');
+        const harmonizerSpeedValue = document.getElementById('harmonizerSpeedValue');
         const harmonizerModeSelect = document.getElementById('harmonizerMode');
         const harmBassEnabledCheckbox = document.getElementById('harmBassEnabled');
         const harmChordsEnabledCheckbox = document.getElementById('harmChordsEnabled');
@@ -904,6 +806,17 @@
         const harmBassVoiceSelect = document.getElementById('harmBassVoice');
         const harmChordsVoiceSelect = document.getElementById('harmChordsVoice');
         const harmPadVoiceSelect = document.getElementById('harmPadVoice');
+        
+        // Éléments DOM pour les Effets Vocaux
+        const autoTuneEnabledCheckbox = document.getElementById('autoTuneEnabled');
+        const autoTuneStrengthSlider = document.getElementById('autoTuneStrength');
+        const autoTuneStrengthValue = document.getElementById('autoTuneStrengthValue');
+        const octaverEnabledCheckbox = document.getElementById('octaverEnabled');
+        const octaverDirectionSelect = document.getElementById('octaverDirection');
+        const harmonizerVocalEnabledCheckbox = document.getElementById('harmonizerVocalEnabled');
+        const harmonizerIntervalSelect = document.getElementById('harmonizerInterval');
+        const vocoderEnabledCheckbox = document.getElementById('vocoderEnabled');
+        const vocoderVoiceSelect = document.getElementById('vocoderVoice');
 
         // Charger les tonalités depuis le JSON
         let tonesData = [];
@@ -1189,6 +1102,9 @@
         function sendMidiNote(noteNumber, velocity = 100) {
             if (!midiOutput) return;
             
+            // 1. APPLIQUER AUTO-TUNE en premier
+            noteNumber = applyAutoTune(noteNumber);
+            
             const channel = parseInt(midiChannelSlider.value) - 1;
             const playMode = playModeSelect.value;
             
@@ -1235,13 +1151,6 @@
             currentChordNotes.forEach(oldNote => {
                 if (!notesToPlay.includes(oldNote)) {
                     midiOutput.send([0x80 | channel, oldNote, 0]);
-                    
-                    // Enregistrer Note Off dans le looper
-                    for (let i = 0; i < 4; i++) {
-                        if (loopLayers[i].isRecording) {
-                            recordMidiEvent(i, 'noteOff', oldNote, 0);
-                        }
-                    }
                 }
             });
             
@@ -1249,20 +1158,37 @@
             notesToPlay.forEach(note => {
                 if (!currentChordNotes.includes(note)) {
                     midiOutput.send([0x90 | channel, note, velocity]);
-                    
-                    // Enregistrer dans le looper si un layer est en mode record
-                    for (let i = 0; i < 4; i++) {
-                        if (loopLayers[i].isRecording) {
-                            recordMidiEvent(i, 'noteOn', note, velocity);
-                        }
-                    }
                 }
             });
             
             currentChordNotes = notesToPlay;
             currentNote = quantizedNote;
             
-            // Jouer l'harmonie si l'harmoniseur est activé
+            // 2. APPLIQUER LES EFFETS VOCAUX
+            // Vocoder (change le timbre)
+            if (vocoderEnabled) {
+                // Récupérer l'amplitude depuis l'analyser
+                const dataArray = new Uint8Array(analyser.fftSize);
+                analyser.getByteTimeDomainData(dataArray);
+                let sum = 0;
+                for (let i = 0; i < dataArray.length; i++) {
+                    sum += Math.abs(dataArray[i] - 128);
+                }
+                const amplitude = sum / dataArray.length / 128;
+                applyVocoder(quantizedNote, velocity, amplitude);
+            }
+            
+            // Octaver (ajoute octaves)
+            if (octaverEnabled) {
+                applyOctaver(quantizedNote, velocity);
+            }
+            
+            // Harmonizer Vocal (ajoute harmonie)
+            if (harmonizerVocalEnabled) {
+                applyHarmonizerVocal(quantizedNote, velocity);
+            }
+            
+            // 3. JOUER L'HARMONIE si activée
             if (harmonizerEnabled) {
                 playHarmony(quantizedNote);
             }
@@ -1383,190 +1309,6 @@
         }
         
         // ============================================
-        // FONCTIONS DU LOOPER
-        // ============================================
-        
-        // Calculer la durée du loop en ms
-        function calculateLoopDuration() {
-            const bpm = parseInt(globalBpmSlider.value);
-            const beats = parseInt(loopLengthSelect.value);
-            const msPerBeat = 60000 / bpm;
-            return msPerBeat * beats;
-        }
-        
-        // Démarrer l'enregistrement d'un layer
-        function startLoopRecording(layerIndex) {
-            const layer = loopLayers[layerIndex];
-            
-            // Si c'est le premier layer à être enregistré
-            if (!isLooping) {
-                loopStartTime = Date.now();
-                loopDuration = calculateLoopDuration();
-                isLooping = true;
-                startLoopPlayback();
-            }
-            
-            // Réinitialiser le layer
-            layer.events = [];
-            layer.isRecording = true;
-            layer.hasData = false;
-            
-            // UI
-            loopRecBtns[layerIndex].classList.add('recording');
-            loopRecBtns[layerIndex].textContent = '⏺️ Recording...';
-            loopStatusDivs[layerIndex].textContent = '🔴 Enregistrement...';
-        }
-        
-        // Arrêter l'enregistrement d'un layer
-        function stopLoopRecording(layerIndex) {
-            const layer = loopLayers[layerIndex];
-            
-            layer.isRecording = false;
-            layer.hasData = layer.events.length > 0;
-            
-            // UI
-            loopRecBtns[layerIndex].classList.remove('recording');
-            loopRecBtns[layerIndex].classList.add('playing');
-            loopRecBtns[layerIndex].textContent = '🟢 Layer ' + (layerIndex + 1);
-            loopStatusDivs[layerIndex].textContent = layer.hasData ? 
-                `🟢 ${layer.events.length} notes` : 'Vide';
-            
-            // Activer les boutons mute et clear
-            loopMuteBtns[layerIndex].disabled = !layer.hasData;
-            loopClearBtns[layerIndex].disabled = !layer.hasData;
-        }
-        
-        // Enregistrer un événement MIDI dans le layer
-        function recordMidiEvent(layerIndex, eventType, note, velocity) {
-            const layer = loopLayers[layerIndex];
-            
-            if (!layer.isRecording || !isLooping) return;
-            
-            const timestamp = (Date.now() - loopStartTime) % loopDuration;
-            
-            layer.events.push({
-                type: eventType,
-                note: note,
-                velocity: velocity,
-                timestamp: timestamp,
-                channel: parseInt(midiChannelSlider.value) - 1
-            });
-        }
-        
-        // Démarrer la lecture en boucle
-        function startLoopPlayback() {
-            if (loopPlaybackInterval) return;
-            
-            currentLoopTime = 0;
-            
-            function playbackTick() {
-                if (!isLooping) {
-                    stopLoopPlayback();
-                    return;
-                }
-                
-                currentLoopTime = (Date.now() - loopStartTime) % loopDuration;
-                
-                // Jouer les events de tous les layers
-                loopLayers.forEach((layer, index) => {
-                    if (layer.isMuted || !layer.hasData) return;
-                    
-                    layer.events.forEach(event => {
-                        // Tolérance de 50ms pour la synchronisation
-                        const timeDiff = Math.abs(event.timestamp - currentLoopTime);
-                        if (timeDiff < 50 || timeDiff > loopDuration - 50) {
-                            playLoopEvent(event);
-                        }
-                    });
-                });
-                
-                requestAnimationFrame(playbackTick);
-            }
-            
-            playbackTick();
-        }
-        
-        // Jouer un événement du loop
-        function playLoopEvent(event) {
-            if (!midiOutput) return;
-            
-            if (event.type === 'noteOn') {
-                midiOutput.send([0x90 | event.channel, event.note, event.velocity]);
-            } else if (event.type === 'noteOff') {
-                midiOutput.send([0x80 | event.channel, event.note, 0]);
-            }
-        }
-        
-        // Arrêter la lecture
-        function stopLoopPlayback() {
-            if (loopPlaybackInterval) {
-                cancelAnimationFrame(loopPlaybackInterval);
-                loopPlaybackInterval = null;
-            }
-            isLooping = false;
-        }
-        
-        // Toggle mute d'un layer
-        function toggleLoopMute(layerIndex) {
-            const layer = loopLayers[layerIndex];
-            layer.isMuted = !layer.isMuted;
-            
-            // UI
-            if (layer.isMuted) {
-                loopMuteBtns[layerIndex].classList.add('muted');
-                loopMuteBtns[layerIndex].textContent = '🔇';
-                loopStatusDivs[layerIndex].textContent = '🔇 Muté';
-            } else {
-                loopMuteBtns[layerIndex].classList.remove('muted');
-                loopMuteBtns[layerIndex].textContent = '🔊';
-                loopStatusDivs[layerIndex].textContent = `🟢 ${layer.events.length} notes`;
-            }
-        }
-        
-        // Effacer un layer
-        function clearLoopLayer(layerIndex) {
-            const layer = loopLayers[layerIndex];
-            
-            layer.events = [];
-            layer.isRecording = false;
-            layer.isMuted = false;
-            layer.hasData = false;
-            
-            // UI
-            loopRecBtns[layerIndex].classList.remove('recording', 'playing');
-            loopRecBtns[layerIndex].textContent = '⏺️ Layer ' + (layerIndex + 1);
-            loopStatusDivs[layerIndex].textContent = 'Vide';
-            loopMuteBtns[layerIndex].disabled = true;
-            loopMuteBtns[layerIndex].classList.remove('muted');
-            loopClearBtns[layerIndex].disabled = true;
-            
-            // Si tous les layers sont vides, arrêter le looper
-            const hasData = loopLayers.some(l => l.hasData);
-            if (!hasData) {
-                stopLoopPlayback();
-            }
-        }
-        
-        // Effacer tous les layers
-        function clearAllLoops() {
-            for (let i = 0; i < 4; i++) {
-                clearLoopLayer(i);
-            }
-            stopLoopPlayback();
-        }
-        
-        // Arrêter tous les layers
-        function stopAllLoops() {
-            stopLoopPlayback();
-            
-            loopLayers.forEach((layer, index) => {
-                if (layer.isRecording) {
-                    stopLoopRecording(index);
-                }
-            });
-        }
-        
-        // ============================================
         // FONCTIONS DE L'HARMONISEUR INTELLIGENT
         // ============================================
         
@@ -1640,7 +1382,7 @@
             return padNotes;
         }
         
-        // Jouer l'harmonie complète
+        // Jouer l'harmonie complète avec contrôle de vitesse
         function playHarmony(leadNote) {
             if (!harmonizerEnabled || !midiOutput) return;
             
@@ -1650,11 +1392,24 @@
                 noteHistory.shift(); // Garder seulement les 16 dernières notes
             }
             
+            // Stocker la note pour un changement ultérieur
+            pendingHarmonyNote = leadNote;
+            
+            // Vérifier si on doit changer l'harmonie maintenant
+            const now = Date.now();
+            if (now - lastHarmonyChangeTime < harmonizerSpeed) {
+                // Trop tôt, on ne change pas encore
+                return;
+            }
+            
+            // Mettre à jour le temps du dernier changement
+            lastHarmonyChangeTime = now;
+            
             // Détecter la tonalité
-            if (harmonizerMode.value === 'auto') {
+            if (harmonizerModeSelect.value === 'auto') {
                 currentKey = detectKey(noteHistory);
             } else {
-                currentKey.mode = harmonizerMode.value;
+                currentKey.mode = harmonizerModeSelect.value;
                 currentKey.root = leadNote % 12;
             }
             
@@ -1722,6 +1477,106 @@
             });
             currentHarmonyNotes.pad = [];
         }
+        
+        // ============================================
+        // FONCTIONS DES EFFETS VOCAUX
+        // ============================================
+        
+        // Appliquer Auto-Tune (quantification à la gamme)
+        function applyAutoTune(midiNote) {
+            if (!autoTuneEnabled) return midiNote;
+            
+            const quantized = quantizeToScale(midiNote);
+            const strength = autoTuneStrength / 100;
+            
+            // Blend entre note originale et quantized selon la force
+            return Math.round(midiNote * (1 - strength) + quantized * strength);
+        }
+        
+        // Appliquer Octaver
+        function applyOctaver(originalNote, velocity) {
+            if (!octaverEnabled || !midiOutput) return;
+            
+            // Arrêter les notes d'octaver précédentes
+            stopOctaver();
+            
+            const channel = parseInt(midiChannelSlider.value) - 1;
+            
+            if (octaverDirection === 'up' || octaverDirection === 'both') {
+                const upperNote = originalNote + 12;
+                if (upperNote <= 127) {
+                    midiOutput.send([0x90 | channel, upperNote, Math.floor(velocity * 0.6)]);
+                    currentOctaverNotes.push(upperNote);
+                }
+            }
+            
+            if (octaverDirection === 'down' || octaverDirection === 'both') {
+                const lowerNote = originalNote - 12;
+                if (lowerNote >= 0) {
+                    midiOutput.send([0x90 | channel, lowerNote, Math.floor(velocity * 0.6)]);
+                    currentOctaverNotes.push(lowerNote);
+                }
+            }
+        }
+        
+        // Arrêter les notes de l'octaver
+        function stopOctaver() {
+            if (!midiOutput) return;
+            
+            const channel = parseInt(midiChannelSlider.value) - 1;
+            currentOctaverNotes.forEach(note => {
+                midiOutput.send([0x80 | channel, note, 0]);
+            });
+            currentOctaverNotes = [];
+        }
+        
+        // Appliquer Harmonizer Vocal (ajoute une voix harmonique)
+        function applyHarmonizerVocal(originalNote, velocity) {
+            if (!harmonizerVocalEnabled || !midiOutput) return;
+            
+            // Arrêter les notes harmoniques précédentes
+            stopHarmonizerVocal();
+            
+            const interval = parseInt(harmonizerInterval);
+            const harmonyNote = originalNote + interval;
+            
+            if (harmonyNote >= 0 && harmonyNote <= 127) {
+                // Utiliser le canal des effets vocaux
+                midiOutput.send([0x90 | vocalEffectsChannel, harmonyNote, Math.floor(velocity * 0.7)]);
+                currentHarmonizerNotes.push(harmonyNote);
+            }
+        }
+        
+        // Arrêter les notes du harmonizer vocal
+        function stopHarmonizerVocal() {
+            if (!midiOutput) return;
+            
+            currentHarmonizerNotes.forEach(note => {
+                midiOutput.send([0x80 | vocalEffectsChannel, note, 0]);
+            });
+            currentHarmonizerNotes = [];
+        }
+        
+        // Appliquer Vocoder
+        function applyVocoder(midiNote, velocity, amplitude) {
+            if (!vocoderEnabled || !midiOutput) return;
+            
+            const voice = parseInt(vocoderVoice);
+            const channel = parseInt(midiChannelSlider.value) - 1;
+            
+            // Changer la tonalité pour le vocoder
+            midiOutput.send([0xC0 | channel, voice]);
+            
+            // Moduler le filtre cutoff (CC 74) selon l'amplitude vocale
+            const cutoff = Math.floor(amplitude * 127);
+            midiOutput.send([0xB0 | channel, 74, cutoff]);
+        }
+        
+        // Arrêter tous les effets vocaux
+        function stopAllVocalEffects() {
+            stopOctaver();
+            stopHarmonizerVocal();
+        }
 
         function stopCurrentNote() {
             // Arrêter l'arpégiateur si actif
@@ -1729,6 +1584,9 @@
             
             // Arrêter l'harmonie si active
             stopHarmony();
+            
+            // Arrêter les effets vocaux
+            stopAllVocalEffects();
             
             if (midiOutput) {
                 const channel = parseInt(midiChannelSlider.value) - 1;
@@ -1934,11 +1792,6 @@
                 statusDiv.className = 'status active';
                 pitchDisplay.style.display = 'block';
                 
-                // Activer les boutons du looper
-                loopRecBtns.forEach(btn => btn.disabled = false);
-                loopClearAllBtn.disabled = false;
-                loopStopAllBtn.disabled = false;
-                
                 // Ajuster taille du canvas
                 visualizer.width = visualizer.offsetWidth;
                 visualizer.height = visualizer.offsetHeight;
@@ -1957,9 +1810,6 @@
             
             // Arrêter l'arpégiateur d'abord
             stopArpeggiator();
-            
-            // Arrêter le looper
-            stopAllLoops();
             
             // Arrêter les notes courantes
             stopCurrentNote();
@@ -1999,13 +1849,6 @@
             statusDiv.textContent = '⚫ Inactif';
             statusDiv.className = 'status inactive';
             pitchDisplay.style.display = 'none';
-            
-            // Désactiver les boutons du looper
-            loopRecBtns.forEach(btn => btn.disabled = true);
-            loopMuteBtns.forEach(btn => btn.disabled = true);
-            loopClearBtns.forEach(btn => btn.disabled = true);
-            loopClearAllBtn.disabled = true;
-            loopStopAllBtn.disabled = true;
             
             // Effacer canvas
             canvasCtx.fillStyle = '#1f2937';
@@ -2069,61 +1912,12 @@
             }
         });
         
-        // Event listeners pour le Looper
-        globalBpmSlider.addEventListener('input', (e) => {
-            globalBpmValue.textContent = e.target.value;
-            // Recalculer la durée si le loop est déjà actif
-            if (isLooping) {
-                loopDuration = calculateLoopDuration();
-            }
-        });
-        
-        // Boutons Record/Stop pour chaque layer
-        loopRecBtns.forEach((btn, index) => {
-            btn.addEventListener('click', () => {
-                const layer = loopLayers[index];
-                
-                if (layer.isRecording) {
-                    stopLoopRecording(index);
-                } else {
-                    startLoopRecording(index);
-                }
-            });
-        });
-        
-        // Boutons Mute pour chaque layer
-        loopMuteBtns.forEach((btn, index) => {
-            btn.addEventListener('click', () => {
-                toggleLoopMute(index);
-            });
-        });
-        
-        // Boutons Clear pour chaque layer
-        loopClearBtns.forEach((btn, index) => {
-            btn.addEventListener('click', () => {
-                if (confirm(`Effacer le Layer ${index + 1}?`)) {
-                    clearLoopLayer(index);
-                }
-            });
-        });
-        
-        // Bouton Clear All
-        loopClearAllBtn.addEventListener('click', () => {
-            if (confirm('Effacer tous les layers?')) {
-                clearAllLoops();
-            }
-        });
-        
-        // Bouton Stop All
-        loopStopAllBtn.addEventListener('click', () => {
-            stopAllLoops();
-        });
-        
         // Event listeners pour l'Harmoniseur
         harmonizerEnabledCheckbox.addEventListener('change', (e) => {
             harmonizerEnabled = e.target.checked;
             
             // Activer/désactiver les contrôles
+            harmonizerSpeedSlider.disabled = !harmonizerEnabled;
             harmonizerModeSelect.disabled = !harmonizerEnabled;
             harmBassEnabledCheckbox.disabled = !harmonizerEnabled;
             harmChordsEnabledCheckbox.disabled = !harmonizerEnabled;
@@ -2136,7 +1930,60 @@
             if (!harmonizerEnabled) {
                 stopHarmony();
                 noteHistory = [];
+                lastHarmonyChangeTime = 0;
+                pendingHarmonyNote = null;
             }
+        });
+        
+        harmonizerSpeedSlider.addEventListener('input', (e) => {
+            harmonizerSpeed = parseInt(e.target.value);
+            harmonizerSpeedValue.textContent = harmonizerSpeed + 'ms';
+        });
+        
+        // Event listeners pour les Effets Vocaux
+        autoTuneEnabledCheckbox.addEventListener('change', (e) => {
+            autoTuneEnabled = e.target.checked;
+            autoTuneStrengthSlider.disabled = !autoTuneEnabled;
+        });
+        
+        autoTuneStrengthSlider.addEventListener('input', (e) => {
+            autoTuneStrength = parseInt(e.target.value);
+            autoTuneStrengthValue.textContent = autoTuneStrength + '%';
+        });
+        
+        octaverEnabledCheckbox.addEventListener('change', (e) => {
+            octaverEnabled = e.target.checked;
+            octaverDirectionSelect.disabled = !octaverEnabled;
+            
+            if (!octaverEnabled) {
+                stopOctaver();
+            }
+        });
+        
+        octaverDirectionSelect.addEventListener('change', (e) => {
+            octaverDirection = e.target.value;
+        });
+        
+        harmonizerVocalEnabledCheckbox.addEventListener('change', (e) => {
+            harmonizerVocalEnabled = e.target.checked;
+            harmonizerIntervalSelect.disabled = !harmonizerVocalEnabled;
+            
+            if (!harmonizerVocalEnabled) {
+                stopHarmonizerVocal();
+            }
+        });
+        
+        harmonizerIntervalSelect.addEventListener('change', (e) => {
+            harmonizerInterval = parseInt(e.target.value);
+        });
+        
+        vocoderEnabledCheckbox.addEventListener('change', (e) => {
+            vocoderEnabled = e.target.checked;
+            vocoderVoiceSelect.disabled = !vocoderEnabled;
+        });
+        
+        vocoderVoiceSelect.addEventListener('change', (e) => {
+            vocoderVoice = parseInt(e.target.value);
         });
 
         // Initialisation
