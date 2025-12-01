@@ -2165,8 +2165,8 @@
                 useLocalAudio = false;
                 
                 // Configuration du drum kit (voices 395-400)
-                // Bank Select MSB (CC 0) = 121, LSB (CC 32) = 0, Program = 40
-                midiOutput.send([0xB0 + DRUM_CHANNEL, 0, 121]);
+                // Bank Select MSB (CC 0) = 120, LSB (CC 32) = 0, Program = 40
+                midiOutput.send([0xB0 + DRUM_CHANNEL, 0, 120]);
                 midiOutput.send([0xB0 + DRUM_CHANNEL, 32, 0]);
                 midiOutput.send([0xC0 + DRUM_CHANNEL, 40]);
                 
