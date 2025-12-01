@@ -85,6 +85,13 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        @media (min-width: 768px) {
+            .pads-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
         }
 
         .drum-pad {
@@ -367,14 +374,15 @@
         /* Beat indicator */
         .beat-indicator {
             display: flex;
-            gap: 10px;
+            gap: 6px;
             justify-content: center;
             margin-top: 15px;
+            flex-wrap: wrap;
         }
 
         .beat-dot {
-            width: 15px;
-            height: 15px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.2);
             transition: all 0.1s ease;
@@ -382,8 +390,8 @@
 
         .beat-dot.active {
             background: #4ecdc4;
-            box-shadow: 0 0 15px rgba(78, 205, 196, 0.8);
-            transform: scale(1.3);
+            box-shadow: 0 0 12px rgba(78, 205, 196, 0.8);
+            transform: scale(1.4);
         }
 
         /* Info panel */
@@ -413,6 +421,9 @@
                 <button id="connectBtn" class="midi-btn">Connecter MIDI (optionnel)</button>
                 <div id="status" class="status">🔊 Mode Audio Local - Prêt à jouer!</div>
             </div>
+            <div style="font-size: 12px; color: #888; margin-top: 10px;">
+                15 Pads • 16 Steps • Patterns Avancés • Outros 8 Mesures
+            </div>
         </div>
 
         <div class="main-section">
@@ -428,6 +439,19 @@
                         <div class="drum-pad-icon">🎯</div>
                         <div class="drum-pad-name">Snare</div>
                     </div>
+                    <div class="drum-pad" data-note="40" data-name="Rim">
+                        <div class="drum-pad-icon">⚪</div>
+                        <div class="drum-pad-name">Rim Shot</div>
+                    </div>
+                    <div class="drum-pad" data-note="39" data-name="Clap">
+                        <div class="drum-pad-icon">👏</div>
+                        <div class="drum-pad-name">Clap</div>
+                    </div>
+                    <div class="drum-pad" data-note="56" data-name="Cowbell">
+                        <div class="drum-pad-icon">🔔</div>
+                        <div class="drum-pad-name">Cowbell</div>
+                    </div>
+                    
                     <div class="drum-pad" data-note="42" data-name="Hi-Hat C">
                         <div class="drum-pad-icon">⭕</div>
                         <div class="drum-pad-name">HH Close</div>
@@ -436,15 +460,28 @@
                         <div class="drum-pad-icon">⏺️</div>
                         <div class="drum-pad-name">HH Open</div>
                     </div>
-                    <div class="drum-pad" data-note="47" data-name="Tom Low">
+                    <div class="drum-pad" data-note="44" data-name="Hi-Hat P">
+                        <div class="drum-pad-icon">🔘</div>
+                        <div class="drum-pad-name">HH Pedal</div>
+                    </div>
+                    <div class="drum-pad" data-note="54" data-name="Tamb">
+                        <div class="drum-pad-icon">🎶</div>
+                        <div class="drum-pad-name">Tambour.</div>
+                    </div>
+                    <div class="drum-pad" data-note="55" data-name="Splash">
+                        <div class="drum-pad-icon">💦</div>
+                        <div class="drum-pad-name">Splash</div>
+                    </div>
+                    
+                    <div class="drum-pad" data-note="45" data-name="Tom Low">
                         <div class="drum-pad-icon">🔵</div>
                         <div class="drum-pad-name">Tom Low</div>
                     </div>
-                    <div class="drum-pad" data-note="48" data-name="Tom Mid">
+                    <div class="drum-pad" data-note="47" data-name="Tom Mid">
                         <div class="drum-pad-icon">🟢</div>
                         <div class="drum-pad-name">Tom Mid</div>
                     </div>
-                    <div class="drum-pad" data-note="50" data-name="Tom High">
+                    <div class="drum-pad" data-note="48" data-name="Tom High">
                         <div class="drum-pad-icon">🟡</div>
                         <div class="drum-pad-name">Tom Hi</div>
                     </div>
@@ -458,6 +495,18 @@
                     </div>
                 </div>
                 <div class="beat-indicator">
+                    <div class="beat-dot"></div>
+                    <div class="beat-dot"></div>
+                    <div class="beat-dot"></div>
+                    <div class="beat-dot"></div>
+                    <div class="beat-dot"></div>
+                    <div class="beat-dot"></div>
+                    <div class="beat-dot"></div>
+                    <div class="beat-dot"></div>
+                    <div class="beat-dot"></div>
+                    <div class="beat-dot"></div>
+                    <div class="beat-dot"></div>
+                    <div class="beat-dot"></div>
                     <div class="beat-dot"></div>
                     <div class="beat-dot"></div>
                     <div class="beat-dot"></div>
@@ -539,7 +588,7 @@
         let measureCount = 0;
         let autoFillEnabled = true;
 
-        // Styles de batterie avec patterns détaillés
+        // Styles de batterie avec patterns détaillés (16 steps)
         const drumStyles = {
             rock: {
                 name: "Rock Standard",
@@ -547,13 +596,37 @@
                     [{ note: 36, vel: 100 }, { note: 42, vel: 80 }],
                     [{ note: 42, vel: 70 }],
                     [{ note: 38, vel: 95 }, { note: 42, vel: 80 }],
+                    [{ note: 42, vel: 70 }],
+                    [{ note: 36, vel: 100 }, { note: 42, vel: 80 }],
+                    [{ note: 42, vel: 70 }],
+                    [{ note: 38, vel: 95 }, { note: 42, vel: 80 }],
+                    [{ note: 36, vel: 90 }, { note: 42, vel: 70 }],
+                    [{ note: 36, vel: 100 }, { note: 42, vel: 80 }],
+                    [{ note: 42, vel: 70 }],
+                    [{ note: 38, vel: 95 }, { note: 42, vel: 80 }],
+                    [{ note: 42, vel: 70 }, { note: 42, vel: 65 }, { note: 42, vel: 60 }], // triple hi-hat
+                    [{ note: 36, vel: 100 }, { note: 42, vel: 80 }],
+                    [],
+                    [{ note: 38, vel: 95 }, { note: 42, vel: 80 }],
                     [{ note: 42, vel: 70 }]
                 ],
                 fill: [
-                    [{ note: 50, vel: 90 }],
+                    [{ note: 48, vel: 95 }],
                     [{ note: 48, vel: 90 }],
+                    [{ note: 47, vel: 95 }],
                     [{ note: 47, vel: 90 }],
-                    [{ note: 36, vel: 100 }, { note: 49, vel: 95 }]
+                    [{ note: 45, vel: 95 }],
+                    [{ note: 45, vel: 90 }],
+                    [{ note: 38, vel: 100 }],
+                    [{ note: 38, vel: 90 }],
+                    [{ note: 48, vel: 95 }, { note: 47, vel: 95 }],
+                    [{ note: 45, vel: 95 }],
+                    [],
+                    [{ note: 38, vel: 100 }],
+                    [{ note: 48, vel: 95 }],
+                    [{ note: 47, vel: 95 }],
+                    [{ note: 45, vel: 95 }],
+                    [{ note: 36, vel: 105 }, { note: 49, vel: 100 }]
                 ]
             },
             pop: {
@@ -562,12 +635,36 @@
                     [{ note: 36, vel: 95 }, { note: 42, vel: 75 }],
                     [{ note: 42, vel: 70 }],
                     [{ note: 38, vel: 90 }, { note: 42, vel: 75 }],
-                    [{ note: 42, vel: 70 }, { note: 36, vel: 85 }]
+                    [{ note: 42, vel: 70 }, { note: 36, vel: 85 }],
+                    [{ note: 36, vel: 95 }, { note: 42, vel: 75 }],
+                    [{ note: 42, vel: 70 }],
+                    [{ note: 38, vel: 90 }, { note: 42, vel: 75 }],
+                    [{ note: 42, vel: 70 }],
+                    [{ note: 36, vel: 95 }, { note: 42, vel: 75 }],
+                    [{ note: 42, vel: 70 }, { note: 42, vel: 65 }, { note: 42, vel: 60 }], // triple
+                    [{ note: 38, vel: 90 }, { note: 42, vel: 75 }],
+                    [{ note: 42, vel: 70 }, { note: 36, vel: 85 }],
+                    [{ note: 36, vel: 95 }, { note: 42, vel: 75 }],
+                    [],
+                    [{ note: 38, vel: 90 }, { note: 42, vel: 75 }],
+                    [{ note: 42, vel: 70 }]
                 ],
                 fill: [
+                    [{ note: 38, vel: 90 }],
                     [{ note: 38, vel: 85 }],
-                    [{ note: 38, vel: 85 }],
-                    [{ note: 50, vel: 90 }, { note: 48, vel: 90 }],
+                    [{ note: 48, vel: 90 }],
+                    [],
+                    [{ note: 47, vel: 90 }],
+                    [{ note: 45, vel: 90 }],
+                    [{ note: 38, vel: 95 }],
+                    [{ note: 40, vel: 80 }], // rim shot
+                    [{ note: 48, vel: 90 }],
+                    [{ note: 48, vel: 85 }],
+                    [{ note: 47, vel: 90 }],
+                    [{ note: 47, vel: 85 }],
+                    [{ note: 45, vel: 90 }, { note: 45, vel: 85 }, { note: 45, vel: 80 }], // triple tom
+                    [],
+                    [{ note: 38, vel: 95 }],
                     [{ note: 36, vel: 100 }, { note: 49, vel: 95 }]
                 ]
             },
@@ -575,30 +672,78 @@
                 name: "Funk Groovy",
                 normal: [
                     [{ note: 36, vel: 100 }, { note: 42, vel: 80 }],
-                    [{ note: 42, vel: 65 }, { note: 38, vel: 45 }],
+                    [{ note: 42, vel: 65 }, { note: 38, vel: 45 }], // ghost note
                     [{ note: 42, vel: 70 }],
-                    [{ note: 38, vel: 95 }, { note: 42, vel: 75 }]
+                    [{ note: 38, vel: 95 }, { note: 42, vel: 75 }],
+                    [{ note: 36, vel: 95 }, { note: 42, vel: 80 }],
+                    [{ note: 42, vel: 65 }, { note: 38, vel: 45 }],
+                    [{ note: 42, vel: 70 }, { note: 36, vel: 85 }],
+                    [],
+                    [{ note: 36, vel: 100 }, { note: 42, vel: 80 }],
+                    [{ note: 42, vel: 65 }],
+                    [{ note: 42, vel: 70 }, { note: 42, vel: 65 }, { note: 42, vel: 60 }], // triple
+                    [{ note: 38, vel: 95 }, { note: 42, vel: 75 }],
+                    [{ note: 36, vel: 95 }, { note: 42, vel: 80 }],
+                    [{ note: 42, vel: 65 }],
+                    [{ note: 38, vel: 95 }, { note: 42, vel: 80 }],
+                    [{ note: 42, vel: 75 }]
                 ],
                 fill: [
-                    [{ note: 38, vel: 90 }, { note: 42, vel: 75 }],
-                    [{ note: 38, vel: 85 }],
-                    [{ note: 50, vel: 90 }],
-                    [{ note: 36, vel: 100 }, { note: 49, vel: 95 }]
+                    [{ note: 38, vel: 95 }],
+                    [{ note: 38, vel: 85 }, { note: 40, vel: 75 }], // snare + rim
+                    [],
+                    [{ note: 48, vel: 90 }],
+                    [{ note: 47, vel: 90 }, { note: 47, vel: 85 }, { note: 47, vel: 80 }], // triple tom
+                    [{ note: 45, vel: 90 }],
+                    [{ note: 38, vel: 95 }],
+                    [{ note: 39, vel: 85 }], // clap
+                    [{ note: 48, vel: 90 }],
+                    [],
+                    [{ note: 47, vel: 90 }],
+                    [{ note: 45, vel: 90 }],
+                    [{ note: 38, vel: 100 }],
+                    [{ note: 38, vel: 90 }],
+                    [{ note: 36, vel: 95 }],
+                    [{ note: 36, vel: 105 }, { note: 49, vel: 100 }]
                 ]
             },
             jazz: {
                 name: "Jazz Swing",
                 normal: [
                     [{ note: 36, vel: 85 }, { note: 51, vel: 70 }],
+                    [],
                     [{ note: 51, vel: 65 }],
                     [{ note: 51, vel: 70 }, { note: 38, vel: 75 }],
-                    [{ note: 51, vel: 65 }]
+                    [{ note: 36, vel: 80 }, { note: 51, vel: 70 }],
+                    [],
+                    [{ note: 51, vel: 65 }, { note: 51, vel: 60 }, { note: 51, vel: 55 }], // swing triple
+                    [{ note: 51, vel: 70 }],
+                    [{ note: 36, vel: 85 }, { note: 51, vel: 70 }],
+                    [],
+                    [{ note: 51, vel: 65 }],
+                    [{ note: 51, vel: 70 }, { note: 38, vel: 75 }],
+                    [{ note: 36, vel: 80 }, { note: 51, vel: 70 }],
+                    [{ note: 51, vel: 65 }],
+                    [],
+                    [{ note: 51, vel: 70 }]
                 ],
                 fill: [
+                    [{ note: 51, vel: 80 }],
+                    [],
+                    [{ note: 48, vel: 85 }],
+                    [{ note: 48, vel: 75 }, { note: 48, vel: 70 }, { note: 48, vel: 65 }], // triple tom
+                    [{ note: 47, vel: 85 }],
+                    [],
+                    [{ note: 45, vel: 85 }],
+                    [{ note: 38, vel: 80 }],
                     [{ note: 51, vel: 75 }],
-                    [{ note: 50, vel: 80 }],
                     [{ note: 48, vel: 80 }],
-                    [{ note: 36, vel: 90 }, { note: 49, vel: 85 }]
+                    [],
+                    [{ note: 47, vel: 80 }],
+                    [{ note: 45, vel: 80 }],
+                    [{ note: 38, vel: 85 }],
+                    [],
+                    [{ note: 36, vel: 90 }, { note: 51, vel: 85 }]
                 ]
             },
             latin: {
@@ -607,12 +752,36 @@
                     [{ note: 36, vel: 95 }, { note: 42, vel: 75 }],
                     [{ note: 38, vel: 80 }, { note: 42, vel: 70 }],
                     [{ note: 36, vel: 90 }, { note: 42, vel: 75 }],
-                    [{ note: 38, vel: 85 }, { note: 42, vel: 70 }]
+                    [{ note: 38, vel: 85 }, { note: 42, vel: 70 }],
+                    [{ note: 36, vel: 95 }, { note: 42, vel: 75 }],
+                    [{ note: 38, vel: 80 }, { note: 42, vel: 70 }],
+                    [{ note: 36, vel: 90 }, { note: 42, vel: 75 }],
+                    [{ note: 42, vel: 70 }, { note: 42, vel: 65 }, { note: 42, vel: 60 }], // triple
+                    [{ note: 36, vel: 95 }, { note: 54, vel: 75 }], // tambourine
+                    [{ note: 38, vel: 80 }, { note: 54, vel: 70 }],
+                    [{ note: 36, vel: 90 }, { note: 54, vel: 75 }],
+                    [{ note: 38, vel: 85 }, { note: 54, vel: 70 }],
+                    [{ note: 36, vel: 95 }, { note: 42, vel: 75 }],
+                    [],
+                    [{ note: 38, vel: 85 }, { note: 42, vel: 70 }],
+                    [{ note: 42, vel: 75 }]
                 ],
                 fill: [
-                    [{ note: 50, vel: 90 }],
-                    [{ note: 50, vel: 85 }],
+                    [{ note: 48, vel: 92 }],
+                    [{ note: 48, vel: 88 }],
+                    [{ note: 47, vel: 92 }],
+                    [{ note: 47, vel: 88 }],
+                    [{ note: 45, vel: 92 }, { note: 45, vel: 88 }, { note: 45, vel: 84 }], // triple
+                    [],
+                    [{ note: 54, vel: 85 }], // tambourine
+                    [{ note: 38, vel: 95 }],
                     [{ note: 48, vel: 90 }],
+                    [{ note: 47, vel: 90 }],
+                    [{ note: 45, vel: 90 }],
+                    [{ note: 38, vel: 90 }],
+                    [{ note: 48, vel: 92 }, { note: 47, vel: 92 }],
+                    [],
+                    [{ note: 45, vel: 92 }],
                     [{ note: 36, vel: 100 }, { note: 49, vel: 95 }]
                 ]
             },
@@ -622,12 +791,36 @@
                     [{ note: 36, vel: 75 }, { note: 42, vel: 60 }],
                     [{ note: 42, vel: 55 }],
                     [{ note: 38, vel: 70 }, { note: 42, vel: 60 }],
+                    [{ note: 42, vel: 55 }],
+                    [{ note: 36, vel: 75 }, { note: 42, vel: 60 }],
+                    [],
+                    [{ note: 38, vel: 70 }, { note: 42, vel: 60 }],
+                    [{ note: 42, vel: 55 }],
+                    [{ note: 36, vel: 75 }, { note: 51, vel: 65 }], // ride
+                    [{ note: 51, vel: 60 }],
+                    [{ note: 38, vel: 70 }, { note: 51, vel: 65 }],
+                    [{ note: 51, vel: 60 }, { note: 51, vel: 55 }, { note: 51, vel: 50 }], // triple ride
+                    [{ note: 36, vel: 75 }, { note: 42, vel: 60 }],
+                    [],
+                    [{ note: 38, vel: 70 }, { note: 42, vel: 60 }],
                     [{ note: 42, vel: 55 }]
                 ],
                 fill: [
-                    [{ note: 42, vel: 65 }],
-                    [{ note: 50, vel: 75 }],
+                    [{ note: 51, vel: 70 }],
+                    [],
                     [{ note: 48, vel: 75 }],
+                    [{ note: 48, vel: 70 }],
+                    [{ note: 47, vel: 75 }],
+                    [],
+                    [{ note: 45, vel: 75 }],
+                    [{ note: 45, vel: 70 }],
+                    [{ note: 38, vel: 75 }],
+                    [],
+                    [{ note: 48, vel: 75 }],
+                    [{ note: 47, vel: 75 }],
+                    [{ note: 45, vel: 75 }, { note: 45, vel: 70 }, { note: 45, vel: 65 }], // triple
+                    [],
+                    [],
                     [{ note: 36, vel: 80 }, { note: 49, vel: 80 }]
                 ]
             },
@@ -637,13 +830,37 @@
                     [{ note: 36, vel: 100 }, { note: 42, vel: 85 }],
                     [{ note: 36, vel: 90 }, { note: 42, vel: 80 }],
                     [{ note: 36, vel: 100 }, { note: 38, vel: 95 }, { note: 42, vel: 85 }],
+                    [{ note: 36, vel: 90 }, { note: 42, vel: 80 }],
+                    [{ note: 36, vel: 100 }, { note: 42, vel: 85 }],
+                    [{ note: 36, vel: 90 }, { note: 42, vel: 80 }],
+                    [{ note: 36, vel: 100 }, { note: 38, vel: 95 }, { note: 42, vel: 85 }],
+                    [{ note: 36, vel: 90 }, { note: 42, vel: 80 }, { note: 42, vel: 75 }, { note: 42, vel: 70 }], // triple
+                    [{ note: 36, vel: 100 }, { note: 46, vel: 80 }], // open hi-hat
+                    [{ note: 36, vel: 90 }, { note: 42, vel: 80 }],
+                    [{ note: 36, vel: 100 }, { note: 38, vel: 95 }, { note: 42, vel: 85 }],
+                    [{ note: 36, vel: 90 }, { note: 42, vel: 80 }],
+                    [{ note: 36, vel: 100 }, { note: 42, vel: 85 }],
+                    [],
+                    [{ note: 36, vel: 100 }, { note: 38, vel: 95 }, { note: 42, vel: 85 }],
                     [{ note: 36, vel: 90 }, { note: 42, vel: 80 }]
                 ],
                 fill: [
-                    [{ note: 36, vel: 95 }, { note: 42, vel: 85 }],
-                    [{ note: 50, vel: 90 }],
-                    [{ note: 48, vel: 90 }],
-                    [{ note: 36, vel: 100 }, { note: 49, vel: 95 }]
+                    [{ note: 36, vel: 100 }, { note: 48, vel: 95 }],
+                    [{ note: 36, vel: 95 }, { note: 48, vel: 90 }],
+                    [{ note: 36, vel: 100 }, { note: 47, vel: 95 }],
+                    [{ note: 36, vel: 95 }, { note: 47, vel: 90 }],
+                    [{ note: 36, vel: 100 }, { note: 45, vel: 95 }],
+                    [{ note: 36, vel: 95 }],
+                    [{ note: 38, vel: 100 }],
+                    [{ note: 38, vel: 90 }, { note: 38, vel: 85 }, { note: 38, vel: 80 }], // triple snare
+                    [{ note: 48, vel: 95 }],
+                    [{ note: 47, vel: 95 }],
+                    [{ note: 45, vel: 95 }],
+                    [{ note: 38, vel: 95 }],
+                    [{ note: 36, vel: 100 }, { note: 48, vel: 90 }],
+                    [{ note: 47, vel: 90 }],
+                    [{ note: 45, vel: 90 }],
+                    [{ note: 36, vel: 105 }, { note: 49, vel: 100 }]
                 ]
             },
             reggae: {
@@ -652,12 +869,36 @@
                     [{ note: 42, vel: 75 }],
                     [{ note: 42, vel: 70 }],
                     [{ note: 36, vel: 100 }, { note: 38, vel: 90 }, { note: 42, vel: 75 }],
+                    [{ note: 42, vel: 70 }],
+                    [{ note: 42, vel: 75 }],
+                    [],
+                    [{ note: 36, vel: 100 }, { note: 38, vel: 90 }, { note: 42, vel: 75 }],
+                    [{ note: 42, vel: 70 }],
+                    [{ note: 42, vel: 75 }, { note: 40, vel: 65 }], // rim
+                    [{ note: 42, vel: 70 }],
+                    [{ note: 36, vel: 100 }, { note: 38, vel: 90 }, { note: 42, vel: 75 }],
+                    [{ note: 42, vel: 70 }, { note: 42, vel: 65 }, { note: 42, vel: 60 }], // triple
+                    [{ note: 42, vel: 75 }],
+                    [],
+                    [{ note: 36, vel: 100 }, { note: 38, vel: 90 }, { note: 42, vel: 75 }],
                     [{ note: 42, vel: 70 }]
                 ],
                 fill: [
                     [{ note: 51, vel: 80 }],
-                    [{ note: 50, vel: 85 }],
+                    [],
+                    [{ note: 48, vel: 85 }],
+                    [{ note: 47, vel: 85 }],
+                    [{ note: 45, vel: 85 }, { note: 45, vel: 80 }, { note: 45, vel: 75 }], // triple
+                    [],
+                    [{ note: 40, vel: 85 }], // rim
                     [{ note: 38, vel: 90 }],
+                    [{ note: 48, vel: 85 }],
+                    [{ note: 47, vel: 85 }],
+                    [],
+                    [{ note: 38, vel: 90 }],
+                    [{ note: 40, vel: 85 }],
+                    [{ note: 38, vel: 85 }],
+                    [],
                     [{ note: 36, vel: 100 }, { note: 49, vel: 90 }]
                 ]
             },
@@ -665,15 +906,39 @@
                 name: "Blues Shuffle",
                 normal: [
                     [{ note: 36, vel: 90 }, { note: 51, vel: 75 }],
-                    [{ note: 51, vel: 65 }, { note: 38, vel: 50 }],
+                    [{ note: 51, vel: 65 }, { note: 38, vel: 50 }], // ghost snare
+                    [{ note: 51, vel: 70 }, { note: 38, vel: 85 }],
+                    [{ note: 51, vel: 65 }],
+                    [{ note: 36, vel: 90 }, { note: 51, vel: 75 }],
+                    [{ note: 51, vel: 65 }],
+                    [{ note: 51, vel: 70 }, { note: 38, vel: 85 }],
+                    [],
+                    [{ note: 36, vel: 90 }, { note: 51, vel: 75 }],
+                    [{ note: 51, vel: 65 }, { note: 51, vel: 60 }, { note: 51, vel: 55 }], // shuffle triple
+                    [{ note: 51, vel: 70 }, { note: 38, vel: 85 }],
+                    [{ note: 51, vel: 65 }],
+                    [{ note: 36, vel: 90 }, { note: 51, vel: 75 }],
+                    [{ note: 51, vel: 65 }],
                     [{ note: 51, vel: 70 }, { note: 38, vel: 85 }],
                     [{ note: 51, vel: 65 }]
                 ],
                 fill: [
-                    [{ note: 50, vel: 85 }],
+                    [{ note: 48, vel: 85 }],
+                    [{ note: 48, vel: 80 }],
+                    [{ note: 47, vel: 85 }],
+                    [],
+                    [{ note: 45, vel: 85 }],
+                    [{ note: 45, vel: 80 }, { note: 45, vel: 75 }, { note: 45, vel: 70 }], // triple
+                    [{ note: 38, vel: 90 }],
+                    [{ note: 40, vel: 80 }], // rim
                     [{ note: 48, vel: 85 }],
                     [{ note: 47, vel: 85 }],
-                    [{ note: 36, vel: 95 }, { note: 49, vel: 90 }]
+                    [],
+                    [{ note: 45, vel: 85 }],
+                    [{ note: 38, vel: 90 }],
+                    [{ note: 38, vel: 85 }],
+                    [],
+                    [{ note: 36, vel: 95 }, { note: 51, vel: 90 }]
                 ]
             },
             country: {
@@ -682,12 +947,36 @@
                     [{ note: 36, vel: 95 }, { note: 42, vel: 80 }],
                     [{ note: 38, vel: 75 }, { note: 42, vel: 75 }],
                     [{ note: 36, vel: 90 }, { note: 42, vel: 80 }],
+                    [{ note: 42, vel: 75 }],
+                    [{ note: 36, vel: 95 }, { note: 42, vel: 80 }],
+                    [{ note: 38, vel: 75 }, { note: 42, vel: 75 }],
+                    [{ note: 36, vel: 90 }, { note: 42, vel: 80 }],
+                    [{ note: 42, vel: 75 }, { note: 42, vel: 70 }, { note: 42, vel: 65 }], // triple
+                    [{ note: 36, vel: 95 }, { note: 42, vel: 80 }],
+                    [],
+                    [{ note: 36, vel: 90 }, { note: 38, vel: 75 }, { note: 42, vel: 80 }],
+                    [{ note: 42, vel: 75 }],
+                    [{ note: 36, vel: 95 }, { note: 42, vel: 80 }],
+                    [{ note: 38, vel: 75 }],
+                    [{ note: 36, vel: 90 }, { note: 42, vel: 80 }],
                     [{ note: 42, vel: 75 }]
                 ],
                 fill: [
-                    [{ note: 50, vel: 90 }, { note: 42, vel: 75 }],
-                    [{ note: 48, vel: 85 }],
+                    [{ note: 48, vel: 92 }],
+                    [{ note: 48, vel: 88 }],
+                    [{ note: 47, vel: 92 }],
+                    [{ note: 47, vel: 88 }],
+                    [{ note: 45, vel: 92 }],
+                    [],
+                    [{ note: 38, vel: 95 }],
+                    [{ note: 40, vel: 85 }], // rim
+                    [{ note: 48, vel: 90 }, { note: 42, vel: 75 }],
+                    [{ note: 47, vel: 90 }],
+                    [{ note: 45, vel: 90 }, { note: 45, vel: 85 }, { note: 45, vel: 80 }], // triple
                     [{ note: 38, vel: 90 }],
+                    [{ note: 36, vel: 95 }],
+                    [{ note: 48, vel: 85 }],
+                    [{ note: 47, vel: 85 }],
                     [{ note: 36, vel: 100 }, { note: 49, vel: 90 }]
                 ]
             },
@@ -697,13 +986,37 @@
                     [{ note: 36, vel: 110 }, { note: 42, vel: 90 }],
                     [{ note: 36, vel: 105 }, { note: 42, vel: 85 }],
                     [{ note: 36, vel: 110 }, { note: 38, vel: 100 }, { note: 42, vel: 90 }],
+                    [{ note: 36, vel: 105 }, { note: 42, vel: 85 }],
+                    [{ note: 36, vel: 110 }, { note: 42, vel: 90 }],
+                    [{ note: 36, vel: 105 }, { note: 42, vel: 85 }],
+                    [{ note: 36, vel: 110 }, { note: 38, vel: 100 }, { note: 42, vel: 90 }],
+                    [{ note: 36, vel: 105 }, { note: 42, vel: 85 }, { note: 42, vel: 80 }, { note: 42, vel: 75 }], // triple
+                    [{ note: 36, vel: 110 }, { note: 49, vel: 95 }], // crash
+                    [{ note: 36, vel: 105 }, { note: 42, vel: 85 }],
+                    [{ note: 36, vel: 110 }, { note: 38, vel: 100 }, { note: 42, vel: 90 }],
+                    [{ note: 36, vel: 105 }, { note: 42, vel: 85 }],
+                    [{ note: 36, vel: 110 }, { note: 42, vel: 90 }],
+                    [],
+                    [{ note: 36, vel: 110 }, { note: 38, vel: 100 }, { note: 42, vel: 90 }],
                     [{ note: 36, vel: 105 }, { note: 42, vel: 85 }]
                 ],
                 fill: [
-                    [{ note: 36, vel: 110 }, { note: 50, vel: 100 }],
-                    [{ note: 36, vel: 105 }, { note: 48, vel: 100 }],
+                    [{ note: 36, vel: 115 }, { note: 48, vel: 105 }],
+                    [{ note: 36, vel: 110 }, { note: 48, vel: 100 }],
+                    [{ note: 36, vel: 115 }, { note: 47, vel: 105 }],
                     [{ note: 36, vel: 110 }, { note: 47, vel: 100 }],
-                    [{ note: 36, vel: 115 }, { note: 49, vel: 110 }]
+                    [{ note: 36, vel: 115 }, { note: 45, vel: 105 }],
+                    [{ note: 36, vel: 110 }, { note: 45, vel: 100 }],
+                    [{ note: 38, vel: 110 }],
+                    [{ note: 38, vel: 105 }, { note: 38, vel: 100 }, { note: 38, vel: 95 }], // triple snare
+                    [{ note: 36, vel: 115 }, { note: 48, vel: 105 }],
+                    [{ note: 36, vel: 110 }, { note: 47, vel: 105 }],
+                    [{ note: 36, vel: 115 }, { note: 45, vel: 105 }],
+                    [{ note: 38, vel: 110 }],
+                    [{ note: 36, vel: 115 }, { note: 48, vel: 105 }, { note: 47, vel: 105 }],
+                    [{ note: 45, vel: 105 }],
+                    [{ note: 38, vel: 110 }],
+                    [{ note: 36, vel: 120 }, { note: 49, vel: 115 }]
                 ]
             },
             techno: {
@@ -712,28 +1025,76 @@
                     [{ note: 36, vel: 110 }, { note: 42, vel: 90 }],
                     [{ note: 42, vel: 85 }],
                     [{ note: 36, vel: 110 }, { note: 42, vel: 90 }],
+                    [{ note: 42, vel: 85 }],
+                    [{ note: 36, vel: 110 }, { note: 42, vel: 90 }],
+                    [{ note: 42, vel: 85 }],
+                    [{ note: 36, vel: 110 }, { note: 42, vel: 90 }],
+                    [{ note: 42, vel: 85 }, { note: 42, vel: 80 }, { note: 42, vel: 75 }], // triple
+                    [{ note: 36, vel: 110 }, { note: 42, vel: 90 }],
+                    [],
+                    [{ note: 36, vel: 110 }, { note: 42, vel: 90 }],
+                    [{ note: 42, vel: 85 }],
+                    [{ note: 36, vel: 110 }, { note: 38, vel: 100 }, { note: 42, vel: 90 }], // snare accent
+                    [{ note: 42, vel: 85 }],
+                    [{ note: 36, vel: 110 }, { note: 42, vel: 90 }],
                     [{ note: 42, vel: 85 }]
                 ],
                 fill: [
                     [{ note: 36, vel: 110 }, { note: 42, vel: 90 }],
-                    [{ note: 38, vel: 100 }, { note: 42, vel: 85 }],
+                    [{ note: 38, vel: 100 }],
                     [{ note: 36, vel: 110 }, { note: 42, vel: 90 }],
-                    [{ note: 38, vel: 100 }, { note: 49, vel: 105 }]
+                    [{ note: 38, vel: 95 }],
+                    [{ note: 36, vel: 110 }, { note: 42, vel: 90 }],
+                    [{ note: 38, vel: 100 }, { note: 38, vel: 95 }, { note: 38, vel: 90 }], // triple
+                    [{ note: 36, vel: 110 }, { note: 42, vel: 90 }],
+                    [],
+                    [{ note: 38, vel: 105 }],
+                    [{ note: 38, vel: 100 }],
+                    [{ note: 38, vel: 105 }],
+                    [{ note: 38, vel: 100 }],
+                    [{ note: 38, vel: 105 }],
+                    [{ note: 38, vel: 100 }],
+                    [{ note: 38, vel: 105 }],
+                    [{ note: 36, vel: 115 }, { note: 49, vel: 105 }]
                 ]
             },
             dnb: {
                 name: "Drum & Bass",
                 normal: [
                     [{ note: 36, vel: 110 }, { note: 42, vel: 85 }],
+                    [{ note: 42, vel: 75 }],
                     [{ note: 42, vel: 80 }],
-                    [{ note: 38, vel: 105 }, { note: 42, vel: 85 }],
-                    [{ note: 42, vel: 80 }, { note: 36, vel: 100 }]
+                    [{ note: 38, vel: 105 }],
+                    [{ note: 42, vel: 85 }],
+                    [{ note: 42, vel: 75 }],
+                    [{ note: 42, vel: 80 }, { note: 36, vel: 100 }],
+                    [],
+                    [{ note: 36, vel: 110 }, { note: 42, vel: 85 }],
+                    [{ note: 42, vel: 75 }],
+                    [{ note: 42, vel: 80 }],
+                    [{ note: 38, vel: 105 }, { note: 42, vel: 75 }],
+                    [{ note: 42, vel: 85 }, { note: 36, vel: 95 }],
+                    [{ note: 42, vel: 75 }],
+                    [{ note: 42, vel: 80 }, { note: 42, vel: 75 }, { note: 42, vel: 70 }], // triple
+                    [{ note: 36, vel: 100 }]
                 ],
                 fill: [
-                    [{ note: 38, vel: 100 }, { note: 42, vel: 85 }],
-                    [{ note: 50, vel: 95 }],
+                    [{ note: 38, vel: 105 }],
+                    [{ note: 38, vel: 95 }],
+                    [{ note: 38, vel: 100 }],
+                    [{ note: 38, vel: 90 }],
+                    [{ note: 48, vel: 100 }],
                     [{ note: 48, vel: 95 }],
-                    [{ note: 36, vel: 110 }, { note: 49, vel: 105 }]
+                    [{ note: 47, vel: 100 }],
+                    [{ note: 47, vel: 95 }, { note: 47, vel: 90 }, { note: 47, vel: 85 }], // triple
+                    [{ note: 45, vel: 100 }],
+                    [{ note: 45, vel: 95 }],
+                    [{ note: 38, vel: 105 }],
+                    [],
+                    [{ note: 48, vel: 100 }, { note: 47, vel: 100 }],
+                    [{ note: 45, vel: 100 }],
+                    [{ note: 38, vel: 105 }],
+                    [{ note: 36, vel: 115 }, { note: 49, vel: 105 }]
                 ]
             },
             trap: {
@@ -742,13 +1103,37 @@
                     [{ note: 36, vel: 110 }, { note: 42, vel: 85 }],
                     [{ note: 42, vel: 75 }],
                     [{ note: 42, vel: 80 }],
-                    [{ note: 38, vel: 100 }, { note: 42, vel: 75 }]
+                    [{ note: 38, vel: 100 }, { note: 42, vel: 75 }],
+                    [{ note: 36, vel: 110 }, { note: 42, vel: 85 }],
+                    [],
+                    [{ note: 42, vel: 80 }],
+                    [{ note: 38, vel: 100 }],
+                    [{ note: 36, vel: 110 }, { note: 42, vel: 85 }],
+                    [{ note: 42, vel: 75 }, { note: 42, vel: 70 }, { note: 42, vel: 65 }], // triple
+                    [{ note: 42, vel: 80 }],
+                    [{ note: 38, vel: 100 }, { note: 42, vel: 75 }],
+                    [{ note: 36, vel: 110 }, { note: 42, vel: 85 }],
+                    [{ note: 42, vel: 75 }],
+                    [],
+                    [{ note: 38, vel: 100 }]
                 ],
                 fill: [
-                    [{ note: 42, vel: 85 }, { note: 50, vel: 90 }],
-                    [{ note: 42, vel: 80 }, { note: 48, vel: 90 }],
-                    [{ note: 38, vel: 95 }],
-                    [{ note: 36, vel: 110 }, { note: 49, vel: 100 }]
+                    [{ note: 42, vel: 85 }, { note: 48, vel: 95 }],
+                    [{ note: 42, vel: 80 }],
+                    [{ note: 47, vel: 95 }],
+                    [],
+                    [{ note: 45, vel: 95 }, { note: 45, vel: 90 }, { note: 45, vel: 85 }], // triple
+                    [{ note: 38, vel: 100 }],
+                    [{ note: 39, vel: 90 }], // clap
+                    [],
+                    [{ note: 48, vel: 95 }],
+                    [{ note: 47, vel: 95 }],
+                    [{ note: 45, vel: 95 }],
+                    [{ note: 38, vel: 100 }],
+                    [{ note: 48, vel: 90 }],
+                    [{ note: 47, vel: 90 }],
+                    [{ note: 38, vel: 100 }],
+                    [{ note: 36, vel: 115 }, { note: 49, vel: 100 }]
                 ]
             },
             samba: {
@@ -757,12 +1142,36 @@
                     [{ note: 36, vel: 100 }, { note: 42, vel: 80 }],
                     [{ note: 38, vel: 85 }, { note: 42, vel: 75 }],
                     [{ note: 42, vel: 80 }],
-                    [{ note: 38, vel: 90 }, { note: 42, vel: 75 }]
+                    [{ note: 38, vel: 90 }, { note: 42, vel: 75 }],
+                    [{ note: 36, vel: 100 }, { note: 54, vel: 80 }], // tambourine
+                    [{ note: 38, vel: 85 }, { note: 54, vel: 75 }],
+                    [{ note: 54, vel: 80 }],
+                    [{ note: 38, vel: 90 }, { note: 54, vel: 75 }, { note: 54, vel: 70 }, { note: 54, vel: 65 }], // triple tamb
+                    [{ note: 36, vel: 100 }, { note: 42, vel: 80 }],
+                    [{ note: 38, vel: 85 }, { note: 42, vel: 75 }],
+                    [],
+                    [{ note: 38, vel: 90 }, { note: 42, vel: 75 }],
+                    [{ note: 36, vel: 100 }, { note: 42, vel: 80 }],
+                    [{ note: 38, vel: 85 }],
+                    [{ note: 42, vel: 80 }],
+                    [{ note: 38, vel: 90 }]
                 ],
                 fill: [
-                    [{ note: 50, vel: 90 }, { note: 42, vel: 80 }],
+                    [{ note: 48, vel: 92 }],
+                    [{ note: 48, vel: 88 }],
+                    [{ note: 47, vel: 92 }],
+                    [{ note: 47, vel: 88 }],
+                    [{ note: 45, vel: 92 }],
+                    [{ note: 45, vel: 88 }],
+                    [{ note: 54, vel: 85 }], // tambourine
+                    [{ note: 54, vel: 80 }, { note: 54, vel: 75 }, { note: 54, vel: 70 }], // triple
                     [{ note: 48, vel: 90 }],
+                    [{ note: 47, vel: 90 }],
+                    [{ note: 45, vel: 90 }],
+                    [],
                     [{ note: 38, vel: 95 }],
+                    [{ note: 48, vel: 92 }, { note: 47, vel: 92 }],
+                    [{ note: 45, vel: 92 }],
                     [{ note: 36, vel: 105 }, { note: 49, vel: 95 }]
                 ]
             },
@@ -772,13 +1181,37 @@
                     [{ note: 36, vel: 85 }, { note: 51, vel: 70 }],
                     [{ note: 51, vel: 65 }],
                     [{ note: 38, vel: 75 }, { note: 51, vel: 70 }],
-                    [{ note: 36, vel: 80 }, { note: 51, vel: 65 }]
+                    [{ note: 36, vel: 80 }, { note: 51, vel: 65 }],
+                    [{ note: 36, vel: 85 }, { note: 51, vel: 70 }],
+                    [],
+                    [{ note: 38, vel: 75 }, { note: 51, vel: 70 }],
+                    [{ note: 51, vel: 65 }],
+                    [{ note: 36, vel: 85 }, { note: 51, vel: 70 }],
+                    [{ note: 51, vel: 65 }, { note: 51, vel: 60 }, { note: 51, vel: 55 }], // triple ride
+                    [{ note: 38, vel: 75 }, { note: 51, vel: 70 }],
+                    [{ note: 36, vel: 80 }, { note: 51, vel: 65 }],
+                    [{ note: 36, vel: 85 }, { note: 40, vel: 70 }], // rim
+                    [{ note: 51, vel: 65 }],
+                    [{ note: 38, vel: 75 }, { note: 51, vel: 70 }],
+                    []
                 ],
                 fill: [
                     [{ note: 51, vel: 75 }],
-                    [{ note: 50, vel: 80 }],
+                    [],
+                    [{ note: 48, vel: 80 }],
+                    [{ note: 48, vel: 75 }],
+                    [{ note: 47, vel: 80 }],
+                    [{ note: 47, vel: 75 }, { note: 47, vel: 70 }, { note: 47, vel: 65 }], // triple
+                    [{ note: 45, vel: 80 }],
+                    [],
                     [{ note: 38, vel: 85 }],
-                    [{ note: 36, vel: 90 }, { note: 49, vel: 85 }]
+                    [{ note: 40, vel: 75 }], // rim
+                    [{ note: 48, vel: 80 }],
+                    [{ note: 47, vel: 80 }],
+                    [],
+                    [{ note: 45, vel: 80 }],
+                    [{ note: 38, vel: 85 }],
+                    [{ note: 36, vel: 90 }, { note: 51, vel: 85 }]
                 ]
             },
             waltz: {
@@ -786,11 +1219,37 @@
                 normal: [
                     [{ note: 36, vel: 95 }, { note: 49, vel: 80 }],
                     [{ note: 38, vel: 80 }, { note: 51, vel: 70 }],
-                    [{ note: 38, vel: 75 }, { note: 51, vel: 70 }]
+                    [{ note: 38, vel: 75 }, { note: 51, vel: 70 }],
+                    [{ note: 36, vel: 95 }, { note: 51, vel: 75 }],
+                    [],
+                    [{ note: 38, vel: 75 }, { note: 51, vel: 70 }],
+                    [{ note: 36, vel: 95 }, { note: 51, vel: 75 }],
+                    [{ note: 38, vel: 80 }, { note: 51, vel: 70 }],
+                    [{ note: 38, vel: 75 }, { note: 51, vel: 70 }, { note: 51, vel: 65 }, { note: 51, vel: 60 }], // triple waltz
+                    [{ note: 36, vel: 95 }, { note: 51, vel: 75 }],
+                    [{ note: 38, vel: 80 }, { note: 51, vel: 70 }],
+                    [],
+                    [{ note: 36, vel: 95 }, { note: 42, vel: 75 }],
+                    [{ note: 38, vel: 80 }, { note: 42, vel: 70 }],
+                    [{ note: 38, vel: 75 }, { note: 42, vel: 70 }],
+                    []
                 ],
                 fill: [
-                    [{ note: 50, vel: 85 }],
                     [{ note: 48, vel: 85 }],
+                    [{ note: 48, vel: 80 }],
+                    [{ note: 47, vel: 85 }],
+                    [{ note: 47, vel: 80 }],
+                    [{ note: 45, vel: 85 }],
+                    [],
+                    [{ note: 38, vel: 90 }],
+                    [{ note: 38, vel: 85 }],
+                    [{ note: 48, vel: 85 }, { note: 48, vel: 80 }, { note: 48, vel: 75 }], // triple
+                    [{ note: 47, vel: 85 }],
+                    [{ note: 45, vel: 85 }],
+                    [],
+                    [{ note: 38, vel: 90 }],
+                    [{ note: 48, vel: 85 }],
+                    [{ note: 47, vel: 85 }],
                     [{ note: 36, vel: 95 }, { note: 49, vel: 90 }]
                 ]
             },
@@ -800,12 +1259,36 @@
                     [{ note: 36, vel: 100 }, { note: 42, vel: 80 }],
                     [{ note: 42, vel: 75 }],
                     [{ note: 38, vel: 95 }, { note: 42, vel: 80 }],
+                    [{ note: 42, vel: 75 }, { note: 36, vel: 90 }],
+                    [{ note: 36, vel: 100 }, { note: 42, vel: 80 }],
+                    [{ note: 42, vel: 75 }],
+                    [{ note: 38, vel: 95 }, { note: 42, vel: 80 }],
+                    [{ note: 42, vel: 75 }],
+                    [{ note: 36, vel: 100 }, { note: 54, vel: 75 }], // tambourine
+                    [{ note: 54, vel: 70 }],
+                    [{ note: 38, vel: 95 }, { note: 54, vel: 75 }],
+                    [{ note: 54, vel: 70 }, { note: 54, vel: 65 }, { note: 54, vel: 60 }], // triple tamb
+                    [{ note: 36, vel: 100 }, { note: 42, vel: 80 }],
+                    [],
+                    [{ note: 38, vel: 95 }, { note: 42, vel: 80 }],
                     [{ note: 42, vel: 75 }, { note: 36, vel: 90 }]
                 ],
                 fill: [
-                    [{ note: 50, vel: 90 }],
-                    [{ note: 48, vel: 90 }],
+                    [{ note: 48, vel: 92 }],
+                    [{ note: 48, vel: 88 }],
+                    [{ note: 47, vel: 92 }],
+                    [{ note: 47, vel: 88 }],
+                    [{ note: 45, vel: 92 }],
+                    [],
                     [{ note: 38, vel: 95 }],
+                    [{ note: 38, vel: 90 }, { note: 38, vel: 85 }, { note: 38, vel: 80 }], // triple snare
+                    [{ note: 48, vel: 90 }],
+                    [{ note: 47, vel: 90 }],
+                    [{ note: 45, vel: 90 }],
+                    [{ note: 54, vel: 80 }], // tambourine
+                    [{ note: 38, vel: 95 }],
+                    [{ note: 48, vel: 88 }],
+                    [{ note: 47, vel: 88 }],
                     [{ note: 36, vel: 100 }, { note: 49, vel: 95 }]
                 ]
             },
@@ -815,12 +1298,36 @@
                     [{ note: 36, vel: 100 }, { note: 42, vel: 80 }],
                     [{ note: 38, vel: 85 }, { note: 42, vel: 75 }],
                     [{ note: 36, vel: 95 }, { note: 42, vel: 80 }],
-                    [{ note: 38, vel: 90 }, { note: 42, vel: 75 }]
+                    [{ note: 38, vel: 90 }, { note: 42, vel: 75 }],
+                    [{ note: 36, vel: 100 }, { note: 42, vel: 80 }],
+                    [{ note: 38, vel: 85 }, { note: 42, vel: 75 }],
+                    [{ note: 36, vel: 95 }, { note: 42, vel: 80 }],
+                    [{ note: 42, vel: 75 }, { note: 42, vel: 70 }, { note: 42, vel: 65 }], // triple
+                    [{ note: 36, vel: 100 }, { note: 56, vel: 85 }], // cowbell
+                    [{ note: 38, vel: 85 }],
+                    [{ note: 36, vel: 95 }, { note: 56, vel: 85 }],
+                    [{ note: 38, vel: 90 }],
+                    [{ note: 36, vel: 100 }, { note: 42, vel: 80 }],
+                    [],
+                    [{ note: 36, vel: 95 }, { note: 38, vel: 90 }, { note: 42, vel: 80 }],
+                    [{ note: 42, vel: 75 }]
                 ],
                 fill: [
-                    [{ note: 50, vel: 90 }, { note: 42, vel: 75 }],
+                    [{ note: 48, vel: 92 }],
+                    [{ note: 48, vel: 88 }],
+                    [{ note: 47, vel: 92 }],
+                    [{ note: 47, vel: 88 }],
+                    [{ note: 45, vel: 92 }],
+                    [{ note: 45, vel: 88 }, { note: 45, vel: 84 }, { note: 45, vel: 80 }], // triple
+                    [{ note: 56, vel: 90 }], // cowbell
+                    [{ note: 38, vel: 95 }],
                     [{ note: 48, vel: 90 }],
                     [{ note: 47, vel: 90 }],
+                    [],
+                    [{ note: 45, vel: 90 }],
+                    [{ note: 38, vel: 95 }],
+                    [{ note: 48, vel: 92 }, { note: 47, vel: 92 }],
+                    [{ note: 45, vel: 92 }],
                     [{ note: 36, vel: 105 }, { note: 49, vel: 95 }]
                 ]
             },
@@ -830,12 +1337,36 @@
                     [{ note: 36, vel: 105 }, { note: 42, vel: 85 }],
                     [{ note: 42, vel: 80 }],
                     [{ note: 38, vel: 100 }, { note: 42, vel: 85 }],
-                    [{ note: 42, vel: 80 }, { note: 36, vel: 95 }]
+                    [{ note: 42, vel: 80 }, { note: 36, vel: 95 }],
+                    [{ note: 36, vel: 105 }, { note: 42, vel: 85 }],
+                    [],
+                    [{ note: 38, vel: 100 }, { note: 42, vel: 85 }],
+                    [{ note: 42, vel: 80 }],
+                    [{ note: 36, vel: 105 }, { note: 42, vel: 85 }],
+                    [{ note: 42, vel: 80 }, { note: 42, vel: 75 }, { note: 42, vel: 70 }], // triple
+                    [{ note: 38, vel: 100 }, { note: 42, vel: 85 }],
+                    [{ note: 42, vel: 80 }, { note: 36, vel: 95 }],
+                    [{ note: 36, vel: 105 }, { note: 42, vel: 85 }],
+                    [{ note: 42, vel: 80 }],
+                    [{ note: 38, vel: 100 }],
+                    []
                 ],
                 fill: [
-                    [{ note: 42, vel: 90 }, { note: 50, vel: 90 }],
-                    [{ note: 42, vel: 85 }, { note: 48, vel: 90 }],
+                    [{ note: 42, vel: 90 }, { note: 48, vel: 92 }],
+                    [{ note: 42, vel: 85 }],
+                    [{ note: 47, vel: 92 }],
+                    [],
+                    [{ note: 45, vel: 92 }, { note: 45, vel: 88 }, { note: 45, vel: 84 }], // triple
                     [{ note: 38, vel: 100 }],
+                    [{ note: 39, vel: 90 }], // clap
+                    [{ note: 42, vel: 85 }],
+                    [{ note: 48, vel: 90 }],
+                    [{ note: 47, vel: 90 }],
+                    [{ note: 45, vel: 90 }],
+                    [],
+                    [{ note: 38, vel: 100 }],
+                    [{ note: 48, vel: 88 }],
+                    [{ note: 47, vel: 88 }],
                     [{ note: 36, vel: 110 }, { note: 49, vel: 100 }]
                 ]
             },
@@ -845,13 +1376,37 @@
                     [{ note: 36, vel: 115 }, { note: 42, vel: 95 }],
                     [{ note: 38, vel: 105 }, { note: 42, vel: 90 }],
                     [{ note: 36, vel: 115 }, { note: 42, vel: 95 }],
-                    [{ note: 38, vel: 105 }, { note: 42, vel: 90 }]
+                    [{ note: 38, vel: 105 }, { note: 42, vel: 90 }],
+                    [{ note: 36, vel: 115 }, { note: 42, vel: 95 }],
+                    [{ note: 38, vel: 105 }, { note: 42, vel: 90 }],
+                    [{ note: 36, vel: 115 }, { note: 42, vel: 95 }],
+                    [{ note: 38, vel: 105 }, { note: 42, vel: 90 }, { note: 42, vel: 85 }, { note: 42, vel: 80 }], // triple
+                    [{ note: 36, vel: 115 }, { note: 49, vel: 100 }], // crash
+                    [{ note: 38, vel: 105 }],
+                    [{ note: 36, vel: 115 }, { note: 42, vel: 95 }],
+                    [],
+                    [{ note: 36, vel: 115 }, { note: 38, vel: 105 }, { note: 42, vel: 95 }],
+                    [{ note: 38, vel: 105 }],
+                    [{ note: 36, vel: 115 }, { note: 42, vel: 95 }],
+                    [{ note: 38, vel: 105 }]
                 ],
                 fill: [
-                    [{ note: 36, vel: 115 }, { note: 50, vel: 100 }],
-                    [{ note: 38, vel: 110 }, { note: 48, vel: 100 }],
-                    [{ note: 36, vel: 115 }, { note: 47, vel: 100 }],
-                    [{ note: 36, vel: 120 }, { note: 49, vel: 110 }]
+                    [{ note: 36, vel: 120 }, { note: 48, vel: 105 }],
+                    [{ note: 38, vel: 110 }],
+                    [{ note: 36, vel: 120 }, { note: 47, vel: 105 }],
+                    [{ note: 38, vel: 110 }],
+                    [{ note: 36, vel: 120 }, { note: 45, vel: 105 }],
+                    [{ note: 38, vel: 110 }, { note: 38, vel: 105 }, { note: 38, vel: 100 }], // triple
+                    [{ note: 36, vel: 120 }],
+                    [],
+                    [{ note: 48, vel: 105 }],
+                    [{ note: 47, vel: 105 }],
+                    [{ note: 45, vel: 105 }],
+                    [{ note: 38, vel: 115 }],
+                    [{ note: 36, vel: 120 }, { note: 48, vel: 105 }, { note: 47, vel: 105 }],
+                    [{ note: 45, vel: 105 }],
+                    [{ note: 38, vel: 115 }],
+                    [{ note: 36, vel: 125 }, { note: 49, vel: 115 }]
                 ]
             },
             sixteenths: {
@@ -859,13 +1414,37 @@
                 normal: [
                     [{ note: 36, vel: 100 }, { note: 42, vel: 85 }],
                     [{ note: 42, vel: 75 }],
+                    [{ note: 42, vel: 80 }],
+                    [{ note: 42, vel: 75 }],
                     [{ note: 38, vel: 95 }, { note: 42, vel: 85 }],
+                    [{ note: 42, vel: 75 }],
+                    [{ note: 42, vel: 80 }],
+                    [{ note: 42, vel: 75 }],
+                    [{ note: 36, vel: 100 }, { note: 42, vel: 85 }],
+                    [{ note: 42, vel: 75 }],
+                    [{ note: 42, vel: 80 }, { note: 42, vel: 75 }, { note: 42, vel: 70 }], // triple
+                    [{ note: 42, vel: 75 }],
+                    [{ note: 38, vel: 95 }, { note: 42, vel: 85 }],
+                    [],
+                    [{ note: 42, vel: 80 }],
                     [{ note: 42, vel: 75 }]
                 ],
                 fill: [
-                    [{ note: 50, vel: 90 }, { note: 42, vel: 80 }],
-                    [{ note: 48, vel: 90 }, { note: 42, vel: 75 }],
+                    [{ note: 48, vel: 92 }],
+                    [{ note: 48, vel: 88 }],
+                    [{ note: 48, vel: 84 }],
+                    [{ note: 48, vel: 80 }],
+                    [{ note: 47, vel: 92 }],
+                    [{ note: 47, vel: 88 }],
+                    [{ note: 47, vel: 84 }],
+                    [{ note: 47, vel: 80 }, { note: 47, vel: 76 }, { note: 47, vel: 72 }], // triple
+                    [{ note: 45, vel: 92 }],
+                    [{ note: 45, vel: 88 }],
+                    [],
+                    [{ note: 38, vel: 95 }],
+                    [{ note: 48, vel: 90 }],
                     [{ note: 47, vel: 90 }],
+                    [{ note: 45, vel: 90 }],
                     [{ note: 36, vel: 105 }, { note: 49, vel: 100 }]
                 ]
             },
@@ -875,12 +1454,36 @@
                     [{ note: 36, vel: 105 }, { note: 42, vel: 85 }],
                     [{ note: 42, vel: 75 }],
                     [{ note: 38, vel: 100 }, { note: 42, vel: 85 }],
-                    [{ note: 36, vel: 95 }, { note: 42, vel: 75 }]
+                    [{ note: 36, vel: 95 }, { note: 42, vel: 75 }],
+                    [{ note: 36, vel: 105 }, { note: 42, vel: 85 }],
+                    [],
+                    [{ note: 38, vel: 100 }, { note: 42, vel: 85 }],
+                    [{ note: 42, vel: 75 }],
+                    [{ note: 36, vel: 105 }, { note: 42, vel: 85 }],
+                    [{ note: 42, vel: 75 }, { note: 42, vel: 70 }, { note: 42, vel: 65 }], // triple
+                    [{ note: 38, vel: 100 }, { note: 42, vel: 85 }],
+                    [{ note: 36, vel: 95 }, { note: 42, vel: 75 }],
+                    [{ note: 36, vel: 105 }, { note: 42, vel: 85 }],
+                    [{ note: 42, vel: 75 }],
+                    [{ note: 38, vel: 100 }],
+                    []
                 ],
                 fill: [
-                    [{ note: 38, vel: 95 }, { note: 42, vel: 80 }],
-                    [{ note: 50, vel: 90 }],
-                    [{ note: 48, vel: 90 }, { note: 38, vel: 90 }],
+                    [{ note: 38, vel: 100 }],
+                    [{ note: 38, vel: 90 }],
+                    [{ note: 48, vel: 92 }],
+                    [],
+                    [{ note: 47, vel: 92 }, { note: 47, vel: 88 }, { note: 47, vel: 84 }], // triple
+                    [{ note: 45, vel: 92 }],
+                    [{ note: 38, vel: 95 }],
+                    [{ note: 40, vel: 85 }], // rim
+                    [{ note: 48, vel: 90 }],
+                    [{ note: 47, vel: 90 }],
+                    [{ note: 45, vel: 90 }],
+                    [],
+                    [{ note: 38, vel: 100 }],
+                    [{ note: 48, vel: 88 }, { note: 47, vel: 88 }],
+                    [{ note: 45, vel: 88 }],
                     [{ note: 36, vel: 110 }, { note: 49, vel: 100 }]
                 ]
             },
@@ -888,27 +1491,62 @@
                 name: "Hip-Hop Boom Bap",
                 normal: [
                     [{ note: 36, vel: 110 }, { note: 42, vel: 80 }],
+                    [{ note: 42, vel: 65 }],
                     [{ note: 42, vel: 70 }],
+                    [{ note: 42, vel: 65 }],
                     [{ note: 38, vel: 105 }, { note: 42, vel: 80 }],
-                    [{ note: 42, vel: 70 }]
+                    [{ note: 42, vel: 65 }],
+                    [{ note: 42, vel: 70 }],
+                    [{ note: 42, vel: 65 }],
+                    [{ note: 36, vel: 110 }, { note: 42, vel: 80 }],
+                    [{ note: 42, vel: 65 }],
+                    [{ note: 42, vel: 70 }, { note: 42, vel: 65 }, { note: 42, vel: 60 }], // triple
+                    [{ note: 42, vel: 65 }, { note: 36, vel: 95 }],
+                    [{ note: 38, vel: 105 }, { note: 42, vel: 80 }],
+                    [],
+                    [{ note: 42, vel: 70 }],
+                    [{ note: 42, vel: 65 }, { note: 36, vel: 100 }]
                 ],
                 fill: [
                     [{ note: 38, vel: 100 }],
-                    [{ note: 50, vel: 90 }],
+                    [],
                     [{ note: 38, vel: 95 }],
+                    [{ note: 40, vel: 85 }], // rim
+                    [{ note: 48, vel: 95 }],
+                    [{ note: 48, vel: 90 }, { note: 48, vel: 85 }, { note: 48, vel: 80 }], // triple
+                    [],
+                    [{ note: 47, vel: 95 }],
+                    [{ note: 47, vel: 90 }],
+                    [{ note: 45, vel: 95 }],
+                    [],
+                    [{ note: 38, vel: 100 }],
+                    [{ note: 38, vel: 95 }],
+                    [{ note: 48, vel: 95 }],
+                    [{ note: 47, vel: 95 }],
                     [{ note: 36, vel: 115 }, { note: 49, vel: 100 }]
                 ]
             }
         };
-
         // Sections spéciales
         const sectionPatterns = {
             intro: {
                 pattern: [
                     [{ note: 49, vel: 85 }],
+                    [],
+                    [],
+                    [],
                     [{ note: 51, vel: 75 }],
+                    [],
+                    [{ note: 51, vel: 70 }],
+                    [],
                     [{ note: 51, vel: 75 }],
-                    [{ note: 51, vel: 75 }]
+                    [],
+                    [{ note: 51, vel: 70 }],
+                    [],
+                    [{ note: 51, vel: 75 }],
+                    [],
+                    [{ note: 51, vel: 70 }],
+                    [{ note: 36, vel: 90 }]
                 ],
                 measures: 4
             },
@@ -917,21 +1555,109 @@
             bridge: {
                 pattern: [
                     [{ note: 36, vel: 95 }, { note: 51, vel: 80 }],
+                    [{ note: 51, vel: 65 }],
                     [{ note: 51, vel: 70 }],
+                    [{ note: 51, vel: 65 }],
                     [{ note: 38, vel: 90 }, { note: 51, vel: 80 }],
-                    [{ note: 51, vel: 70 }]
+                    [{ note: 51, vel: 65 }],
+                    [{ note: 51, vel: 70 }],
+                    [{ note: 51, vel: 65 }],
+                    [{ note: 36, vel: 95 }, { note: 51, vel: 80 }],
+                    [{ note: 51, vel: 65 }],
+                    [{ note: 36, vel: 85 }, { note: 51, vel: 70 }],
+                    [{ note: 51, vel: 65 }],
+                    [{ note: 38, vel: 90 }, { note: 51, vel: 80 }],
+                    [{ note: 51, vel: 65 }],
+                    [{ note: 51, vel: 70 }],
+                    [{ note: 51, vel: 65 }]
                 ],
                 measures: 8
             },
             fill: 'fill',
             outro: {
                 pattern: [
+                    // Mesure 1
                     [{ note: 36, vel: 100 }, { note: 49, vel: 90 }],
-                    [{ note: 50, vel: 85 }],
                     [{ note: 48, vel: 85 }],
-                    [{ note: 47, vel: 85 }, { note: 49, vel: 95 }]
+                    [{ note: 47, vel: 85 }],
+                    [{ note: 45, vel: 85 }],
+                    [{ note: 38, vel: 95 }],
+                    [{ note: 48, vel: 80 }],
+                    [{ note: 47, vel: 80 }],
+                    [{ note: 45, vel: 80 }],
+                    // Mesure 2
+                    [{ note: 36, vel: 100 }, { note: 42, vel: 85 }],
+                    [{ note: 42, vel: 75 }],
+                    [{ note: 38, vel: 95 }, { note: 42, vel: 85 }],
+                    [{ note: 42, vel: 75 }],
+                    [{ note: 36, vel: 95 }, { note: 42, vel: 85 }],
+                    [{ note: 42, vel: 75 }],
+                    [{ note: 38, vel: 95 }, { note: 42, vel: 85 }],
+                    [{ note: 42, vel: 75 }],
+                    // Mesure 3
+                    [{ note: 36, vel: 100 }, { note: 48, vel: 90 }],
+                    [{ note: 48, vel: 85 }],
+                    [{ note: 47, vel: 90 }],
+                    [{ note: 47, vel: 85 }],
+                    [{ note: 45, vel: 90 }],
+                    [{ note: 45, vel: 85 }],
+                    [{ note: 38, vel: 95 }],
+                    [{ note: 38, vel: 85 }],
+                    // Mesure 4
+                    [{ note: 36, vel: 100 }, { note: 51, vel: 85 }],
+                    [{ note: 51, vel: 75 }],
+                    [{ note: 51, vel: 80 }],
+                    [{ note: 51, vel: 75 }],
+                    [{ note: 38, vel: 90 }, { note: 51, vel: 85 }],
+                    [{ note: 51, vel: 75 }],
+                    [{ note: 51, vel: 80 }],
+                    [{ note: 36, vel: 90 }, { note: 51, vel: 75 }],
+                    // Mesure 5
+                    [{ note: 36, vel: 100 }, { note: 49, vel: 95 }],
+                    [{ note: 48, vel: 90 }],
+                    [],
+                    [{ note: 47, vel: 90 }],
+                    [{ note: 45, vel: 90 }],
+                    [],
+                    [{ note: 38, vel: 95 }],
+                    [{ note: 48, vel: 85 }],
+                    // Mesure 6
+                    [{ note: 47, vel: 90 }],
+                    [{ note: 47, vel: 85 }],
+                    [{ note: 45, vel: 90 }],
+                    [{ note: 45, vel: 85 }],
+                    [{ note: 38, vel: 95 }],
+                    [{ note: 38, vel: 85 }],
+                    [{ note: 40, vel: 90 }],
+                    [{ note: 38, vel: 85 }],
+                    // Mesure 7
+                    [{ note: 36, vel: 100 }],
+                    [],
+                    [{ note: 48, vel: 90 }],
+                    [],
+                    [{ note: 47, vel: 90 }],
+                    [],
+                    [{ note: 45, vel: 95 }],
+                    [],
+                    // Mesure 8 - Finale
+                    [{ note: 36, vel: 110 }, { note: 38, vel: 100 }, { note: 49, vel: 105 }],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [{ note: 36, vel: 90 }],
+                    [],
+                    [],
+                    [],
+                    [{ note: 49, vel: 85 }],
+                    [],
+                    [],
+                    []
                 ],
-                measures: 1,
+                measures: 8,
                 ending: true
             }
         };
@@ -966,19 +1692,40 @@
                 case 38: // Snare
                     playSnare(now, vel);
                     break;
+                case 40: // Rim Shot
+                    playRimShot(now, vel);
+                    break;
+                case 39: // Clap
+                    playClap(now, vel);
+                    break;
+                case 56: // Cowbell
+                    playCowbell(now, vel);
+                    break;
                 case 42: // Hi-Hat Closed
                     playHiHatClosed(now, vel);
                     break;
                 case 46: // Hi-Hat Open
                     playHiHatOpen(now, vel);
                     break;
-                case 47: // Tom Low
-                    playTom(now, vel, 90);
+                case 44: // Hi-Hat Pedal
+                    playHiHatPedal(now, vel);
                     break;
-                case 48: // Tom Mid
-                    playTom(now, vel, 140);
+                case 54: // Tambourine
+                    playTambourine(now, vel);
                     break;
-                case 50: // Tom High
+                case 55: // Splash
+                    playSplash(now, vel);
+                    break;
+                case 45: // Tom Low
+                    playTom(now, vel, 80);
+                    break;
+                case 47: // Tom Mid
+                    playTom(now, vel, 120);
+                    break;
+                case 48: // Tom High
+                    playTom(now, vel, 180);
+                    break;
+                case 50: // Tom High Alt
                     playTom(now, vel, 200);
                     break;
                 case 49: // Crash
@@ -1166,6 +1913,156 @@
             
             gain.gain.setValueAtTime(velocity * 0.5, time);
             gain.gain.exponentialRampToValueAtTime(0.01, time + 0.5);
+            
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+            
+            noise.start(time);
+        }
+
+        function playRimShot(time, velocity) {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(1800, time);
+            osc.frequency.exponentialRampToValueAtTime(1500, time + 0.05);
+            
+            gain.gain.setValueAtTime(velocity * 0.4, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05);
+            
+            osc.connect(gain);
+            gain.connect(masterGain);
+            
+            osc.start(time);
+            osc.stop(time + 0.05);
+        }
+
+        function playClap(time, velocity) {
+            // Multiple short bursts pour simuler clap
+            for (let i = 0; i < 3; i++) {
+                const noise = audioContext.createBufferSource();
+                const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.03, audioContext.sampleRate);
+                const noiseData = noiseBuffer.getChannelData(0);
+                
+                for (let j = 0; j < noiseData.length; j++) {
+                    noiseData[j] = Math.random() * 2 - 1;
+                }
+                
+                noise.buffer = noiseBuffer;
+                
+                const gain = audioContext.createGain();
+                const filter = audioContext.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = 1200;
+                filter.Q.value = 2;
+                
+                gain.gain.setValueAtTime(velocity * 0.6, time + (i * 0.01));
+                gain.gain.exponentialRampToValueAtTime(0.01, time + (i * 0.01) + 0.03);
+                
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(masterGain);
+                
+                noise.start(time + (i * 0.01));
+            }
+        }
+
+        function playCowbell(time, velocity) {
+            const osc1 = audioContext.createOscillator();
+            const osc2 = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc1.type = 'square';
+            osc1.frequency.setValueAtTime(800, time);
+            
+            osc2.type = 'square';
+            osc2.frequency.setValueAtTime(540, time);
+            
+            gain.gain.setValueAtTime(velocity * 0.5, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+            
+            osc1.connect(gain);
+            osc2.connect(gain);
+            gain.connect(masterGain);
+            
+            osc1.start(time);
+            osc2.start(time);
+            osc1.stop(time + 0.2);
+            osc2.stop(time + 0.2);
+        }
+
+        function playTambourine(time, velocity) {
+            const noise = audioContext.createBufferSource();
+            const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.15, audioContext.sampleRate);
+            const noiseData = noiseBuffer.getChannelData(0);
+            
+            for (let i = 0; i < noiseData.length; i++) {
+                noiseData[i] = Math.random() * 2 - 1;
+            }
+            
+            noise.buffer = noiseBuffer;
+            
+            const gain = audioContext.createGain();
+            const filter = audioContext.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.value = 5000;
+            
+            gain.gain.setValueAtTime(velocity * 0.6, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.15);
+            
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+            
+            noise.start(time);
+        }
+
+        function playHiHatPedal(time, velocity) {
+            const noise = audioContext.createBufferSource();
+            const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.08, audioContext.sampleRate);
+            const noiseData = noiseBuffer.getChannelData(0);
+            
+            for (let i = 0; i < noiseData.length; i++) {
+                noiseData[i] = Math.random() * 2 - 1;
+            }
+            
+            noise.buffer = noiseBuffer;
+            
+            const gain = audioContext.createGain();
+            const filter = audioContext.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.value = 7000;
+            
+            gain.gain.setValueAtTime(velocity * 0.35, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.08);
+            
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+            
+            noise.start(time);
+        }
+
+        function playSplash(time, velocity) {
+            const noise = audioContext.createBufferSource();
+            const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.6, audioContext.sampleRate);
+            const noiseData = noiseBuffer.getChannelData(0);
+            
+            for (let i = 0; i < noiseData.length; i++) {
+                noiseData[i] = Math.random() * 2 - 1;
+            }
+            
+            noise.buffer = noiseBuffer;
+            
+            const gain = audioContext.createGain();
+            const filter = audioContext.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.value = 7000;
+            
+            gain.gain.setValueAtTime(velocity * 0.5, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.6);
             
             noise.connect(filter);
             filter.connect(gain);
@@ -1398,7 +2295,7 @@
                 pattern = style.fill;
             } else {
                 // Auto-fill tous les 4 mesures
-                if (autoFillEnabled && measureCount > 0 && measureCount % 4 === 3 && currentBeat === 2) {
+                if (autoFillEnabled && measureCount > 0 && measureCount % 4 === 3 && currentBeat >= 12) {
                     pattern = style.fill;
                 } else {
                     pattern = style.normal;
@@ -1407,38 +2304,43 @@
             
             // Jouer les notes du beat actuel
             const beatNotes = pattern[currentBeat % pattern.length];
-            beatNotes.forEach(noteData => {
-                playNote(noteData.note, noteData.vel, 50);
-            });
+            if (beatNotes && beatNotes.length > 0) {
+                beatNotes.forEach(noteData => {
+                    playNote(noteData.note, noteData.vel, 50);
+                });
+                
+                // Visual feedback sur les pads
+                beatNotes.forEach(noteData => {
+                    const pad = document.querySelector(`.drum-pad[data-note="${noteData.note}"]`);
+                    if (pad) {
+                        pad.classList.add('active');
+                        setTimeout(() => pad.classList.remove('active'), 100);
+                    }
+                });
+            }
             
             // Update visual feedback
             updateBeatIndicator();
             
-            // Visual feedback sur les pads
-            beatNotes.forEach(noteData => {
-                const pad = document.querySelector(`.drum-pad[data-note="${noteData.note}"]`);
-                if (pad) {
-                    pad.classList.add('active');
-                    setTimeout(() => pad.classList.remove('active'), 100);
-                }
-            });
-            
             // Avancer au beat suivant
             currentBeat++;
             
-            // Check for measure completion
-            const beatsPerMeasure = currentSection === 'waltz' ? 3 : 4;
+            // Check for measure completion (16 steps = 1 mesure)
+            const beatsPerMeasure = 16;
             if (currentBeat >= beatsPerMeasure) {
                 currentBeat = 0;
                 measureCount++;
                 
                 // Check si on doit arrêter (outro)
                 if (currentSection === 'outro' && sectionPatterns.outro.ending) {
-                    stopSequencer();
-                    return;
+                    // Outro fait 8 mesures
+                    if (measureCount >= 8) {
+                        stopSequencer();
+                        return;
+                    }
                 }
                 
-                // Retour automatique à normal après fill
+                // Retour automatique à normal après fill (après 1 mesure)
                 if (currentSection === 'fill') {
                     currentSection = 'normal';
                     updateSectionDisplay();
@@ -1448,8 +2350,8 @@
                 }
             }
             
-            // Calculer l'intervalle pour le prochain beat
-            const beatDuration = (60 / currentTempo) * 1000; // ms par beat
+            // Calculer l'intervalle pour le prochain beat (16ème de note)
+            const beatDuration = (60 / currentTempo) * 1000 / 4; // Divisé par 4 car 16 steps par mesure 4/4
             beatInterval = setTimeout(playBeat, beatDuration);
         }
 
@@ -1469,9 +2371,10 @@
                 btn.classList.toggle('active', btn.dataset.section === section);
             });
             
-            // Si c'est l'outro et on joue, préparer l'arrêt
+            // Réinitialiser le beat et mesure pour l'outro
             if (section === 'outro' && isPlaying) {
                 currentBeat = 0;
+                measureCount = 0;
             }
         }
 
