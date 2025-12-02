@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TAP Tempo - CTK-3200 (Multi-méthodes)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 700px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        .warning {
+            background: rgba(255, 200, 0, 0.15);
+            border: 2px solid rgba(255, 200, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .midi-status {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            background: #ff4444;
+        }
+
+        .status-indicator.connected {
+            background: #44ff44;
+            box-shadow: 0 0 10px #44ff44;
+        }
+
+        #connectBtn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: transform 0.2s;
+        }
+
+        #connectBtn:hover {
+            transform: scale(1.05);
+        }
+
+        .method-selector {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .method-selector h3 {
+            margin-bottom: 15px;
+            color: #f5576c;
+        }
+
+        .method-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .method-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .method-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .method-btn.active {
+            background: #44ff44;
+            border-color: #44ff44;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+
+        .tap-section {
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        #tapButton {
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border: 8px solid rgba(255, 255, 255, 0.3);
+            font-size: 2.5em;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: all 0.1s;
+            box-shadow: 0 10px 40px rgba(245, 87, 108, 0.4);
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        #tapButton:active {
+            transform: scale(0.95);
+            box-shadow: 0 5px 20px rgba(245, 87, 108, 0.6);
+        }
+
+        #tapButton.pulse {
+            animation: pulse 0.3s ease-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .bpm-display {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .bpm-value {
+            font-size: 4em;
+            font-weight: bold;
+            color: #f5576c;
+            text-shadow: 0 0 20px rgba(245, 87, 108, 0.5);
+            line-height: 1;
+        }
+
+        .bpm-label {
+            font-size: 1.2em;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 10px;
+        }
+
+        .tap-history {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .tap-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transition: all 0.3s;
+        }
+
+        .tap-dot.active {
+            background: #f5576c;
+            box-shadow: 0 0 10px #f5576c;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 15px 30px;
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .tempo-adjust {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        .tempo-adjust button {
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            padding: 0;
+            border-radius: 50%;
+        }
+
+        .info {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            font-size: 0.9em;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .info h3 {
+            color: #f5576c;
+            margin-bottom: 10px;
+        }
+
+        .log {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 0.85em;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎹 TAP Tempo CTK-3200</h1>
+
+        <div class="warning">
+            ⚠️ <strong>Note importante :</strong> Le CTK-3200 ne supporte peut-être pas le contrôle du tempo via MIDI.
+            Cette app essaie plusieurs méthodes différentes.
+        </div>
+
+        <div class="midi-status">
+            <span class="status-indicator" id="statusIndicator"></span>
+            <span id="statusText">MIDI non connecté</span>
+            <button id="connectBtn">Connecter MIDI</button>
+        </div>
+
+        <div class="method-selector">
+            <h3>Méthode de contrôle MIDI :</h3>
+            <div class="method-options">
+                <div class="method-btn active" data-method="cc">
+                    Control Change<br><small>(CC #5)</small>
+                </div>
+                <div class="method-btn" data-method="rpn">
+                    RPN Tempo<br><small>(Registered)</small>
+                </div>
+                <div class="method-btn" data-method="nrpn">
+                    NRPN Tempo<br><small>(Non-Registered)</small>
+                </div>
+                <div class="method-btn" data-method="all">
+                    TOUT Essayer<br><small>(Recommandé)</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="bpm-display">
+            <div class="bpm-value" id="bpmDisplay">120</div>
+            <div class="bpm-label">BPM</div>
+        </div>
+
+        <div class="tap-section">
+            <div id="tapButton">TAP</div>
+            <div class="tap-history">
+                <div class="tap-dot"></div>
+                <div class="tap-dot"></div>
+                <div class="tap-dot"></div>
+                <div class="tap-dot"></div>
+            </div>
+        </div>
+
+        <div class="tempo-adjust">
+            <button id="decreaseBtn">−</button>
+            <span style="font-size: 1.2em;">Ajuster Tempo</span>
+            <button id="increaseBtn">+</button>
+        </div>
+
+        <div class="controls">
+            <button id="applyBtn">🎯 Appliquer au Clavier</button>
+            <button id="resetBtn">↻ Reset (120 BPM)</button>
+        </div>
+
+        <div class="info">
+            <h3>Instructions :</h3>
+            <p><strong>1.</strong> Connecte ton CTK-3200 et clique "Connecter MIDI"</p>
+            <p><strong>2.</strong> Lance un rythme sur ton clavier</p>
+            <p><strong>3.</strong> Tape le bouton TAP 2-4 fois au tempo désiré</p>
+            <p><strong>4.</strong> Clique "Appliquer au Clavier" pour envoyer le tempo</p>
+            <p style="margin-top: 10px;"><strong>Si ça ne fonctionne pas :</strong> Essaie la méthode "TOUT Essayer" qui testera toutes les commandes MIDI possibles.</p>
+        </div>
+
+        <div class="log">
+            <div id="logContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let midiAccess = null;
+        let midiOutput = null;
+        let currentBPM = 120;
+        let tapTimes = [];
+        let lastTapTime = 0;
+        let selectedMethod = 'cc';
+
+        // Éléments DOM
+        const connectBtn = document.getElementById('connectBtn');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const tapButton = document.getElementById('tapButton');
+        const bpmDisplay = document.getElementById('bpmDisplay');
+        const increaseBtn = document.getElementById('increaseBtn');
+        const decreaseBtn = document.getElementById('decreaseBtn');
+        const applyBtn = document.getElementById('applyBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const tapDots = document.querySelectorAll('.tap-dot');
+        const methodBtns = document.querySelectorAll('.method-btn');
+        const logContent = document.getElementById('logContent');
+
+        // Logging
+        function log(message) {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+            logContent.insertBefore(entry, logContent.firstChild);
+            console.log(message);
+            
+            // Garder seulement les 20 dernières entrées
+            while (logContent.children.length > 20) {
+                logContent.removeChild(logContent.lastChild);
+            }
+        }
+
+        // Sélection de méthode
+        methodBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                methodBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedMethod = btn.dataset.method;
+                log(`Méthode sélectionnée: ${selectedMethod}`);
+            });
+        });
+
+        // Connexion MIDI
+        connectBtn.addEventListener('click', async () => {
+            try {
+                midiAccess = await navigator.requestMIDIAccess({ sysex: true });
+                const outputs = Array.from(midiAccess.outputs.values());
+                
+                if (outputs.length === 0) {
+                    alert('Aucun périphérique MIDI détecté');
+                    return;
+                }
+
+                midiOutput = outputs.find(output => 
+                    output.name.toLowerCase().includes('ctk') ||
+                    output.name.toLowerCase().includes('casio')
+                ) || outputs[0];
+
+                statusIndicator.classList.add('connected');
+                statusText.textContent = `Connecté: ${midiOutput.name}`;
+                connectBtn.textContent = '✓ Connecté';
+                connectBtn.disabled = true;
+
+                log(`MIDI connecté: ${midiOutput.name}`);
+            } catch (error) {
+                alert('Erreur de connexion MIDI: ' + error.message);
+                log(`Erreur: ${error.message}`);
+            }
+        });
+
+        // Méthode 1: Control Change #5 (Portamento Time - parfois utilisé pour tempo)
+        function sendTempoCC(bpm) {
+            if (!midiOutput) return;
+            
+            const channel = 0; // Canal 1
+            const cc5 = 0xB0 | channel; // Control Change sur canal 1
+            const value = Math.min(127, Math.round((bpm / 240) * 127)); // Normaliser 40-240 BPM vers 0-127
+            
+            midiOutput.send([cc5, 5, value]); // CC #5
+            log(`CC #5 envoyé: ${value} (${bpm} BPM)`);
+        }
+
+        // Méthode 2: RPN (Registered Parameter Number) pour tempo
+        function sendTempoRPN(bpm) {
+            if (!midiOutput) return;
+            
+            const channel = 0;
+            const cc = 0xB0 | channel;
+            
+            // RPN pour tempo (peut varier selon fabricant)
+            // MSB (CC #101) = 0, LSB (CC #100) = 0
+            midiOutput.send([cc, 101, 0]); // RPN MSB
+            midiOutput.send([cc, 100, 0]); // RPN LSB
+            
+            // Valeur (CC #6 pour MSB, CC #38 pour LSB)
+            const value = Math.min(127, Math.round((bpm / 240) * 127));
+            midiOutput.send([cc, 6, value]); // Data Entry MSB
+            
+            log(`RPN Tempo envoyé: ${value} (${bpm} BPM)`);
+        }
+
+        // Méthode 3: NRPN (Non-Registered Parameter Number)
+        function sendTempoNRPN(bpm) {
+            if (!midiOutput) return;
+            
+            const channel = 0;
+            const cc = 0xB0 | channel;
+            
+            // NRPN pour tempo (valeur arbitraire, peut varier)
+            midiOutput.send([cc, 99, 0]); // NRPN MSB
+            midiOutput.send([cc, 98, 7]); // NRPN LSB (7 = tempo sur certains appareils)
+            
+            const value = Math.min(127, Math.round((bpm / 240) * 127));
+            midiOutput.send([cc, 6, value]); // Data Entry
+            
+            log(`NRPN Tempo envoyé: ${value} (${bpm} BPM)`);
+        }
+
+        // Méthode 4: Essayer plusieurs Control Changes
+        function sendMultipleCC(bpm) {
+            if (!midiOutput) return;
+            
+            const channel = 0;
+            const cc = 0xB0 | channel;
+            const value = Math.min(127, Math.round((bpm / 240) * 127));
+            
+            // Essayer plusieurs CC qui pourraient contrôler le tempo
+            const ccNumbers = [5, 12, 13, 16, 17, 18, 19]; // Numéros communs
+            
+            ccNumbers.forEach(ccNum => {
+                midiOutput.send([cc, ccNum, value]);
+                log(`CC #${ccNum} = ${value}`);
+            });
+        }
+
+        // Méthode 5: System Exclusive (SysEx) Casio - tentative générique
+        function sendCasioSysEx(bpm) {
+            if (!midiOutput) return;
+            
+            // Structure SysEx Casio générique (peut ne pas fonctionner)
+            // F0 44 [device] [model] [command] [data] F7
+            // 0x44 = Casio manufacturer ID
+            
+            const value = Math.min(127, Math.round((bpm / 240) * 127));
+            
+            // Tentative 1: Message de tempo générique
+            const sysex1 = [0xF0, 0x44, 0x00, 0x00, 0x7F, 0x00, value, 0xF7];
+            midiOutput.send(sysex1);
+            log(`SysEx Casio envoyé (tentative 1)`);
+            
+            // Tentative 2: Autre format
+            setTimeout(() => {
+                const sysex2 = [0xF0, 0x44, 0x19, 0x01, 0x7F, 0x00, value, 0xF7];
+                midiOutput.send(sysex2);
+                log(`SysEx Casio envoyé (tentative 2)`);
+            }, 100);
+        }
+
+        // Appliquer le tempo selon la méthode choisie
+        function applyTempo() {
+            if (!midiOutput) {
+                alert('Connecte d\'abord le MIDI !');
+                return;
+            }
+
+            log(`\n=== Application du tempo: ${currentBPM} BPM ===`);
+
+            switch(selectedMethod) {
+                case 'cc':
+                    sendTempoCC(currentBPM);
+                    break;
+                case 'rpn':
+                    sendTempoRPN(currentBPM);
+                    break;
+                case 'nrpn':
+                    sendTempoNRPN(currentBPM);
+                    break;
+                case 'all':
+                    log('Mode TOUT: envoi de toutes les méthodes...');
+                    sendTempoCC(currentBPM);
+                    setTimeout(() => sendTempoRPN(currentBPM), 100);
+                    setTimeout(() => sendTempoNRPN(currentBPM), 200);
+                    setTimeout(() => sendMultipleCC(currentBPM), 300);
+                    setTimeout(() => sendCasioSysEx(currentBPM), 400);
+                    break;
+            }
+        }
+
+        // Mettre à jour le tempo
+        function updateTempo(newBPM) {
+            newBPM = Math.max(40, Math.min(240, Math.round(newBPM)));
+            currentBPM = newBPM;
+            bpmDisplay.textContent = currentBPM;
+        }
+
+        // Bouton TAP
+        tapButton.addEventListener('click', () => {
+            const now = Date.now();
+            
+            tapButton.classList.add('pulse');
+            setTimeout(() => tapButton.classList.remove('pulse'), 300);
+            
+            if (now - lastTapTime > 2000) {
+                tapTimes = [];
+            }
+            
+            tapTimes.push(now);
+            lastTapTime = now;
+            
+            updateTapDots(tapTimes.length);
+            
+            if (tapTimes.length >= 2) {
+                const intervals = [];
+                for (let i = 1; i < tapTimes.length; i++) {
+                    intervals.push(tapTimes[i] - tapTimes[i - 1]);
+                }
+                
+                const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+                const newBPM = 60000 / avgInterval;
+                updateTempo(newBPM);
+                log(`Tempo calculé: ${currentBPM} BPM (${intervals.length} taps)`);
+            }
+            
+            if (tapTimes.length > 4) {
+                tapTimes.shift();
+            }
+        });
+
+        function updateTapDots(count) {
+            tapDots.forEach((dot, index) => {
+                if (index < count) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+            
+            setTimeout(() => {
+                if (Date.now() - lastTapTime > 2000) {
+                    tapDots.forEach(dot => dot.classList.remove('active'));
+                }
+            }, 2000);
+        }
+
+        // Boutons de contrôle
+        applyBtn.addEventListener('click', applyTempo);
+        
+        resetBtn.addEventListener('click', () => {
+            updateTempo(120);
+            tapTimes = [];
+            updateTapDots(0);
+            log('Reset à 120 BPM');
+        });
+
+        increaseBtn.addEventListener('click', () => {
+            updateTempo(currentBPM + 1);
+        });
+
+        decreaseBtn.addEventListener('click', () => {
+            updateTempo(currentBPM - 1);
+        });
+
+        // Support clavier
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                tapButton.click();
+            } else if (e.code === 'Enter') {
+                e.preventDefault();
+                applyTempo();
+            }
+        });
+
+        log('Application prête !');
+        log('Tape sur le bouton TAP ou appuie sur ESPACE');
+        log('Appuie sur ENTRÉE pour appliquer le tempo');
+    </script>
+</body>
+</html>
