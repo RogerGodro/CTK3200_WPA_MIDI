@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TAP Tempo - CTK-3200</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        .midi-status {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            background: #ff4444;
+        }
+
+        .status-indicator.connected {
+            background: #44ff44;
+            box-shadow: 0 0 10px #44ff44;
+        }
+
+        #connectBtn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: transform 0.2s;
+        }
+
+        #connectBtn:hover {
+            transform: scale(1.05);
+        }
+
+        .tap-section {
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        #tapButton {
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border: 8px solid rgba(255, 255, 255, 0.3);
+            font-size: 3em;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: all 0.1s;
+            box-shadow: 0 10px 40px rgba(245, 87, 108, 0.4);
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        #tapButton:active {
+            transform: scale(0.95);
+            box-shadow: 0 5px 20px rgba(245, 87, 108, 0.6);
+        }
+
+        #tapButton.pulse {
+            animation: pulse 0.3s ease-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .bpm-display {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .bpm-value {
+            font-size: 5em;
+            font-weight: bold;
+            color: #f5576c;
+            text-shadow: 0 0 20px rgba(245, 87, 108, 0.5);
+            line-height: 1;
+        }
+
+        .bpm-label {
+            font-size: 1.2em;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 10px;
+        }
+
+        .beat-indicator {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            margin: 20px auto;
+            transition: all 0.1s;
+        }
+
+        .beat-indicator.active {
+            background: #44ff44;
+            box-shadow: 0 0 30px #44ff44;
+            transform: scale(1.2);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 15px 30px;
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        button.active {
+            background: #44ff44;
+            border-color: #44ff44;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+
+        .tempo-adjust {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        .tempo-adjust button {
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            padding: 0;
+            border-radius: 50%;
+        }
+
+        .info {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            font-size: 0.9em;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .info h3 {
+            color: #f5576c;
+            margin-bottom: 10px;
+        }
+
+        .tap-history {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .tap-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transition: all 0.3s;
+        }
+
+        .tap-dot.active {
+            background: #f5576c;
+            box-shadow: 0 0 10px #f5576c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎹 TAP Tempo CTK-3200</h1>
+
+        <div class="midi-status">
+            <span class="status-indicator" id="statusIndicator"></span>
+            <span id="statusText">MIDI non connecté</span>
+            <button id="connectBtn">Connecter MIDI</button>
+        </div>
+
+        <div class="bpm-display">
+            <div class="bpm-value" id="bpmDisplay">120</div>
+            <div class="bpm-label">BPM</div>
+            <div class="beat-indicator" id="beatIndicator"></div>
+        </div>
+
+        <div class="tap-section">
+            <div id="tapButton">TAP</div>
+            <div class="tap-history">
+                <div class="tap-dot"></div>
+                <div class="tap-dot"></div>
+                <div class="tap-dot"></div>
+                <div class="tap-dot"></div>
+            </div>
+        </div>
+
+        <div class="tempo-adjust">
+            <button id="decreaseBtn">−</button>
+            <span style="font-size: 1.2em;">Ajuster Tempo</span>
+            <button id="increaseBtn">+</button>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn">▶ Start</button>
+            <button id="stopBtn">⏹ Stop</button>
+            <button id="resetBtn">↻ Reset</button>
+        </div>
+
+        <div class="info">
+            <h3>Comment utiliser :</h3>
+            <p><strong>1.</strong> Connecte ton CTK-3200 en MIDI USB</p>
+            <p><strong>2.</strong> Clique sur "Connecter MIDI"</p>
+            <p><strong>3.</strong> Lance un rythme sur ton clavier</p>
+            <p><strong>4.</strong> Tape le bouton TAP au rythme désiré (2-4 fois)</p>
+            <p><strong>5.</strong> Le tempo du rythme s'ajustera automatiquement !</p>
+            <p style="margin-top: 15px;"><strong>Note :</strong> Les boutons +/− ajustent le tempo par incréments de 1 BPM</p>
+        </div>
+    </div>
+
+    <script>
+        let midiAccess = null;
+        let midiOutput = null;
+        let currentBPM = 120;
+        let clockInterval = null;
+        let isPlaying = false;
+        let tapTimes = [];
+        let lastTapTime = 0;
+        let beatCounter = 0;
+
+        // MIDI Clock = 24 pulses par noire (quarter note)
+        const PPQN = 24; // Pulses Per Quarter Note
+
+        // Éléments DOM
+        const connectBtn = document.getElementById('connectBtn');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const tapButton = document.getElementById('tapButton');
+        const bpmDisplay = document.getElementById('bpmDisplay');
+        const beatIndicator = document.getElementById('beatIndicator');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const increaseBtn = document.getElementById('increaseBtn');
+        const decreaseBtn = document.getElementById('decreaseBtn');
+        const tapDots = document.querySelectorAll('.tap-dot');
+
+        // Connexion MIDI
+        connectBtn.addEventListener('click', async () => {
+            try {
+                midiAccess = await navigator.requestMIDIAccess();
+                const outputs = Array.from(midiAccess.outputs.values());
+                
+                if (outputs.length === 0) {
+                    alert('Aucun périphérique MIDI détecté');
+                    return;
+                }
+
+                // Chercher le CTK-3200 ou prendre le premier output
+                midiOutput = outputs.find(output => 
+                    output.name.toLowerCase().includes('ctk') ||
+                    output.name.toLowerCase().includes('casio')
+                ) || outputs[0];
+
+                statusIndicator.classList.add('connected');
+                statusText.textContent = `Connecté: ${midiOutput.name}`;
+                connectBtn.textContent = '✓ Connecté';
+                connectBtn.disabled = true;
+
+                console.log('MIDI connecté:', midiOutput.name);
+            } catch (error) {
+                alert('Erreur de connexion MIDI: ' + error.message);
+                console.error(error);
+            }
+        });
+
+        // Calcul de l'intervalle de clock en ms pour un BPM donné
+        function getClockInterval(bpm) {
+            // 1 minute = 60000 ms
+            // Pour X BPM, on a X beats par minute
+            // Chaque beat nécessite 24 clock messages
+            // Donc: (60000 / BPM) / 24 ms entre chaque clock
+            return (60000 / bpm) / PPQN;
+        }
+
+        // Envoyer un message MIDI Clock
+        function sendMIDIClock() {
+            if (!midiOutput) return;
+            
+            // 0xF8 = MIDI Clock
+            midiOutput.send([0xF8]);
+            
+            // Indicateur visuel de beat (tous les 24 clocks = 1 beat)
+            beatCounter++;
+            if (beatCounter >= PPQN) {
+                beatCounter = 0;
+                flashBeat();
+            }
+        }
+
+        // Animation du beat indicator
+        function flashBeat() {
+            beatIndicator.classList.add('active');
+            setTimeout(() => {
+                beatIndicator.classList.remove('active');
+            }, 100);
+        }
+
+        // Démarrer l'horloge MIDI
+        function startMIDIClock() {
+            if (!midiOutput || isPlaying) return;
+
+            // Envoyer MIDI Start (0xFA)
+            midiOutput.send([0xFA]);
+            
+            isPlaying = true;
+            beatCounter = 0;
+            
+            // Démarrer l'envoi régulier de clock
+            const interval = getClockInterval(currentBPM);
+            clockInterval = setInterval(sendMIDIClock, interval);
+            
+            startBtn.classList.add('active');
+            stopBtn.classList.remove('active');
+            
+            console.log(`MIDI Clock démarré à ${currentBPM} BPM (intervalle: ${interval.toFixed(2)}ms)`);
+        }
+
+        // Arrêter l'horloge MIDI
+        function stopMIDIClock() {
+            if (!midiOutput || !isPlaying) return;
+
+            // Envoyer MIDI Stop (0xFC)
+            midiOutput.send([0xFC]);
+            
+            if (clockInterval) {
+                clearInterval(clockInterval);
+                clockInterval = null;
+            }
+            
+            isPlaying = false;
+            beatCounter = 0;
+            
+            startBtn.classList.remove('active');
+            stopBtn.classList.add('active');
+            
+            console.log('MIDI Clock arrêté');
+        }
+
+        // Mettre à jour le tempo
+        function updateTempo(newBPM) {
+            newBPM = Math.max(40, Math.min(240, Math.round(newBPM))); // Limiter entre 40-240 BPM
+            currentBPM = newBPM;
+            bpmDisplay.textContent = currentBPM;
+            
+            // Si en lecture, redémarrer avec le nouveau tempo
+            if (isPlaying) {
+                if (clockInterval) {
+                    clearInterval(clockInterval);
+                }
+                const interval = getClockInterval(currentBPM);
+                clockInterval = setInterval(sendMIDIClock, interval);
+                console.log(`Tempo mis à jour: ${currentBPM} BPM`);
+            }
+        }
+
+        // Bouton TAP
+        tapButton.addEventListener('click', () => {
+            const now = Date.now();
+            
+            // Animation
+            tapButton.classList.add('pulse');
+            setTimeout(() => tapButton.classList.remove('pulse'), 300);
+            
+            // Réinitialiser si le dernier tap est trop ancien (>2 secondes)
+            if (now - lastTapTime > 2000) {
+                tapTimes = [];
+            }
+            
+            tapTimes.push(now);
+            lastTapTime = now;
+            
+            // Mise à jour des indicateurs visuels
+            updateTapDots(tapTimes.length);
+            
+            // Calculer le BPM avec au moins 2 taps
+            if (tapTimes.length >= 2) {
+                // Calculer les intervalles entre tous les taps consécutifs
+                const intervals = [];
+                for (let i = 1; i < tapTimes.length; i++) {
+                    intervals.push(tapTimes[i] - tapTimes[i - 1]);
+                }
+                
+                // Moyenne des intervalles
+                const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+                
+                // Convertir en BPM (60000 ms = 1 minute)
+                const newBPM = 60000 / avgInterval;
+                updateTempo(newBPM);
+            }
+            
+            // Garder seulement les 4 derniers taps
+            if (tapTimes.length > 4) {
+                tapTimes.shift();
+            }
+        });
+
+        // Mise à jour visuelle des tap dots
+        function updateTapDots(count) {
+            tapDots.forEach((dot, index) => {
+                if (index < count) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+            
+            // Retirer l'état actif après un délai
+            setTimeout(() => {
+                if (Date.now() - lastTapTime > 2000) {
+                    tapDots.forEach(dot => dot.classList.remove('active'));
+                }
+            }, 2000);
+        }
+
+        // Boutons de contrôle
+        startBtn.addEventListener('click', startMIDIClock);
+        stopBtn.addEventListener('click', stopMIDIClock);
+        
+        resetBtn.addEventListener('click', () => {
+            stopMIDIClock();
+            updateTempo(120);
+            tapTimes = [];
+            updateTapDots(0);
+        });
+
+        increaseBtn.addEventListener('click', () => {
+            updateTempo(currentBPM + 1);
+        });
+
+        decreaseBtn.addEventListener('click', () => {
+            updateTempo(currentBPM - 1);
+        });
+
+        // Support du clavier
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                tapButton.click();
+            }
+        });
+
+        console.log('Application TAP Tempo prête !');
+        console.log('Appuie sur ESPACE ou clique sur TAP pour définir le tempo');
+    </script>
+</body>
+</html>
