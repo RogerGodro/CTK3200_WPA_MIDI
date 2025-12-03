@@ -64,7 +64,12 @@
             gap: 10px;
         }
 
-        .nav-btn {
+        #mode-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn, .mode-btn {
             width: 45px;
             height: 45px;
             border-radius: 50%;
@@ -79,7 +84,12 @@
             font-size: 20px;
         }
 
-        .nav-btn:active, .nav-btn.active {
+        .mode-btn {
+            font-size: 9px;
+            font-weight: bold;
+        }
+
+        .nav-btn:active, .nav-btn.active, .mode-btn:active, .mode-btn.active {
             background: #555;
             transform: scale(0.95);
             border-color: #666;
@@ -158,8 +168,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 10px;
+            font-size: 9px;
             color: #666;
+            font-weight: bold;
         }
 
         .side-btn:active, .side-btn.active {
@@ -191,25 +202,31 @@
     <div id="launchpad">
         <div id="header">
             <div id="nav-buttons">
-                <div class="nav-btn" data-note="104">▲</div>
-                <div class="nav-btn" data-note="105">▼</div>
-                <div class="nav-btn" data-note="106">◀</div>
-                <div class="nav-btn" data-note="107">▶</div>
+                <div class="nav-btn" data-note="104" data-type="cc">▲</div>
+                <div class="nav-btn" data-note="105" data-type="cc">▼</div>
+                <div class="nav-btn" data-note="106" data-type="cc">◀</div>
+                <div class="nav-btn" data-note="107" data-type="cc">▶</div>
             </div>
             <div id="logo">LAUNCHPAD MK2</div>
+            <div id="mode-buttons">
+                <div class="mode-btn" data-note="108" data-type="cc">SESS</div>
+                <div class="mode-btn" data-note="109" data-type="cc">USR1</div>
+                <div class="mode-btn" data-note="110" data-type="cc">USR2</div>
+                <div class="mode-btn" data-note="111" data-type="cc">MIX</div>
+            </div>
         </div>
 
         <div id="main-area">
             <div id="grid"></div>
             <div id="side-buttons">
-                <div class="side-btn" data-note="89">Vol</div>
-                <div class="side-btn" data-note="79">Pan</div>
-                <div class="side-btn" data-note="69">SndA</div>
-                <div class="side-btn" data-note="59">SndB</div>
-                <div class="side-btn" data-note="49">Stop</div>
-                <div class="side-btn" data-note="39">Mute</div>
-                <div class="side-btn" data-note="29">Solo</div>
-                <div class="side-btn" data-note="19">Rec</div>
+                <div class="side-btn" data-note="89" data-type="cc">VOL</div>
+                <div class="side-btn" data-note="79" data-type="cc">PAN</div>
+                <div class="side-btn" data-note="69" data-type="cc">SND A</div>
+                <div class="side-btn" data-note="59" data-type="cc">SND B</div>
+                <div class="side-btn" data-note="49" data-type="cc">STOP</div>
+                <div class="side-btn" data-note="39" data-type="cc">MUTE</div>
+                <div class="side-btn" data-note="29" data-type="cc">SOLO</div>
+                <div class="side-btn" data-note="19" data-type="cc">REC</div>
             </div>
         </div>
     </div>
@@ -217,6 +234,7 @@
     <div id="info">
         <p>Appuyez sur les pads pour tester!</p>
         <p>Les LED devraient s'allumer sur le Launchpad.</p>
+        <p><strong>Total: 80 boutons</strong> (4 nav + 4 mode + 64 pads + 8 side)</p>
     </div>
 
     <script>
@@ -240,14 +258,14 @@
 
                 // Trouver le Launchpad MK2
                 for (let output of access.outputs.values()) {
-                    if (output.name.includes('Launchpad MK2')) {
+                    if (output.name.includes('Launchpad MK2') || output.name.includes('Launchpad')) {
                         midiOutput = output;
                         break;
                     }
                 }
 
                 for (let input of access.inputs.values()) {
-                    if (input.name.includes('Launchpad MK2')) {
+                    if (input.name.includes('Launchpad MK2') || input.name.includes('Launchpad')) {
                         midiInput = input;
                         midiInput.onmidimessage = handleMIDIMessage;
                         break;
@@ -294,6 +312,7 @@
                     const pad = document.createElement('div');
                     pad.className = 'pad';
                     pad.dataset.note = note;
+                    pad.dataset.type = 'note';
                     
                     const noteDisplay = document.createElement('div');
                     noteDisplay.className = 'note-display';
@@ -313,8 +332,8 @@
                 });
             });
 
-            // Ajouter événements pour les boutons de navigation
-            document.querySelectorAll('.nav-btn, .side-btn').forEach(btn => {
+            // Ajouter événements pour tous les boutons
+            document.querySelectorAll('.nav-btn, .side-btn, .mode-btn').forEach(btn => {
                 btn.addEventListener('mousedown', () => activateButton(btn));
                 btn.addEventListener('mouseup', () => deactivateButton(btn));
             });
@@ -368,6 +387,7 @@
             const note = parseInt(btn.dataset.note);
             
             if (midiOutput) {
+                // Control Change pour les boutons
                 midiOutput.send([0xB0, note, 127]);
             }
             
@@ -388,20 +408,19 @@
         function handleMIDIMessage(message) {
             const [status, note, velocity] = message.data;
             
-            // Note On (0x90) ou Control Change (0xB0)
+            // Note On (0x90) pour les pads
             if (status === 0x90) {
-                // Trouver le pad correspondant
                 const pad = document.querySelector(`.pad[data-note="${note}"]`);
                 if (pad) {
                     if (velocity > 0) {
                         activatePad(pad);
-                        // Désactiver après un court délai
                         setTimeout(() => deactivatePad(pad), 100);
                     }
                 }
-            } else if (status === 0xB0) {
-                // Boutons (navigation et latéraux)
-                const btn = document.querySelector(`.nav-btn[data-note="${note}"], .side-btn[data-note="${note}"]`);
+            } 
+            // Control Change (0xB0) pour les boutons
+            else if (status === 0xB0) {
+                const btn = document.querySelector(`[data-note="${note}"][data-type="cc"]`);
                 if (btn) {
                     if (velocity > 0) {
                         activateButton(btn);
@@ -441,6 +460,7 @@
                 // Éteindre toutes les LED
                 for (let i = 0; i < 128; i++) {
                     midiOutput.send([0x90, i, 0]);
+                    midiOutput.send([0xB0, i, 0]);
                 }
             }
         });
