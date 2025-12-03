@@ -272,9 +272,11 @@
                     }
                 }
 
+                // Toujours initialiser les pads pour l'affichage
+                initializePads();
+                
                 if (midiOutput && midiInput) {
                     updateStatus('✅ Launchpad MK2 connecté!', 'connected');
-                    initializePads();
                     lightUpPads();
                 } else {
                     updateStatus('❌ Launchpad MK2 non trouvé. Branchez-le et rafraîchissez.', 'error');
