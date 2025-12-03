@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Launchpad MK2</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+
+        #status {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        #status.connected {
+            background: rgba(0, 255, 0, 0.2);
+            border: 2px solid #00ff00;
+        }
+
+        #status.error {
+            background: rgba(255, 0, 0, 0.2);
+            border: 2px solid #ff0000;
+        }
+
+        #launchpad {
+            background: #1a1a1a;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+            border: 3px solid #333;
+        }
+
+        #header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #333;
+        }
+
+        #nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: #2a2a2a;
+            border: 2px solid #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.1s;
+            color: #888;
+            font-size: 20px;
+        }
+
+        .nav-btn:active, .nav-btn.active {
+            background: #555;
+            transform: scale(0.95);
+            border-color: #666;
+        }
+
+        #logo {
+            color: #888;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        #main-area {
+            display: flex;
+            gap: 20px;
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 8px;
+        }
+
+        .pad {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            background: #2a2a2a;
+            border: 2px solid #444;
+            cursor: pointer;
+            transition: all 0.1s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pad::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: white;
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .pad:active::before, .pad.active::before {
+            width: 100%;
+            height: 100%;
+            opacity: 0.3;
+        }
+
+        .pad:active, .pad.active {
+            transform: scale(0.9);
+            box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        #side-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            justify-content: space-between;
+        }
+
+        .side-btn {
+            width: 45px;
+            height: 50px;
+            border-radius: 50%;
+            background: #2a2a2a;
+            border: 2px solid #444;
+            cursor: pointer;
+            transition: all 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #666;
+        }
+
+        .side-btn:active, .side-btn.active {
+            background: #555;
+            transform: scale(0.95);
+            border-color: #666;
+        }
+
+        #info {
+            margin-top: 30px;
+            text-align: center;
+            color: #888;
+            font-size: 14px;
+        }
+
+        .note-display {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 8px;
+            color: #666;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div id="status">🔌 Recherche du Launchpad MK2...</div>
+
+    <div id="launchpad">
+        <div id="header">
+            <div id="nav-buttons">
+                <div class="nav-btn" data-note="104">▲</div>
+                <div class="nav-btn" data-note="105">▼</div>
+                <div class="nav-btn" data-note="106">◀</div>
+                <div class="nav-btn" data-note="107">▶</div>
+            </div>
+            <div id="logo">LAUNCHPAD MK2</div>
+        </div>
+
+        <div id="main-area">
+            <div id="grid"></div>
+            <div id="side-buttons">
+                <div class="side-btn" data-note="89">Vol</div>
+                <div class="side-btn" data-note="79">Pan</div>
+                <div class="side-btn" data-note="69">SndA</div>
+                <div class="side-btn" data-note="59">SndB</div>
+                <div class="side-btn" data-note="49">Stop</div>
+                <div class="side-btn" data-note="39">Mute</div>
+                <div class="side-btn" data-note="29">Solo</div>
+                <div class="side-btn" data-note="19">Rec</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="info">
+        <p>Appuyez sur les pads pour tester!</p>
+        <p>Les LED devraient s'allumer sur le Launchpad.</p>
+    </div>
+
+    <script>
+        let midiOutput = null;
+        let midiInput = null;
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Couleurs alternées: bleu, rouge, vert, mauve
+        const colors = [
+            { name: 'bleu', led: 45, css: '#0080ff' },
+            { name: 'rouge', led: 5, css: '#ff0000' },
+            { name: 'vert', led: 21, css: '#00ff00' },
+            { name: 'mauve', led: 53, css: '#ff00ff' }
+        ];
+
+        // Initialiser Web MIDI
+        async function initMIDI() {
+            try {
+                const access = await navigator.requestMIDIAccess();
+                updateStatus('🔍 Recherche du Launchpad MK2...');
+
+                // Trouver le Launchpad MK2
+                for (let output of access.outputs.values()) {
+                    if (output.name.includes('Launchpad MK2')) {
+                        midiOutput = output;
+                        break;
+                    }
+                }
+
+                for (let input of access.inputs.values()) {
+                    if (input.name.includes('Launchpad MK2')) {
+                        midiInput = input;
+                        midiInput.onmidimessage = handleMIDIMessage;
+                        break;
+                    }
+                }
+
+                if (midiOutput && midiInput) {
+                    updateStatus('✅ Launchpad MK2 connecté!', 'connected');
+                    initializePads();
+                    lightUpPads();
+                } else {
+                    updateStatus('❌ Launchpad MK2 non trouvé. Branchez-le et rafraîchissez.', 'error');
+                }
+            } catch (error) {
+                updateStatus('❌ Erreur MIDI: ' + error.message, 'error');
+                console.error(error);
+            }
+        }
+
+        function updateStatus(message, statusClass = '') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = statusClass;
+        }
+
+        // Créer les 64 pads
+        function initializePads() {
+            const grid = document.getElementById('grid');
+            
+            // Notes MIDI pour chaque pad (de haut en bas, gauche à droite)
+            const padNotes = [
+                [81, 82, 83, 84, 85, 86, 87, 88],
+                [71, 72, 73, 74, 75, 76, 77, 78],
+                [61, 62, 63, 64, 65, 66, 67, 68],
+                [51, 52, 53, 54, 55, 56, 57, 58],
+                [41, 42, 43, 44, 45, 46, 47, 48],
+                [31, 32, 33, 34, 35, 36, 37, 38],
+                [21, 22, 23, 24, 25, 26, 27, 28],
+                [11, 12, 13, 14, 15, 16, 17, 18]
+            ];
+
+            padNotes.forEach((row, rowIndex) => {
+                row.forEach((note, colIndex) => {
+                    const pad = document.createElement('div');
+                    pad.className = 'pad';
+                    pad.dataset.note = note;
+                    
+                    const noteDisplay = document.createElement('div');
+                    noteDisplay.className = 'note-display';
+                    noteDisplay.textContent = note;
+                    pad.appendChild(noteDisplay);
+                    
+                    const padIndex = rowIndex * 8 + colIndex;
+                    const color = colors[padIndex % colors.length];
+                    pad.dataset.color = color.css;
+                    pad.dataset.ledColor = color.led;
+                    
+                    pad.addEventListener('mousedown', () => activatePad(pad));
+                    pad.addEventListener('mouseup', () => deactivatePad(pad));
+                    pad.addEventListener('mouseleave', () => deactivatePad(pad));
+                    
+                    grid.appendChild(pad);
+                });
+            });
+
+            // Ajouter événements pour les boutons de navigation
+            document.querySelectorAll('.nav-btn, .side-btn').forEach(btn => {
+                btn.addEventListener('mousedown', () => activateButton(btn));
+                btn.addEventListener('mouseup', () => deactivateButton(btn));
+            });
+        }
+
+        // Allumer tous les pads avec leurs couleurs
+        function lightUpPads() {
+            if (!midiOutput) return;
+            
+            document.querySelectorAll('.pad').forEach(pad => {
+                const note = parseInt(pad.dataset.note);
+                const ledColor = parseInt(pad.dataset.ledColor);
+                
+                // Envoyer Note On avec la couleur LED
+                midiOutput.send([0x90, note, ledColor]);
+                
+                // Appliquer la couleur CSS
+                pad.style.background = pad.dataset.color;
+                pad.style.borderColor = pad.dataset.color;
+            });
+        }
+
+        // Activer un pad
+        function activatePad(pad) {
+            pad.classList.add('active');
+            const note = parseInt(pad.dataset.note);
+            
+            if (midiOutput) {
+                // Envoyer Note On avec vélocité maximale pour illuminer
+                midiOutput.send([0x90, note, 127]);
+            }
+            
+            playSound(note);
+        }
+
+        // Désactiver un pad
+        function deactivatePad(pad) {
+            pad.classList.remove('active');
+            const note = parseInt(pad.dataset.note);
+            const ledColor = parseInt(pad.dataset.ledColor);
+            
+            if (midiOutput) {
+                // Remettre la couleur originale
+                midiOutput.send([0x90, note, ledColor]);
+            }
+        }
+
+        // Activer un bouton
+        function activateButton(btn) {
+            btn.classList.add('active');
+            const note = parseInt(btn.dataset.note);
+            
+            if (midiOutput) {
+                midiOutput.send([0xB0, note, 127]);
+            }
+            
+            playSound(note);
+        }
+
+        // Désactiver un bouton
+        function deactivateButton(btn) {
+            btn.classList.remove('active');
+            const note = parseInt(btn.dataset.note);
+            
+            if (midiOutput) {
+                midiOutput.send([0xB0, note, 0]);
+            }
+        }
+
+        // Gérer les messages MIDI entrants
+        function handleMIDIMessage(message) {
+            const [status, note, velocity] = message.data;
+            
+            // Note On (0x90) ou Control Change (0xB0)
+            if (status === 0x90) {
+                // Trouver le pad correspondant
+                const pad = document.querySelector(`.pad[data-note="${note}"]`);
+                if (pad) {
+                    if (velocity > 0) {
+                        activatePad(pad);
+                        // Désactiver après un court délai
+                        setTimeout(() => deactivatePad(pad), 100);
+                    }
+                }
+            } else if (status === 0xB0) {
+                // Boutons (navigation et latéraux)
+                const btn = document.querySelector(`.nav-btn[data-note="${note}"], .side-btn[data-note="${note}"]`);
+                if (btn) {
+                    if (velocity > 0) {
+                        activateButton(btn);
+                        setTimeout(() => deactivateButton(btn), 100);
+                    }
+                }
+            }
+        }
+
+        // Jouer un son
+        function playSound(note) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            // Convertir la note MIDI en fréquence
+            const frequency = 440 * Math.pow(2, (note - 69) / 12);
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+
+        // Démarrer au chargement
+        window.addEventListener('load', initMIDI);
+
+        // Nettoyer à la fermeture
+        window.addEventListener('beforeunload', () => {
+            if (midiOutput) {
+                // Éteindre toutes les LED
+                for (let i = 0; i < 128; i++) {
+                    midiOutput.send([0x90, i, 0]);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
