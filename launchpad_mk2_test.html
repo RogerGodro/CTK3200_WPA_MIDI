@@ -27,7 +27,7 @@
             background: rgba(255, 255, 255, 0.1);
             padding: 15px 30px;
             border-radius: 10px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             font-size: 18px;
             text-align: center;
         }
@@ -40,6 +40,34 @@
         #status.error {
             background: rgba(255, 0, 0, 0.2);
             border: 2px solid #ff0000;
+        }
+
+        #reconnect-btn {
+            background: #0080ff;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            transition: all 0.2s;
+        }
+
+        #reconnect-btn:hover {
+            background: #0060cc;
+        }
+
+        #reconnect-btn:active {
+            transform: scale(0.95);
+        }
+
+        #device-name {
+            color: #00ff00;
+            font-weight: bold;
+            margin-top: 5px;
+            font-size: 14px;
         }
 
         #launchpad {
@@ -198,6 +226,7 @@
 </head>
 <body>
     <div id="status">🔌 Recherche du Launchpad MK2...</div>
+    <button id="reconnect-btn">🔄 Reconnecter</button>
 
     <div id="launchpad">
         <div id="header">
@@ -240,6 +269,7 @@
     <script>
         let midiOutput = null;
         let midiInput = null;
+        let midiAccess = null;
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         
         // Couleurs alternées: bleu, rouge, vert, mauve
@@ -253,37 +283,61 @@
         // Initialiser Web MIDI
         async function initMIDI() {
             try {
-                const access = await navigator.requestMIDIAccess();
-                updateStatus('🔍 Recherche du Launchpad MK2...');
+                midiAccess = await navigator.requestMIDIAccess();
+                updateStatus('🔍 Recherche d\'un appareil MIDI...');
 
-                // Trouver le Launchpad MK2
-                for (let output of access.outputs.values()) {
-                    if (output.name.includes('Launchpad MK2') || output.name.includes('Launchpad')) {
-                        midiOutput = output;
-                        break;
+                // Ajouter listener pour détecter les nouveaux appareils
+                midiAccess.onstatechange = function(e) {
+                    console.log('État MIDI changé:', e.port.name, e.port.state);
+                    if (e.port.state === 'connected') {
+                        updateStatus('🔌 Nouvel appareil détecté: ' + e.port.name);
+                        // Attendre un peu puis reconnecter
+                        setTimeout(connectToDevice, 500);
                     }
-                }
+                };
 
-                for (let input of access.inputs.values()) {
-                    if (input.name.includes('Launchpad MK2') || input.name.includes('Launchpad')) {
-                        midiInput = input;
-                        midiInput.onmidimessage = handleMIDIMessage;
-                        break;
-                    }
-                }
+                // Connexion initiale
+                connectToDevice();
 
-                // Toujours initialiser les pads pour l'affichage
-                initializePads();
-                
-                if (midiOutput && midiInput) {
-                    updateStatus('✅ Launchpad MK2 connecté!', 'connected');
-                    lightUpPads();
-                } else {
-                    updateStatus('❌ Launchpad MK2 non trouvé. Branchez-le et rafraîchissez.', 'error');
-                }
             } catch (error) {
                 updateStatus('❌ Erreur MIDI: ' + error.message, 'error');
                 console.error(error);
+            }
+        }
+
+        // Fonction pour se connecter aux appareils MIDI
+        function connectToDevice() {
+            if (!midiAccess) return;
+
+            // Réinitialiser les connexions
+            midiOutput = null;
+            midiInput = null;
+
+            // Chercher n'importe quel appareil MIDI
+            for (let output of midiAccess.outputs.values()) {
+                if (!midiOutput) {
+                    midiOutput = output;
+                    console.log('Output trouvé:', output.name);
+                }
+            }
+
+            for (let input of midiAccess.inputs.values()) {
+                if (!midiInput) {
+                    midiInput = input;
+                    midiInput.onmidimessage = handleMIDIMessage;
+                    console.log('Input trouvé:', input.name);
+                }
+            }
+
+            if (midiOutput && midiInput) {
+                const deviceName = midiInput.name || 'Appareil MIDI';
+                updateStatus('✅ Connecté: ' + deviceName, 'connected');
+                lightUpPads();
+            } else if (midiOutput || midiInput) {
+                const deviceName = (midiOutput?.name || midiInput?.name) || 'Appareil MIDI';
+                updateStatus('⚠️ Appareil trouvé mais connexion partielle: ' + deviceName, 'error');
+            } else {
+                updateStatus('❌ Aucun appareil MIDI trouvé. Branchez-le et cliquez Reconnecter.', 'error');
             }
         }
 
@@ -454,7 +508,16 @@
         }
 
         // Démarrer au chargement
-        window.addEventListener('load', initMIDI);
+        window.addEventListener('load', () => {
+            initializePads(); // Toujours afficher les pads
+            initMIDI(); // Tenter la connexion MIDI
+            
+            // Ajouter listener au bouton de reconnexion
+            document.getElementById('reconnect-btn').addEventListener('click', () => {
+                updateStatus('🔄 Reconnexion en cours...');
+                connectToDevice();
+            });
+        });
 
         // Nettoyer à la fermeture
         window.addEventListener('beforeunload', () => {
