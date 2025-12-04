@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>G1X Four Controller - Advanced</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap');
+        
+        :root {
+            --bg-dark: #0a0e17;
+            --bg-panel: #1a1f2e;
+            --accent-primary: #00ff9f;
+            --accent-secondary: #ff3d71;
+            --accent-tertiary: #ffd700;
+            --text-primary: #e0e6ed;
+            --text-secondary: #8b95a5;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Space Mono', monospace;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 20px;
+        }
+        
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-tertiary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        
+        .subtitle {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .panel {
+            background: var(--bg-panel);
+            border: 2px solid rgba(0, 255, 159, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+        }
+        
+        .panel-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--accent-secondary);
+            box-shadow: 0 0 15px var(--accent-secondary);
+            animation: blink 2s ease-in-out infinite;
+        }
+        
+        .status-dot.connected {
+            background: var(--accent-primary);
+            box-shadow: 0 0 15px var(--accent-primary);
+            animation: none;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        button {
+            font-family: 'Orbitron', sans-serif;
+            background: linear-gradient(135deg, var(--accent-primary) 0%, #00cc7f 100%);
+            color: var(--bg-dark);
+            border: none;
+            padding: 12px 25px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 255, 159, 0.4);
+            margin: 5px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 255, 159, 0.6);
+        }
+        
+        button:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        
+        .patch-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+        
+        .patch-btn {
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid rgba(0, 255, 159, 0.2);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+        
+        .patch-btn:hover {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 20px rgba(0, 255, 159, 0.3);
+        }
+        
+        .patch-btn.active {
+            background: linear-gradient(135deg, rgba(0, 255, 159, 0.2) 0%, rgba(0, 204, 127, 0.2) 100%);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 30px rgba(0, 255, 159, 0.5);
+        }
+        
+        .effect-chain {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .effect-slot {
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid rgba(255, 61, 113, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .effect-slot.active {
+            border-color: var(--accent-secondary);
+            box-shadow: 0 0 20px rgba(255, 61, 113, 0.3);
+            background: linear-gradient(135deg, rgba(255, 61, 113, 0.1) 0%, rgba(255, 100, 130, 0.1) 100%);
+        }
+        
+        .effect-info {
+            flex: 1;
+        }
+        
+        .effect-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--accent-secondary);
+        }
+        
+        .effect-type {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .effect-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .toggle-btn {
+            width: 50px;
+            height: 30px;
+            background: #333;
+            border-radius: 15px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .toggle-btn.active {
+            background: var(--accent-secondary);
+            border-color: var(--accent-secondary);
+        }
+        
+        .toggle-btn::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: white;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-btn.active::after {
+            left: 24px;
+        }
+        
+        .param-slider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .param-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            min-width: 80px;
+        }
+        
+        input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-secondary);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 61, 113, 0.5);
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-secondary);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px rgba(255, 61, 113, 0.5);
+        }
+        
+        .param-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            color: var(--accent-secondary);
+            min-width: 40px;
+            text-align: right;
+        }
+        
+        .current-patch-info {
+            background: rgba(0, 255, 159, 0.05);
+            border: 1px solid rgba(0, 255, 159, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .current-patch-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            color: var(--accent-primary);
+            margin-bottom: 5px;
+        }
+        
+        .current-patch-details {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        
+        .action-buttons button {
+            flex: 1;
+            min-width: 120px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>G1X Four</h1>
+            <div class="subtitle">Advanced MIDI Controller</div>
+        </header>
+        
+        <div class="main-grid">
+            <!-- Left Column -->
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <!-- Connection Panel -->
+                <div class="panel">
+                    <div class="panel-title">
+                        <div class="status-dot" id="statusDot"></div>
+                        <span>Connexion</span>
+                    </div>
+                    <button id="connectBtn">Connecter la pédale</button>
+                    <div id="deviceInfo" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);"></div>
+                </div>
+                
+                <!-- Patch Selection -->
+                <div class="panel">
+                    <div class="panel-title">Patches - Bank <span id="currentBank">1</span></div>
+                    <div class="patch-grid" id="patchGrid"></div>
+                    <div class="action-buttons">
+                        <button onclick="changeBank(-1)">◀ Bank</button>
+                        <button onclick="changeBank(1)">Bank ▶</button>
+                    </div>
+                </div>
+                
+                <!-- Current Patch Info -->
+                <div class="panel">
+                    <div class="panel-title">Patch Actuel</div>
+                    <div class="current-patch-info">
+                        <div class="current-patch-name" id="currentPatchName">-</div>
+                        <div class="current-patch-details" id="currentPatchDetails">Patch #<span id="currentPatchNum">-</span></div>
+                    </div>
+                    <div class="action-buttons">
+                        <button onclick="requestPatchData()">Charger Info</button>
+                        <button onclick="enableEditMode()">Edit Mode</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column -->
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <!-- Effects Chain -->
+                <div class="panel">
+                    <div class="panel-title">Chaîne d'Effets</div>
+                    <div class="effect-chain" id="effectChain"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let midiOutput = null;
+        let midiInput = null;
+        let currentPatch = 10;
+        let currentBank = 1;
+        let editMode = false;
+        
+        const effects = [
+            { slot: 0, name: 'Effect 1', type: 'EMPTY', enabled: false, params: { level: 50, tone: 50 } },
+            { slot: 1, name: 'Effect 2', type: 'EMPTY', enabled: false, params: { level: 50, tone: 50 } },
+            { slot: 2, name: 'Effect 3', type: 'EMPTY', enabled: false, params: { level: 50, tone: 50 } },
+            { slot: 3, name: 'Effect 4', type: 'EMPTY', enabled: false, params: { level: 50, tone: 50 } },
+            { slot: 4, name: 'Effect 5', type: 'EMPTY', enabled: false, params: { level: 50, tone: 50 } }
+        ];
+        
+        // Initialize
+        document.getElementById('connectBtn').addEventListener('click', connectMIDI);
+        updatePatchGrid();
+        updateEffectChain();
+        
+        async function connectMIDI() {
+            try {
+                const midiAccess = await navigator.requestMIDIAccess({ sysex: true });
+                
+                for (const output of midiAccess.outputs.values()) {
+                    if (output.name.includes('ZOOM') || output.name.includes('G1')) {
+                        midiOutput = output;
+                    }
+                }
+                
+                for (const input of midiAccess.inputs.values()) {
+                    if (input.name.includes('ZOOM') || input.name.includes('G1')) {
+                        midiInput = input;
+                        midiInput.onmidimessage = handleMIDIMessage;
+                    }
+                }
+                
+                if (midiOutput) {
+                    document.getElementById('statusDot').classList.add('connected');
+                    document.getElementById('deviceInfo').textContent = 'Connecté: ' + midiOutput.name;
+                    document.getElementById('connectBtn').textContent = 'Connecté ✓';
+                    document.getElementById('connectBtn').disabled = true;
+                    
+                    console.log('Connecté à:', midiOutput.name);
+                } else {
+                    alert('Zoom G1X Four non trouvée.');
+                }
+            } catch (error) {
+                console.error('Erreur MIDI:', error);
+                alert('Impossible d\'accéder au MIDI.');
+            }
+        }
+        
+        function updatePatchGrid() {
+            const grid = document.getElementById('patchGrid');
+            grid.innerHTML = '';
+            
+            const startPatch = 10 + ((currentBank - 1) * 10);
+            
+            for (let i = 0; i < 10; i++) {
+                const patchNum = startPatch + i;
+                const btn = document.createElement('div');
+                btn.className = 'patch-btn';
+                btn.textContent = patchNum;
+                
+                if (patchNum === currentPatch) {
+                    btn.classList.add('active');
+                }
+                
+                btn.onclick = () => changePatch(patchNum);
+                grid.appendChild(btn);
+            }
+            
+            document.getElementById('currentBank').textContent = currentBank;
+        }
+        
+        function updateEffectChain() {
+            const chain = document.getElementById('effectChain');
+            chain.innerHTML = '';
+            
+            effects.forEach((effect, idx) => {
+                const slot = document.createElement('div');
+                slot.className = 'effect-slot' + (effect.enabled ? ' active' : '');
+                
+                slot.innerHTML = `
+                    <div class="effect-info">
+                        <div class="effect-name">${effect.name}</div>
+                        <div class="effect-type">${effect.type}</div>
+                        ${effect.enabled ? `
+                            <div class="param-slider">
+                                <span class="param-label">Level</span>
+                                <input type="range" min="0" max="100" value="${effect.params.level}" 
+                                    onchange="updateEffectParam(${idx}, 'level', this.value)">
+                                <span class="param-value">${effect.params.level}</span>
+                            </div>
+                            <div class="param-slider">
+                                <span class="param-label">Tone</span>
+                                <input type="range" min="0" max="100" value="${effect.params.tone}" 
+                                    onchange="updateEffectParam(${idx}, 'tone', this.value)">
+                                <span class="param-value">${effect.params.tone}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="effect-controls">
+                        <div class="toggle-btn ${effect.enabled ? 'active' : ''}" 
+                            onclick="toggleEffect(${idx})"></div>
+                    </div>
+                `;
+                
+                chain.appendChild(slot);
+            });
+        }
+        
+        function changePatch(patchNum) {
+            if (!midiOutput) return;
+            
+            const patchIndex = patchNum - 10;
+            midiOutput.send([0xC0, patchIndex]);
+            
+            currentPatch = patchNum;
+            currentBank = Math.floor((patchNum - 10) / 10) + 1;
+            
+            updatePatchGrid();
+            updateCurrentPatchInfo(patchNum);
+            
+            console.log('Patch changé:', patchNum);
+        }
+        
+        function changeBank(direction) {
+            currentBank += direction;
+            if (currentBank < 1) currentBank = 5;
+            if (currentBank > 5) currentBank = 1;
+            
+            updatePatchGrid();
+        }
+        
+        function toggleEffect(idx) {
+            if (!editMode) {
+                alert('Active le Edit Mode d\'abord');
+                return;
+            }
+            
+            effects[idx].enabled = !effects[idx].enabled;
+            updateEffectChain();
+            
+            // Simuler l'envoi MIDI (à implémenter avec vraies commandes SysEx)
+            console.log(`Effect ${idx + 1}: ${effects[idx].enabled ? 'ON' : 'OFF'}`);
+        }
+        
+        function updateEffectParam(idx, param, value) {
+            effects[idx].params[param] = parseInt(value);
+            
+            // Simuler l'envoi MIDI (à implémenter avec vraies commandes SysEx)
+            console.log(`Effect ${idx + 1} ${param}: ${value}`);
+        }
+        
+        function requestPatchData() {
+            if (!midiOutput) return;
+            
+            // F0 52 00 64 29 F7 - Download current patch
+            const sysex = [0xF0, 0x52, 0x00, 0x64, 0x29, 0xF7];
+            midiOutput.send(sysex);
+            
+            console.log('Requête patch data envoyée');
+        }
+        
+        function enableEditMode() {
+            if (!midiOutput) return;
+            
+            editMode = !editMode;
+            
+            // F0 52 00 64 50 F7 - Enable edit mode
+            // F0 52 00 64 51 F7 - Disable edit mode
+            const sysex = editMode 
+                ? [0xF0, 0x52, 0x00, 0x64, 0x50, 0xF7]
+                : [0xF0, 0x52, 0x00, 0x64, 0x51, 0xF7];
+            
+            midiOutput.send(sysex);
+            
+            const btn = event.target;
+            btn.textContent = editMode ? 'Edit ON ✓' : 'Edit Mode';
+            btn.style.background = editMode 
+                ? 'linear-gradient(135deg, #ff3d71 0%, #ff6491 100%)'
+                : '';
+            
+            console.log('Edit mode:', editMode);
+        }
+        
+        function updateCurrentPatchInfo(patchNum) {
+            document.getElementById('currentPatchNum').textContent = patchNum;
+            document.getElementById('currentPatchName').textContent = `PATCH ${patchNum}`;
+            document.getElementById('currentPatchDetails').textContent = `Patch #${patchNum}`;
+        }
+        
+        function handleMIDIMessage(message) {
+            const data = message.data;
+            
+            // Program Change
+            if (data[0] === 0xC0) {
+                const patch = data[1] + 10;
+                currentPatch = patch;
+                currentBank = Math.floor((patch - 10) / 10) + 1;
+                
+                updatePatchGrid();
+                updateCurrentPatchInfo(patch);
+                
+                console.log('Patch changé depuis pédale:', patch);
+            }
+            
+            // SysEx
+            if (data[0] === 0xF0 && data[1] === 0x52) {
+                console.log('SysEx:', Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' '));
+                parsePatchData(data);
+            }
+        }
+        
+        function parsePatchData(data) {
+            // Parse simplifiée - à compléter avec vraie structure
+            console.log('Données patch reçues, longueur:', data.length);
+            
+            // Simuler détection d'effets
+            const detectedEffects = ['COMP', 'DRIVE', 'AMP', 'DELAY', 'REVERB'];
+            
+            effects.forEach((effect, idx) => {
+                effect.type = detectedEffects[idx];
+                effect.enabled = Math.random() > 0.5; // Placeholder
+            });
+            
+            updateEffectChain();
+        }
+        
+        // Check MIDI support
+        if (!navigator.requestMIDIAccess) {
+            alert('Web MIDI API non supportée. Utilise Chrome, Edge ou Opera.');
+        }
+    </script>
+</body>
+</html>
