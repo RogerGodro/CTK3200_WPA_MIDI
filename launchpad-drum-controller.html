@@ -1329,26 +1329,10 @@
             
             // Messages Note On (0x90)
             if (status === 0x90) {
-                // Pads de la grille principale (notes 11-88)
-                // Pattern: ligne×10 + colonne + 1 (ligne 1 = bas, col 1 = gauche)
-                if (note >= 11 && note <= 88) {
-                    const tens = Math.floor(note / 10);
-                    const ones = note % 10;
-                    
-                    // Vérifier que c'est une note valide (pas de 9, 0 dans les unités)
-                    if (ones >= 1 && ones <= 8 && tens >= 1 && tens <= 8) {
-                        const row = tens - 1; // Ligne 0-7 (0 = bas)
-                        const col = ones - 1; // Colonne 0-7 (0 = gauche)
-                        console.log(`✓ Pad cliqué - Note ${note} -> Row: ${row}, Col: ${col}`);
-                        handlePadClick(row, col);
-                    }
-                }
                 // Boutons ronds de droite (Note On: 89, 79, 69, 59, 49, 39, 29, 19)
-                // 89=Volume(drumset0), 79=Pan(drumset1), 69=SendA(drumset2), 
-                // 59=SendB(drumset3), 49=Stop(drumset4), 39=Mute(drumset5),
-                // 29=Solo(STOP), 19=RecordArm(PAUSE)
-                else if ([89, 79, 69, 59, 49, 39, 29, 19].includes(note)) {
-                    const rightButtons = [89, 79, 69, 59, 49, 39, 29, 19];
+                // IMPORTANT: Vérifier AVANT les pads car 79,69,59,49,39,29,19 sont dans la plage 11-88!
+                const rightButtons = [89, 79, 69, 59, 49, 39, 29, 19];
+                if (rightButtons.includes(note)) {
                     const btnIndex = rightButtons.indexOf(note);
                     const btnNames = ['Volume/STANDARD', 'Pan/ROOM', 'SendA/POWER', 'SendB/SYNTH', 'Stop/BRUSH', 'Mute/ORCHESTRA', 'Solo/STOP', 'RecordArm/PAUSE'];
                     
@@ -1366,6 +1350,24 @@
                         // Record Arm = PAUSE
                         console.log('→ PAUSE/RESUME déclenché');
                         togglePause();
+                    }
+                    return; // Important: sortir de la fonction après traitement
+                }
+                
+                // Pads de la grille principale (notes 11-88, SAUF les boutons de droite)
+                // Pattern: ligne×10 + colonne + 1 (ligne 1 = bas, col 1 = gauche)
+                if (note >= 11 && note <= 88) {
+                    const tens = Math.floor(note / 10);
+                    const ones = note % 10;
+                    
+                    // Vérifier que c'est une note valide (pas de 9, 0 dans les unités)
+                    if (ones >= 1 && ones <= 8 && tens >= 1 && tens <= 8) {
+                        const row = tens - 1; // Ligne 0-7 (0 = bas)
+                        const col = ones - 1; // Colonne 0-7 (0 = gauche)
+                        console.log(`✓ Pad cliqué - Note ${note} -> Row: ${row}, Col: ${col}`);
+                        handlePadClick(row, col);
+                    } else {
+                        console.log(`⚠️ Note ${note} dans la plage 11-88 mais invalide (tens=${tens}, ones=${ones})`);
                     }
                 } else {
                     console.log(`⚠️ Note On non gérée: ${note}`);
