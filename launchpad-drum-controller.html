@@ -183,6 +183,7 @@
             color: var(--primary);
             min-width: 100px;
             text-align: center;
+            transition: all 0.2s ease;
         }
 
         .btn {
@@ -542,8 +543,12 @@
                 ou cliquez directement sur les pads. Basculez entre USER 1 et USER 2 pour accéder aux 32 groupes.
             </p>
             <p style="margin-bottom: 15px;">
-                <strong>Contrôle:</strong> Le Launchpad physique (si connecté) reflète l'interface et peut être utilisé pour 
-                contrôler les rythmes, changer le drum set, ajuster le tempo, et arrêter/pauser la lecture.
+                <strong>Contrôles Launchpad (si connecté):</strong><br>
+                • <strong>Pads 8×8:</strong> Démarrer les rythmes (intro/corps/variation/outro)<br>
+                • <strong>Boutons de droite:</strong> 6 premiers = drum sets, 7e = STOP, 8e = PAUSE<br>
+                • <strong>Bouton User 1 (haut):</strong> Basculer USER 1 ↔ USER 2<br>
+                • <strong>Bouton User 2 (haut):</strong> Tempo +5 BPM<br>
+                • <strong>Bouton Mixer (haut):</strong> Tempo -5 BPM
             </p>
             
             <h3>Légende des pads</h3>
@@ -734,27 +739,31 @@
             const column = document.getElementById('rightColumn');
             column.innerHTML = '';
             
-            // 6 boutons pour les drum sets
+            // 6 boutons pour les drum sets (correspondant aux notes 89, 79, 69, 59, 49, 39)
+            const drumsetLabels = ['STANDARD', 'ROOM', 'POWER', 'SYNTH', 'BRUSH', 'ORCHESTRA'];
             DRUM_SETS.forEach((drumset, index) => {
                 const btn = document.createElement('div');
                 btn.className = 'side-btn drumset';
                 if (index === currentDrumset) btn.classList.add('active');
-                btn.textContent = drumset.name;
+                btn.textContent = drumsetLabels[index] || drumset.name;
+                btn.title = `${drumset.name} (Note ${[89, 79, 69, 59, 49, 39][index]})`;
                 btn.addEventListener('click', () => selectDrumset(index));
                 column.appendChild(btn);
             });
             
-            // Bouton Stop
+            // Bouton Stop (note 29 = Solo sur le Launchpad)
             const stopBtn = document.createElement('div');
             stopBtn.className = 'side-btn stop';
             stopBtn.textContent = 'STOP';
+            stopBtn.title = 'Arrêter le rythme (Note 29)';
             stopBtn.addEventListener('click', stopAllRhythms);
             column.appendChild(stopBtn);
             
-            // Bouton Pause
+            // Bouton Pause (note 19 = Record Arm sur le Launchpad)
             const pauseBtn = document.createElement('div');
             pauseBtn.className = 'side-btn pause';
             pauseBtn.textContent = 'PAUSE';
+            pauseBtn.title = 'Pause/Reprendre (Note 19)';
             pauseBtn.addEventListener('click', togglePause);
             column.appendChild(pauseBtn);
         }
@@ -763,26 +772,36 @@
             const row = document.getElementById('bottomRow');
             row.innerHTML = '';
             
-            // 8 boutons: 6 vides + tempo- + tempo+
-            for (let i = 0; i < 6; i++) {
+            // 5 boutons vides
+            for (let i = 0; i < 5; i++) {
                 const btn = document.createElement('div');
                 btn.className = 'bottom-btn';
                 row.appendChild(btn);
             }
             
-            // Tempo -
-            const tempoDown = document.createElement('div');
-            tempoDown.className = 'bottom-btn';
-            tempoDown.textContent = '▼';
-            tempoDown.addEventListener('click', () => adjustTempo(-5));
-            row.appendChild(tempoDown);
+            // User 1 - basculer USER1/USER2 (CC 109)
+            const user1Btn = document.createElement('div');
+            user1Btn.className = 'bottom-btn';
+            user1Btn.textContent = 'U1/U2';
+            user1Btn.title = 'Basculer USER 1 / USER 2 (CC 109)';
+            user1Btn.addEventListener('click', () => switchUserMode(currentUserMode === 1 ? 2 : 1));
+            row.appendChild(user1Btn);
             
-            // Tempo +
+            // Tempo + (CC 110 = User 2 sur Launchpad)
             const tempoUp = document.createElement('div');
             tempoUp.className = 'bottom-btn';
             tempoUp.textContent = '▲';
+            tempoUp.title = 'Tempo + (CC 110 = User 2)';
             tempoUp.addEventListener('click', () => adjustTempo(5));
             row.appendChild(tempoUp);
+            
+            // Tempo - (CC 111 = Mixer sur Launchpad)
+            const tempoDown = document.createElement('div');
+            tempoDown.className = 'bottom-btn';
+            tempoDown.textContent = '▼';
+            tempoDown.title = 'Tempo - (CC 111 = Mixer)';
+            tempoDown.addEventListener('click', () => adjustTempo(-5));
+            row.appendChild(tempoDown);
         }
 
         function updatePadColors() {
@@ -975,6 +994,9 @@
             });
             
             createPadGrid();
+            
+            // Synchroniser avec le Launchpad
+            syncLaunchpadColors();
         }
 
         function highlightGroup(groupId) {
@@ -1018,7 +1040,18 @@
         }
 
         function adjustTempo(delta) {
+            const oldTempo = tempo;
             updateTempo(tempo + delta);
+            
+            // Feedback visuel sur l'affichage du tempo
+            const tempoDisplay = document.getElementById('tempoDisplay');
+            tempoDisplay.style.transform = 'scale(1.2)';
+            tempoDisplay.style.color = delta > 0 ? '#00ff88' : '#ff6600';
+            
+            setTimeout(() => {
+                tempoDisplay.style.transform = 'scale(1)';
+                tempoDisplay.style.color = 'var(--primary)';
+            }, 200);
         }
 
         function updatePlaybackState() {
@@ -1091,15 +1124,32 @@
                 // SysEx: F0h 00h 20h 29h 02h 18h 0Eh 01h F7h
                 midiOutputLaunchpad.send([0xF0, 0x00, 0x20, 0x29, 0x02, 0x18, 0x0E, 0x01, 0xF7]);
                 
-                // Effacer toutes les LEDs
-                for (let i = 0; i < 64; i++) {
-                    midiOutputLaunchpad.send([0x90, 11 + (i % 8) + Math.floor(i / 8) * 10, 0]);
-                }
-                
-                // Synchroniser les couleurs
-                setTimeout(() => syncLaunchpadColors(), 100);
-                
                 console.log('Launchpad initialisé en mode programmeur');
+                
+                // Attendre que le Launchpad soit prêt, puis effacer et synchroniser
+                setTimeout(() => {
+                    // Effacer toutes les LEDs des pads (notes 11-88)
+                    for (let row = 1; row <= 8; row++) {
+                        for (let col = 1; col <= 8; col++) {
+                            const note = row * 10 + col;
+                            midiOutputLaunchpad.send([0x90, note, 0]);
+                        }
+                    }
+                    
+                    // Effacer les boutons de droite (notes 89, 79, 69, 59, 49, 39, 29, 19)
+                    [89, 79, 69, 59, 49, 39, 29, 19].forEach(note => {
+                        midiOutputLaunchpad.send([0x90, note, 0]);
+                    });
+                    
+                    // Effacer les boutons du haut (CC 104-111)
+                    for (let cc = 104; cc <= 111; cc++) {
+                        midiOutputLaunchpad.send([0xB0, cc, 0]);
+                    }
+                    
+                    // Synchroniser les couleurs
+                    setTimeout(() => syncLaunchpadColors(), 50);
+                }, 100);
+                
             } catch (error) {
                 console.error('Erreur lors de l\'initialisation du Launchpad:', error);
             }
@@ -1120,14 +1170,15 @@
             };
             
             // Mettre à jour les pads de la grille 8x8
+            // Pattern: note = ligne×10 + colonne + 1 (ligne 1 = bas, col 1 = gauche)
             for (let row = 0; row < 8; row++) {
                 for (let col = 0; col < 8; col++) {
                     const groupIndex = row * 2 + Math.floor(col / 4);
                     const actualGroupId = currentUserMode === 1 ? groupIndex : groupIndex + 16;
                     const padType = col % 4;
                     
-                    // Calculer la note MIDI pour ce pad (grille Launchpad MK2)
-                    const note = 11 + col + (row * 10);
+                    // Calculer la note MIDI pour ce pad
+                    const note = (row + 1) * 10 + (col + 1);
                     
                     let color = COLORS.off;
                     
@@ -1152,41 +1203,49 @@
                         }
                     }
                     
-                    // Envoyer la couleur au Launchpad
+                    // Envoyer la couleur au Launchpad (Note On)
                     midiOutputLaunchpad.send([0x90, note, color]);
                 }
             }
             
-            // Mettre à jour les boutons de droite (Round buttons)
-            // Ces boutons utilisent des messages CC pour les LEDs
-            const rightButtonCCs = [19, 29, 39, 49, 59, 69, 79, 89];
+            // Mettre à jour les boutons ronds de droite (Note On: 89, 79, 69, 59, 49, 39, 29, 19)
+            const rightButtons = [89, 79, 69, 59, 49, 39, 29, 19];
             for (let i = 0; i < 8; i++) {
-                const cc = rightButtonCCs[i];
+                const note = rightButtons[i];
                 let color = COLORS.off;
                 
                 if (i < 6) {
                     // Boutons de drum sets
                     color = (i === currentDrumset) ? COLORS.active : 19; // Vert si actif, sinon gris
                 } else if (i === 6) {
-                    // Bouton STOP
+                    // Solo = STOP
                     color = 5; // Rouge
                 } else if (i === 7) {
-                    // Bouton PAUSE
+                    // Record Arm = PAUSE
                     color = isPaused ? COLORS.active : 9; // Vert si en pause, orange sinon
                 }
                 
-                // Envoyer un message CC pour allumer la LED
-                midiOutputLaunchpad.send([0xB0, cc, color]);
+                // Envoyer un message Note On pour allumer la LED
+                midiOutputLaunchpad.send([0x90, note, color]);
             }
             
-            // Mettre à jour les boutons du bas (aussi en CC)
+            // Mettre à jour les boutons du haut (CC 104-111)
+            // 104=Up, 105=Down, 106=Left, 107=Right, 108=Session, 109=User1, 110=User2, 111=Mixer
             for (let i = 0; i < 8; i++) {
                 const cc = 104 + i;
                 let color = COLORS.off;
                 
-                if (i === 6 || i === 7) {
-                    // Boutons tempo - et +
-                    color = 45; // Bleu
+                // User 1 (CC 109) - indicateur USER1/USER2
+                if (cc === 109) {
+                    color = currentUserMode === 1 ? COLORS.active : 37; // Vert si USER1, bleu clair si USER2
+                }
+                // User 2 (CC 110) - Tempo +
+                else if (cc === 110) {
+                    color = 45; // Bleu pour tempo+
+                }
+                // Mixer (CC 111) - Tempo -
+                else if (cc === 111) {
+                    color = 45; // Bleu pour tempo-
                 }
                 
                 midiOutputLaunchpad.send([0xB0, cc, color]);
@@ -1203,54 +1262,62 @@
             // Messages Note On (0x90)
             if (status === 0x90) {
                 // Pads de la grille principale (notes 11-88)
+                // Pattern: ligne×10 + colonne + 1 (ligne 1 = bas, col 1 = gauche)
                 if (note >= 11 && note <= 88) {
-                    const noteOffset = note - 11;
-                    const col = noteOffset % 10;
-                    const row = Math.floor(noteOffset / 10);
+                    const tens = Math.floor(note / 10);
+                    const ones = note % 10;
                     
-                    if (col < 8 && row < 8) {
-                        console.log(`Pad cliqué - Row: ${row}, Col: ${col}`);
+                    // Vérifier que c'est une note valide (pas de 9, 0 dans les unités)
+                    if (ones >= 1 && ones <= 8 && tens >= 1 && tens <= 8) {
+                        const row = tens - 1; // Ligne 0-7 (0 = bas)
+                        const col = ones - 1; // Colonne 0-7 (0 = gauche)
+                        console.log(`Pad cliqué - Note ${note} -> Row: ${row}, Col: ${col}`);
                         handlePadClick(row, col);
                     }
                 }
-                // Boutons du bas (notes 104-111) - aussi en Note On
-                else if (note >= 104 && note <= 111) {
-                    const btnIndex = note - 104;
-                    console.log(`Bouton bas ${btnIndex} cliqué`);
-                    if (btnIndex === 6) {
-                        adjustTempo(-5); // Tempo -
-                    } else if (btnIndex === 7) {
-                        adjustTempo(5);  // Tempo +
-                    }
-                }
-            }
-            // Messages Control Change (0xB0) - pour les boutons ronds de droite
-            else if (status === 0xB0) {
-                console.log('CC message - Controller:', note, 'Value:', velocity);
-                
-                // Boutons ronds de droite (CC 19, 29, 39, 49, 59, 69, 79, 89)
-                const rightButtonCCs = [19, 29, 39, 49, 59, 69, 79, 89];
-                const ccIndex = rightButtonCCs.indexOf(note);
-                
-                if (ccIndex !== -1) {
-                    console.log(`Bouton droit ${ccIndex} cliqué`);
-                    if (ccIndex < 6) {
-                        selectDrumset(ccIndex);
-                    } else if (ccIndex === 6) {
+                // Boutons ronds de droite (Note On: 89, 79, 69, 59, 49, 39, 29, 19)
+                // Mapping pour l'application: 
+                // 89=Volume(drumset0), 79=Pan(drumset1), 69=SendA(drumset2), 
+                // 59=SendB(drumset3), 49=Stop(drumset4), 39=Mute(drumset5),
+                // 29=Solo(STOP), 19=RecordArm(PAUSE)
+                else if ([89, 79, 69, 59, 49, 39, 29, 19].includes(note)) {
+                    const rightButtons = [89, 79, 69, 59, 49, 39, 29, 19];
+                    const btnIndex = rightButtons.indexOf(note);
+                    console.log(`Bouton droit ${btnIndex} cliqué (note ${note})`);
+                    
+                    if (btnIndex < 6) {
+                        // Les 6 premiers = drum sets
+                        selectDrumset(btnIndex);
+                    } else if (btnIndex === 6) {
+                        // Solo = STOP
                         stopAllRhythms();
-                    } else if (ccIndex === 7) {
+                    } else if (btnIndex === 7) {
+                        // Record Arm = PAUSE
                         togglePause();
                     }
                 }
+            }
+            // Messages Control Change (0xB0) - pour les boutons du haut
+            else if (status === 0xB0) {
+                console.log('CC message - Controller:', note, 'Value:', velocity);
                 
-                // Boutons du haut peuvent aussi être en CC (CC 104-111)
-                else if (note >= 104 && note <= 111) {
+                // Boutons du haut (CC 104-111)
+                // 104=Up, 105=Down, 106=Left, 107=Right, 108=Session, 109=User1, 110=User2, 111=Mixer
+                if (note >= 104 && note <= 111) {
                     const btnIndex = note - 104;
-                    console.log(`Bouton haut ${btnIndex} cliqué (CC)`);
-                    if (btnIndex === 6) {
-                        adjustTempo(-5);
-                    } else if (btnIndex === 7) {
+                    console.log(`Bouton haut ${btnIndex} cliqué (CC ${note})`);
+                    
+                    // User 2 (CC 110) = Tempo +
+                    if (note === 110) {
                         adjustTempo(5);
+                    }
+                    // Mixer (CC 111) = Tempo -
+                    else if (note === 111) {
+                        adjustTempo(-5);
+                    }
+                    // User 1 (CC 109) pourrait basculer entre USER1/USER2
+                    else if (note === 109) {
+                        switchUserMode(currentUserMode === 1 ? 2 : 1);
                     }
                 }
             }
