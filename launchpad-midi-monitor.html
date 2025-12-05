@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Launchpad MK2 - Moniteur MIDI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #00ffcc;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 2rem;
+        }
+
+        .status {
+            background: #2a2a2a;
+            border: 2px solid #00ffcc;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #1a1a1a;
+            border-radius: 4px;
+        }
+
+        .status-label {
+            color: #888;
+        }
+
+        .status-value {
+            color: #00ff00;
+            font-weight: bold;
+        }
+
+        .status-value.connected {
+            color: #00ffcc;
+        }
+
+        button {
+            background: #00ffcc;
+            color: #1a1a1a;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            font-family: 'Courier New', monospace;
+        }
+
+        button:hover {
+            background: #00ff88;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .monitor {
+            background: #000;
+            border: 2px solid #00ffcc;
+            border-radius: 8px;
+            padding: 20px;
+            height: 500px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+        }
+
+        .monitor::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .monitor::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        .monitor::-webkit-scrollbar-thumb {
+            background: #00ffcc;
+            border-radius: 5px;
+        }
+
+        .message {
+            padding: 8px;
+            margin-bottom: 5px;
+            border-left: 3px solid #00ffcc;
+            background: #0a0a0a;
+            display: grid;
+            grid-template-columns: 150px 100px 100px 100px 1fr;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .message:hover {
+            background: #1a1a1a;
+        }
+
+        .timestamp {
+            color: #666;
+        }
+
+        .status-byte {
+            color: #ff00ff;
+            font-weight: bold;
+        }
+
+        .data-byte {
+            color: #ffff00;
+            font-weight: bold;
+        }
+
+        .note-on {
+            border-left-color: #00ff00;
+        }
+
+        .note-off {
+            border-left-color: #ff6600;
+        }
+
+        .control-change {
+            border-left-color: #00ffcc;
+        }
+
+        .description {
+            color: #aaa;
+            font-style: italic;
+        }
+
+        .instructions {
+            background: #2a2a2a;
+            border: 2px solid #ffaa00;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            color: #ffaa00;
+        }
+
+        .instructions h2 {
+            margin-bottom: 10px;
+            color: #ffaa00;
+        }
+
+        .instructions p {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        .highlight {
+            background: #ffaa0020;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        .latest {
+            background: #00ffcc20 !important;
+            animation: flash 0.5s;
+        }
+
+        @keyframes flash {
+            0%, 100% { background: #00ffcc20; }
+            50% { background: #00ffcc40; }
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #2a2a2a;
+            border: 2px solid #00ffcc;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            color: #00ffcc;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            color: #888;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎹 LAUNCHPAD MK2 - MONITEUR MIDI 🎹</h1>
+
+        <div class="instructions">
+            <h2>📋 Instructions</h2>
+            <p>1. Cliquez sur <span class="highlight">CONNECTER LAUNCHPAD</span> pour établir la connexion</p>
+            <p>2. Appuyez sur n'importe quel bouton/pad du Launchpad</p>
+            <p>3. Observez les messages MIDI qui apparaissent ci-dessous</p>
+            <p>4. Notez le <span class="highlight">Status</span> (type de message) et les <span class="highlight">Data bytes</span> (note/CC et velocity) pour chaque bouton</p>
+        </div>
+
+        <div class="status">
+            <div class="status-item">
+                <span class="status-label">Launchpad MK2:</span>
+                <span class="status-value" id="connectionStatus">Déconnecté</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Nom de l'appareil:</span>
+                <span class="status-value" id="deviceName">-</span>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="noteOnCount">0</div>
+                <div class="stat-label">Note On</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="noteOffCount">0</div>
+                <div class="stat-label">Note Off</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="ccCount">0</div>
+                <div class="stat-label">Control Change</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalCount">0</div>
+                <div class="stat-label">Total Messages</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button onclick="connectLaunchpad()">CONNECTER LAUNCHPAD</button>
+            <button onclick="clearMonitor()">EFFACER</button>
+            <button onclick="downloadLog()">TÉLÉCHARGER LOG</button>
+        </div>
+
+        <div class="monitor" id="monitor">
+            <div style="text-align: center; color: #666; padding: 50px;">
+                En attente de messages MIDI...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let midiInput = null;
+        let messageLog = [];
+        let counts = {
+            noteOn: 0,
+            noteOff: 0,
+            cc: 0,
+            total: 0
+        };
+
+        async function connectLaunchpad() {
+            if (!navigator.requestMIDIAccess) {
+                alert('Web MIDI API non supportée par ce navigateur');
+                return;
+            }
+
+            try {
+                const midiAccess = await navigator.requestMIDIAccess({ sysex: true });
+                
+                console.log('Appareils MIDI disponibles:');
+                for (let input of midiAccess.inputs.values()) {
+                    console.log('Input:', input.name);
+                }
+
+                // Trouver le Launchpad
+                for (let input of midiAccess.inputs.values()) {
+                    if (input.name.toLowerCase().includes('launchpad')) {
+                        midiInput = input;
+                        midiInput.onmidimessage = handleMIDIMessage;
+                        
+                        document.getElementById('connectionStatus').textContent = 'Connecté';
+                        document.getElementById('connectionStatus').classList.add('connected');
+                        document.getElementById('deviceName').textContent = input.name;
+                        
+                        clearMonitor();
+                        addSystemMessage('✅ Launchpad connecté: ' + input.name);
+                        addSystemMessage('👉 Appuyez sur des boutons pour voir les messages MIDI');
+                        
+                        return;
+                    }
+                }
+
+                alert('Launchpad MK2 non trouvé. Assurez-vous qu\'il est bien connecté.');
+            } catch (error) {
+                console.error('Erreur MIDI:', error);
+                alert('Erreur: ' + error.message);
+            }
+        }
+
+        function handleMIDIMessage(event) {
+            const [status, data1, data2] = event.data;
+            const timestamp = new Date().toLocaleTimeString('fr-CA', { 
+                hour12: false, 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                fractionalSecondDigits: 3
+            });
+
+            // Déterminer le type de message
+            const statusType = status & 0xF0;
+            const channel = (status & 0x0F) + 1;
+            
+            let messageType = 'Unknown';
+            let cssClass = '';
+            let description = '';
+
+            if (statusType === 0x90) {
+                if (data2 === 0) {
+                    messageType = 'Note Off';
+                    cssClass = 'note-off';
+                    counts.noteOff++;
+                } else {
+                    messageType = 'Note On';
+                    cssClass = 'note-on';
+                    counts.noteOn++;
+                }
+                description = `Note ${data1}, Velocity ${data2}`;
+            } else if (statusType === 0x80) {
+                messageType = 'Note Off';
+                cssClass = 'note-off';
+                counts.noteOff++;
+                description = `Note ${data1}, Velocity ${data2}`;
+            } else if (statusType === 0xB0) {
+                messageType = 'Control Change';
+                cssClass = 'control-change';
+                counts.cc++;
+                description = `CC ${data1}, Value ${data2}`;
+            }
+
+            counts.total++;
+            updateStats();
+
+            // Créer l'entrée de log
+            const logEntry = {
+                timestamp,
+                status: '0x' + status.toString(16).toUpperCase().padStart(2, '0'),
+                data1,
+                data2,
+                messageType,
+                cssClass,
+                description,
+                channel
+            };
+
+            messageLog.push(logEntry);
+            displayMessage(logEntry);
+        }
+
+        function displayMessage(entry) {
+            const monitor = document.getElementById('monitor');
+            
+            // Supprimer le message "En attente" si présent
+            if (counts.total === 1) {
+                monitor.innerHTML = '';
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${entry.cssClass} latest`;
+            
+            messageDiv.innerHTML = `
+                <span class="timestamp">${entry.timestamp}</span>
+                <span class="status-byte">${entry.messageType}</span>
+                <span class="data-byte">Status: ${entry.status}</span>
+                <span class="data-byte">Data: [${entry.data1}, ${entry.data2}]</span>
+                <span class="description">${entry.description} (Ch ${entry.channel})</span>
+            `;
+
+            monitor.insertBefore(messageDiv, monitor.firstChild);
+
+            // Limiter à 100 messages affichés
+            while (monitor.children.length > 100) {
+                monitor.removeChild(monitor.lastChild);
+            }
+
+            // Retirer la classe latest après l'animation
+            setTimeout(() => {
+                messageDiv.classList.remove('latest');
+            }, 500);
+        }
+
+        function addSystemMessage(text) {
+            const monitor = document.getElementById('monitor');
+            const messageDiv = document.createElement('div');
+            messageDiv.style.cssText = 'color: #00ffcc; padding: 10px; margin-bottom: 10px; border-left: 3px solid #00ffcc; background: #0a0a0a;';
+            messageDiv.textContent = text;
+            monitor.insertBefore(messageDiv, monitor.firstChild);
+        }
+
+        function updateStats() {
+            document.getElementById('noteOnCount').textContent = counts.noteOn;
+            document.getElementById('noteOffCount').textContent = counts.noteOff;
+            document.getElementById('ccCount').textContent = counts.cc;
+            document.getElementById('totalCount').textContent = counts.total;
+        }
+
+        function clearMonitor() {
+            document.getElementById('monitor').innerHTML = '<div style="text-align: center; color: #666; padding: 50px;">En attente de messages MIDI...</div>';
+            messageLog = [];
+            counts = { noteOn: 0, noteOff: 0, cc: 0, total: 0 };
+            updateStats();
+        }
+
+        function downloadLog() {
+            if (messageLog.length === 0) {
+                alert('Aucun message à télécharger');
+                return;
+            }
+
+            let logText = 'LAUNCHPAD MK2 - LOG MIDI\n';
+            logText += '=' .repeat(80) + '\n';
+            logText += `Date: ${new Date().toLocaleString('fr-CA')}\n`;
+            logText += `Total messages: ${messageLog.length}\n`;
+            logText += '=' .repeat(80) + '\n\n';
+
+            messageLog.forEach(entry => {
+                logText += `[${entry.timestamp}] ${entry.messageType.padEnd(15)} Status: ${entry.status}  Data: [${entry.data1}, ${entry.data2}]  ${entry.description}\n`;
+            });
+
+            const blob = new Blob([logText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `launchpad-midi-log-${Date.now()}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Auto-scroll désactivé pour voir les nouveaux messages en haut
+    </script>
+</body>
+</html>

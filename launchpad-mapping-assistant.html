@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Launchpad MK2 - Assistant de Mapping</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a2e 0%, #0a0a0f 100%);
+            color: #00ff00;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #00ffcc;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 2.5rem;
+            text-shadow: 0 0 20px #00ffcc;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+
+        .status {
+            background: #2a2a2a;
+            border: 2px solid #00ffcc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #1a1a1a;
+            border-radius: 4px;
+        }
+
+        .status-label {
+            color: #888;
+        }
+
+        .status-value {
+            color: #00ff00;
+            font-weight: bold;
+        }
+
+        .status-value.connected {
+            color: #00ffcc;
+        }
+
+        .progress-container {
+            background: #2a2a2a;
+            border: 2px solid #00ffcc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .progress-bar-container {
+            background: #1a1a1a;
+            height: 40px;
+            border-radius: 20px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00ffcc, #00ff88);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #00ffcc;
+            font-size: 1.1rem;
+        }
+
+        .instruction-panel {
+            background: #2a2a2a;
+            border: 3px solid #ffaa00;
+            border-radius: 12px;
+            padding: 40px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .instruction-panel.waiting {
+            border-color: #00ffcc;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { border-color: #00ffcc; }
+            50% { border-color: #00ff88; }
+        }
+
+        .instruction-title {
+            font-size: 1.2rem;
+            color: #ffaa00;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .instruction-panel.waiting .instruction-title {
+            color: #00ffcc;
+        }
+
+        .button-name {
+            font-size: 3rem;
+            color: #fff;
+            font-weight: bold;
+            margin: 20px 0;
+            text-shadow: 0 0 30px #00ffcc;
+        }
+
+        .button-description {
+            color: #aaa;
+            font-size: 1.1rem;
+            margin-top: 10px;
+        }
+
+        .detected-message {
+            background: #1a1a1a;
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+
+        .detected-message .label {
+            color: #888;
+            display: inline-block;
+            width: 100px;
+        }
+
+        .detected-message .value {
+            color: #00ff00;
+            font-weight: bold;
+        }
+
+        button {
+            background: #00ffcc;
+            color: #000;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #00ff88;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 204, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #555;
+            color: #888;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        button.secondary {
+            background: #ff6600;
+        }
+
+        button.secondary:hover {
+            background: #ff8833;
+        }
+
+        button.success {
+            background: #00ff00;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .log-preview {
+            background: #000;
+            border: 2px solid #00ffcc;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            margin-top: 20px;
+        }
+
+        .log-preview::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .log-preview::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        .log-preview::-webkit-scrollbar-thumb {
+            background: #00ffcc;
+            border-radius: 5px;
+        }
+
+        .log-entry {
+            padding: 8px;
+            margin-bottom: 5px;
+            border-left: 3px solid #00ff00;
+            background: #0a0a0a;
+        }
+
+        .log-entry .button-name-log {
+            color: #00ffcc;
+            font-weight: bold;
+        }
+
+        .log-entry .midi-data {
+            color: #ffff00;
+        }
+
+        .success-panel {
+            background: #2a2a2a;
+            border: 3px solid #00ff00;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            display: none;
+        }
+
+        .success-panel.show {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .success-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+        }
+
+        .grid-visual {
+            display: grid;
+            grid-template-columns: repeat(8, 40px);
+            gap: 5px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .grid-cell {
+            width: 40px;
+            height: 40px;
+            background: #333;
+            border: 2px solid #555;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: #666;
+        }
+
+        .grid-cell.current {
+            background: #ffaa00;
+            border-color: #ffaa00;
+            color: #000;
+            font-weight: bold;
+            animation: blink 1s infinite;
+        }
+
+        .grid-cell.completed {
+            background: #00ff00;
+            border-color: #00ff00;
+            color: #000;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎹 ASSISTANT DE MAPPING 🎹</h1>
+        <div class="subtitle">Launchpad MK2 - Configuration automatique</div>
+
+        <div class="status">
+            <div class="status-item">
+                <span class="status-label">Launchpad MK2:</span>
+                <span class="status-value" id="connectionStatus">Déconnecté</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Nom de l'appareil:</span>
+                <span class="status-value" id="deviceName">-</span>
+            </div>
+        </div>
+
+        <div class="controls" id="initialControls">
+            <button onclick="connectAndStart()">🚀 DÉMARRER LE MAPPING</button>
+        </div>
+
+        <div class="progress-container" id="progressContainer" style="display: none;">
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar">0%</div>
+            </div>
+            <div class="progress-text" id="progressText">En attente...</div>
+        </div>
+
+        <div class="instruction-panel" id="instructionPanel" style="display: none;">
+            <div class="instruction-title" id="instructionTitle">APPUYEZ SUR LE BOUTON</div>
+            <div class="button-name" id="buttonName">-</div>
+            <div class="button-description" id="buttonDescription">-</div>
+            
+            <div class="grid-visual" id="gridVisual" style="display: none;"></div>
+
+            <div class="detected-message" id="detectedMessage" style="display: none;">
+                <div><span class="label">Type:</span> <span class="value" id="msgType">-</span></div>
+                <div><span class="label">Status:</span> <span class="value" id="msgStatus">-</span></div>
+                <div><span class="label">Data:</span> <span class="value" id="msgData">-</span></div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <button onclick="skipButton()" class="secondary">⏭️ PASSER</button>
+                <button onclick="redoButton()" class="secondary">🔄 REFAIRE</button>
+            </div>
+        </div>
+
+        <div class="success-panel" id="successPanel">
+            <div class="success-icon">🎉</div>
+            <h2 style="color: #00ff00; margin-bottom: 20px;">MAPPING TERMINÉ!</h2>
+            <p style="color: #aaa; margin-bottom: 30px;">
+                Tous les boutons ont été enregistrés avec succès.<br>
+                Téléchargez le fichier de configuration ci-dessous.
+            </p>
+            <button onclick="downloadMapping()" class="success">📥 TÉLÉCHARGER LE MAPPING</button>
+            <button onclick="location.reload()" class="secondary">🔄 RECOMMENCER</button>
+        </div>
+
+        <div class="log-preview" id="logPreview" style="display: none;"></div>
+    </div>
+
+    <script>
+        let midiInput = null;
+        let currentButtonIndex = 0;
+        let mappingData = [];
+        let waitingForInput = false;
+
+        // Définir tous les boutons dans l'ordre
+        const BUTTONS = [
+            // 64 pads de la grille (ligne 1 = bas, colonne 1 = gauche)
+            ...Array.from({length: 8}, (_, row) => 
+                Array.from({length: 8}, (_, col) => ({
+                    type: 'pad',
+                    name: `Pad Ligne ${row + 1} Col ${col + 1}`,
+                    description: `Rangée ${row + 1} (du bas), Colonne ${col + 1} (de gauche)`,
+                    row: row + 1,
+                    col: col + 1
+                }))
+            ).flat(),
+            
+            // 8 boutons de droite (boutons ronds) - de bas en haut
+            { type: 'right', name: 'Volume', description: 'Bouton rond de droite - Rangée 1 (bas)' },
+            { type: 'right', name: 'Pan', description: 'Bouton rond de droite - Rangée 2' },
+            { type: 'right', name: 'Send A', description: 'Bouton rond de droite - Rangée 3' },
+            { type: 'right', name: 'Send B', description: 'Bouton rond de droite - Rangée 4' },
+            { type: 'right', name: 'Stop', description: 'Bouton rond de droite - Rangée 5' },
+            { type: 'right', name: 'Mute', description: 'Bouton rond de droite - Rangée 6' },
+            { type: 'right', name: 'Solo', description: 'Bouton rond de droite - Rangée 7' },
+            { type: 'right', name: 'Record Arm', description: 'Bouton rond de droite - Rangée 8 (haut)' },
+            
+            // 8 boutons du haut - de gauche à droite
+            { type: 'top', name: 'Up', description: 'Bouton du haut - Position 1 (gauche)' },
+            { type: 'top', name: 'Down', description: 'Bouton du haut - Position 2' },
+            { type: 'top', name: 'Left', description: 'Bouton du haut - Position 3' },
+            { type: 'top', name: 'Right', description: 'Bouton du haut - Position 4' },
+            { type: 'top', name: 'Session', description: 'Bouton du haut - Position 5' },
+            { type: 'top', name: 'User 1', description: 'Bouton du haut - Position 6' },
+            { type: 'top', name: 'User 2', description: 'Bouton du haut - Position 7' },
+            { type: 'top', name: 'Mixer', description: 'Bouton du haut - Position 8 (droite)' }
+        ];
+
+        async function connectAndStart() {
+            if (!navigator.requestMIDIAccess) {
+                alert('Web MIDI API non supportée par ce navigateur');
+                return;
+            }
+
+            try {
+                const midiAccess = await navigator.requestMIDIAccess({ sysex: true });
+
+                // Trouver le Launchpad
+                for (let input of midiAccess.inputs.values()) {
+                    if (input.name.toLowerCase().includes('launchpad')) {
+                        midiInput = input;
+                        midiInput.onmidimessage = handleMIDIMessage;
+                        
+                        document.getElementById('connectionStatus').textContent = 'Connecté';
+                        document.getElementById('connectionStatus').classList.add('connected');
+                        document.getElementById('deviceName').textContent = input.name;
+                        
+                        // Démarrer le processus
+                        startMapping();
+                        return;
+                    }
+                }
+
+                alert('Launchpad MK2 non trouvé. Assurez-vous qu\'il est bien connecté.');
+            } catch (error) {
+                console.error('Erreur MIDI:', error);
+                alert('Erreur: ' + error.message);
+            }
+        }
+
+        function startMapping() {
+            document.getElementById('initialControls').style.display = 'none';
+            document.getElementById('progressContainer').style.display = 'block';
+            document.getElementById('instructionPanel').style.display = 'block';
+            document.getElementById('logPreview').style.display = 'block';
+            
+            currentButtonIndex = 0;
+            mappingData = [];
+            showCurrentButton();
+        }
+
+        function showCurrentButton() {
+            if (currentButtonIndex >= BUTTONS.length) {
+                finishMapping();
+                return;
+            }
+
+            const button = BUTTONS[currentButtonIndex];
+            waitingForInput = true;
+
+            document.getElementById('buttonName').textContent = button.name;
+            document.getElementById('buttonDescription').textContent = button.description;
+            document.getElementById('instructionTitle').textContent = 'APPUYEZ SUR LE BOUTON';
+            document.getElementById('instructionPanel').classList.add('waiting');
+            document.getElementById('detectedMessage').style.display = 'none';
+
+            // Afficher la grille visuelle pour les pads
+            if (button.type === 'pad') {
+                showGridVisual(button.row, button.col);
+            } else {
+                document.getElementById('gridVisual').style.display = 'none';
+            }
+
+            updateProgress();
+        }
+
+        function showGridVisual(currentRow, currentCol) {
+            const gridVisual = document.getElementById('gridVisual');
+            gridVisual.style.display = 'grid';
+            gridVisual.innerHTML = '';
+
+            // Créer la grille (8x8, ligne 1 = bas)
+            for (let row = 8; row >= 1; row--) {
+                for (let col = 1; col <= 8; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    
+                    // Vérifier si ce pad a déjà été mappé
+                    const alreadyMapped = mappingData.find(m => 
+                        m.button.type === 'pad' && 
+                        m.button.row === row && 
+                        m.button.col === col
+                    );
+                    
+                    if (row === currentRow && col === currentCol) {
+                        cell.classList.add('current');
+                        cell.textContent = '●';
+                    } else if (alreadyMapped) {
+                        cell.classList.add('completed');
+                        cell.textContent = '✓';
+                    } else {
+                        cell.textContent = `${row},${col}`;
+                    }
+                    
+                    gridVisual.appendChild(cell);
+                }
+            }
+        }
+
+        function handleMIDIMessage(event) {
+            if (!waitingForInput) return;
+
+            const [status, data1, data2] = event.data;
+            
+            // Ignorer les note off (velocity 0)
+            if ((status & 0xF0) === 0x90 && data2 === 0) return;
+            if ((status & 0xF0) === 0x80) return;
+
+            const button = BUTTONS[currentButtonIndex];
+            
+            // Déterminer le type de message
+            const statusType = status & 0xF0;
+            let messageType = 'Unknown';
+            
+            if (statusType === 0x90) {
+                messageType = 'Note On';
+            } else if (statusType === 0xB0) {
+                messageType = 'Control Change';
+            }
+
+            // Enregistrer le mapping
+            const mapping = {
+                button: button,
+                midi: {
+                    status: '0x' + status.toString(16).toUpperCase().padStart(2, '0'),
+                    statusByte: status,
+                    data1: data1,
+                    data2: data2,
+                    messageType: messageType
+                }
+            };
+
+            mappingData.push(mapping);
+            
+            // Afficher le message détecté
+            document.getElementById('msgType').textContent = messageType;
+            document.getElementById('msgStatus').textContent = mapping.midi.status;
+            document.getElementById('msgData').textContent = `[${data1}, ${data2}]`;
+            document.getElementById('detectedMessage').style.display = 'block';
+            document.getElementById('instructionPanel').classList.remove('waiting');
+            document.getElementById('instructionTitle').textContent = '✓ BOUTON DÉTECTÉ';
+
+            waitingForInput = false;
+
+            // Ajouter au log
+            addToLogPreview(mapping);
+
+            // Passer au bouton suivant après un court délai
+            setTimeout(() => {
+                currentButtonIndex++;
+                showCurrentButton();
+            }, 800);
+        }
+
+        function updateProgress() {
+            const progress = ((currentButtonIndex) / BUTTONS.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressBar').textContent = Math.round(progress) + '%';
+            document.getElementById('progressText').textContent = 
+                `Bouton ${currentButtonIndex + 1} / ${BUTTONS.length}`;
+        }
+
+        function addToLogPreview(mapping) {
+            const logPreview = document.getElementById('logPreview');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `
+                <span class="button-name-log">${mapping.button.name}</span> → 
+                <span class="midi-data">${mapping.midi.messageType}: ${mapping.midi.status} [${mapping.midi.data1}, ${mapping.midi.data2}]</span>
+            `;
+            logPreview.insertBefore(entry, logPreview.firstChild);
+        }
+
+        function skipButton() {
+            if (!waitingForInput) return;
+            
+            const button = BUTTONS[currentButtonIndex];
+            const mapping = {
+                button: button,
+                midi: {
+                    status: 'SKIPPED',
+                    statusByte: -1,
+                    data1: -1,
+                    data2: -1,
+                    messageType: 'Skipped'
+                }
+            };
+            
+            mappingData.push(mapping);
+            addToLogPreview(mapping);
+            
+            currentButtonIndex++;
+            showCurrentButton();
+        }
+
+        function redoButton() {
+            if (waitingForInput && currentButtonIndex > 0) {
+                currentButtonIndex--;
+                mappingData.pop();
+                
+                // Supprimer la dernière entrée du log
+                const logPreview = document.getElementById('logPreview');
+                if (logPreview.firstChild) {
+                    logPreview.removeChild(logPreview.firstChild);
+                }
+                
+                showCurrentButton();
+            }
+        }
+
+        function finishMapping() {
+            document.getElementById('instructionPanel').style.display = 'none';
+            document.getElementById('progressContainer').style.display = 'none';
+            document.getElementById('successPanel').classList.add('show');
+        }
+
+        function downloadMapping() {
+            let output = '=' .repeat(80) + '\n';
+            output += 'LAUNCHPAD MK2 - CONFIGURATION DE MAPPING MIDI\n';
+            output += '=' .repeat(80) + '\n';
+            output += `Date: ${new Date().toLocaleString('fr-CA')}\n`;
+            output += `Appareil: ${document.getElementById('deviceName').textContent}\n`;
+            output += `Total boutons: ${mappingData.length}\n`;
+            output += '=' .repeat(80) + '\n\n';
+
+            // Section 1: Pads de la grille
+            output += '### PADS DE LA GRILLE (64 pads) ###\n';
+            output += 'Format: [Ligne, Col] -> Type | Status | Data1 | Data2\n\n';
+            
+            mappingData.filter(m => m.button.type === 'pad').forEach(m => {
+                output += `[${m.button.row}, ${m.button.col}] -> `;
+                output += `${m.midi.messageType.padEnd(15)} | `;
+                output += `${m.midi.status.padEnd(6)} | `;
+                output += `${String(m.midi.data1).padStart(3)} | `;
+                output += `${String(m.midi.data2).padStart(3)}\n`;
+            });
+
+            // Section 2: Boutons de droite
+            output += '\n' + '=' .repeat(80) + '\n';
+            output += '### BOUTONS DE DROITE (8 boutons ronds) ###\n';
+            output += 'De bas en haut\n\n';
+            
+            mappingData.filter(m => m.button.type === 'right').forEach(m => {
+                output += `${m.button.name.padEnd(20)} -> `;
+                output += `${m.midi.messageType.padEnd(15)} | `;
+                output += `${m.midi.status.padEnd(6)} | `;
+                output += `${String(m.midi.data1).padStart(3)} | `;
+                output += `${String(m.midi.data2).padStart(3)}\n`;
+            });
+
+            // Section 3: Boutons du haut
+            output += '\n' + '=' .repeat(80) + '\n';
+            output += '### BOUTONS DU HAUT (8 boutons) ###\n';
+            output += 'De gauche à droite\n\n';
+            
+            mappingData.filter(m => m.button.type === 'top').forEach(m => {
+                output += `${m.button.name.padEnd(20)} -> `;
+                output += `${m.midi.messageType.padEnd(15)} | `;
+                output += `${m.midi.status.padEnd(6)} | `;
+                output += `${String(m.midi.data1).padStart(3)} | `;
+                output += `${String(m.midi.data2).padStart(3)}\n`;
+            });
+
+            // Section 4: Format JSON pour programmation
+            output += '\n' + '=' .repeat(80) + '\n';
+            output += '### FORMAT JSON POUR PROGRAMMATION ###\n\n';
+            output += JSON.stringify(mappingData, null, 2);
+
+            // Télécharger
+            const blob = new Blob([output], { type: 'text/plain; charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `launchpad-mk2-mapping-${Date.now()}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
