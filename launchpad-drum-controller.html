@@ -514,6 +514,8 @@
                 <button class="btn" onclick="connectDevices()">Connecter les appareils</button>
                 <button class="btn secondary" onclick="stopAllRhythms()">Arrêter tout</button>
                 <button class="btn secondary" onclick="togglePause()">Pause/Resume</button>
+                <button class="btn" style="background: linear-gradient(135deg, #ff1493, #ff69b4);" onclick="playFill('fillLeft')">🎸 Fill Left</button>
+                <button class="btn" style="background: linear-gradient(135deg, #ff69b4, #ff1493);" onclick="playFill('fillRight')">🥁 Fill Right</button>
             </div>
 
             <div class="controls-row" style="margin-top: 10px;">
@@ -562,6 +564,11 @@
                 </span>
             </p>
             <p style="margin-bottom: 15px;">
+                <strong>🎵 32 Rythmes Uniques:</strong> Chaque groupe (USER 1: 0-15, USER 2: 16-31) offre un rythme complet et unique 
+                avec intro musicale (16 temps), corps (loop), variation (loop), outro grandiose (8 temps), 
+                et 2 fills créatifs avec hand claps, sifflets, shakers, cowbell, etc.
+            </p>
+            <p style="margin-bottom: 15px;">
                 <strong>Navigation:</strong> Utilisez le menu déroulant pour sélectionner un groupe de rythme, 
                 ou cliquez directement sur les pads. Basculez entre USER 1 et USER 2 pour accéder aux 32 groupes.
             </p>
@@ -577,6 +584,8 @@
                 <strong>Contrôles Launchpad (si connecté):</strong><br>
                 • <strong>Pads 8×8:</strong> Démarrer les rythmes (intro/corps/variation/outro)<br>
                 • <strong>Boutons de droite:</strong> 6 premiers = drum sets, 7e = STOP, 8e = PAUSE<br>
+                • <strong>Bouton Left (haut):</strong> 🎸 Fill créatif gauche (rose - actif pendant rythme)<br>
+                • <strong>Bouton Right (haut):</strong> 🥁 Fill créatif droite (rose - actif pendant rythme)<br>
                 • <strong>Bouton User 1 (haut):</strong> Activer USER 1 (vert = actif, éteint = inactif)<br>
                 • <strong>Bouton User 2 (haut):</strong> Activer USER 2 (vert = actif, éteint = inactif)<br>
                 • <strong>Bouton Up (haut):</strong> Tempo +5 BPM (bleu)<br>
@@ -673,42 +682,1411 @@
         let beatPosition = 0;
         let intervalId = null;
         let blinkIntervalId = null; // Pour le clignotement pendant transition
-
-        // Patterns de rythmes (notes MIDI pour chaque drum)
-        const DRUM_PATTERNS = {
-            intro: {
-                kick: [0, 4, 8, 12],
-                snare: [4, 12],
-                hihat: [0, 2, 4, 6, 8, 10, 12, 14],
-                length: 16
-            },
-            main: {
-                kick: [0, 6, 8, 14],
-                snare: [4, 12],
-                hihat: [0, 2, 4, 6, 8, 10, 12, 14],
-                length: 16
-            },
-            variation: {
-                kick: [0, 3, 6, 8, 11, 14],
-                snare: [4, 10, 12],
-                hihat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-                length: 16
-            },
-            outro: {
-                kick: [0, 4],
-                snare: [2, 6],
-                hihat: [0, 1, 2, 3, 4, 5, 6, 7],
-                length: 8
-            }
-        };
+        let isPlayingFill = false; // Indique si un fill est en cours
+        let fillType = null; // 'fillLeft' ou 'fillRight'
+        let sectionBeforeFill = null; // Pour revenir après le fill
+        let groupBeforeFill = null; // Groupe avant le fill
 
         // Notes MIDI (General MIDI Drum Map)
         const DRUM_NOTES = {
-            kick: 36,    // Bass Drum 1
-            snare: 38,   // Acoustic Snare
-            hihat: 42,   // Closed Hi-Hat
-            crash: 49    // Crash Cymbal 1
+            kick: 36,      // Bass Drum 1
+            snare: 38,     // Acoustic Snare
+            hihat: 42,     // Closed Hi-Hat
+            openhat: 46,   // Open Hi-Hat
+            crash: 49,     // Crash Cymbal 1
+            ride: 51,      // Ride Cymbal 1
+            lowtom: 45,    // Low Tom
+            midtom: 47,    // Mid Tom
+            hightom: 50,   // High Tom
+            clap: 39,      // Hand Clap
+            cowbell: 56,   // Cowbell
+            tambourine: 54, // Tambourine
+            whistle: 71,   // Short Whistle
+            shaker: 82     // Shaker
         };
+
+        // Bibliothèque complète de 32 rythmes uniques
+        const DRUM_PATTERNS_LIBRARY = {
+            // ═══════════════════════════════════════════════════════
+            // USER 1 - RYTHMES TRADITIONNELS
+            // ═══════════════════════════════════════════════════════
+            
+            // 0. Rock Standard
+            0: {
+                intro: {
+                    kick: [0, 8],
+                    snare: [4, 12],
+                    hightom: [2, 6, 10, 14],
+                    crash: [0],
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 6, 8, 14],
+                    snare: [4, 12],
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 3, 6, 8, 11, 14],
+                    snare: [4, 12],
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    crash: [8],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 4],
+                    snare: [2, 6],
+                    crash: [0, 4],
+                    hightom: [1, 3, 5, 7],
+                    length: 8
+                },
+                fillLeft: {
+                    snare: [0, 2, 4, 6],
+                    hightom: [1, 3, 5, 7],
+                    length: 8
+                },
+                fillRight: {
+                    kick: [0, 4],
+                    hightom: [1, 2],
+                    midtom: [3, 4],
+                    lowtom: [5, 6],
+                    crash: [7],
+                    length: 8
+                }
+            },
+
+            // 1. Pop Groove
+            1: {
+                intro: {
+                    clap: [4, 12],
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    shaker: [1, 3, 5, 7, 9, 11, 13, 15],
+                    kick: [8],
+                    snare: [12],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 6, 10],
+                    snare: [4, 12],
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    clap: [4, 12],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 5, 6, 10, 13],
+                    snare: [4, 12],
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    openhat: [7, 15],
+                    tambourine: [2, 6, 10, 14],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 2, 4, 6],
+                    clap: [1, 3, 5, 7],
+                    crash: [0],
+                    length: 8
+                },
+                fillLeft: {
+                    clap: [0, 2, 4, 6],
+                    tambourine: [1, 3, 5, 7],
+                    length: 8
+                },
+                fillRight: {
+                    snare: [0, 1, 2, 3, 4, 5, 6, 7],
+                    kick: [0, 4],
+                    length: 8
+                }
+            },
+
+            // 2. Ballad Soft
+            2: {
+                intro: {
+                    ride: [0, 4, 8, 12],
+                    kick: [12],
+                    snare: [14],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 8],
+                    snare: [4, 12],
+                    ride: [0, 2, 4, 6, 8, 10, 12, 14],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 6, 8, 14],
+                    snare: [4, 12],
+                    ride: [0, 2, 4, 6, 8, 10, 12, 14],
+                    crash: [0],
+                    length: 16
+                },
+                outro: {
+                    kick: [0],
+                    snare: [2, 4],
+                    ride: [0, 2, 4, 6],
+                    crash: [0, 6],
+                    length: 8
+                },
+                fillLeft: {
+                    snare: [2, 4, 6],
+                    hightom: [0, 2, 4, 6],
+                    length: 8
+                },
+                fillRight: {
+                    ride: [0, 2, 4, 6],
+                    crash: [7],
+                    length: 8
+                }
+            },
+
+            // 3. Funk Drive
+            3: {
+                intro: {
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    kick: [0, 6, 12],
+                    snare: [8],
+                    crash: [0],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 6, 10, 12],
+                    snare: [4],
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    openhat: [2, 6, 10, 14],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 5, 6, 10, 11, 12, 15],
+                    snare: [4],
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    clap: [8],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 1, 2, 3, 4, 5, 6, 7],
+                    snare: [0, 2, 4, 6],
+                    crash: [0, 7],
+                    length: 8
+                },
+                fillLeft: {
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7],
+                    snare: [2, 4, 6],
+                    length: 8
+                },
+                fillRight: {
+                    cowbell: [0, 2, 4, 6],
+                    kick: [0, 4],
+                    clap: [7],
+                    length: 8
+                }
+            },
+
+            // 4. Blues Shuffle
+            4: {
+                intro: {
+                    ride: [0, 3, 6, 9, 12, 15],
+                    kick: [0, 12],
+                    snare: [6],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 9, 12],
+                    snare: [6],
+                    ride: [0, 3, 6, 9, 12, 15],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 3, 9, 12, 15],
+                    snare: [6],
+                    ride: [0, 3, 6, 9, 12, 15],
+                    openhat: [6],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 3, 6],
+                    snare: [2, 4],
+                    crash: [0, 6],
+                    length: 8
+                },
+                fillLeft: {
+                    snare: [0, 3, 6],
+                    hightom: [1, 4],
+                    midtom: [2, 5],
+                    length: 8
+                },
+                fillRight: {
+                    ride: [0, 2, 4, 6],
+                    kick: [0, 6],
+                    length: 8
+                }
+            },
+
+            // 5. Jazz Swing
+            5: {
+                intro: {
+                    ride: [0, 3, 6, 9, 12, 15],
+                    kick: [0],
+                    hihat: [4, 12],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 6, 12],
+                    snare: [4, 10],
+                    ride: [0, 3, 6, 9, 12, 15],
+                    hihat: [2, 8, 14],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 5, 6, 11, 12],
+                    snare: [4, 10, 13],
+                    ride: [0, 3, 6, 9, 12, 15],
+                    crash: [0],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 4],
+                    snare: [2, 6],
+                    ride: [0, 2, 4, 6],
+                    crash: [0, 6],
+                    length: 8
+                },
+                fillLeft: {
+                    snare: [0, 2, 4, 6],
+                    ride: [1, 3, 5, 7],
+                    length: 8
+                },
+                fillRight: {
+                    hightom: [0, 1],
+                    midtom: [2, 3],
+                    lowtom: [4, 5],
+                    crash: [6],
+                    length: 8
+                }
+            },
+
+            // 6. Latin Fire
+            6: {
+                intro: {
+                    cowbell: [0, 2, 4, 6, 8, 10, 12, 14],
+                    clap: [4, 12],
+                    shaker: [1, 3, 5, 7, 9, 11, 13, 15],
+                    kick: [12],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 6, 10],
+                    snare: [4, 12],
+                    cowbell: [0, 2, 4, 6, 8, 10, 12, 14],
+                    shaker: [1, 3, 5, 7, 9, 11, 13, 15],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 5, 6, 10, 13],
+                    snare: [4, 8, 12],
+                    cowbell: [0, 2, 4, 6, 8, 10, 12, 14],
+                    clap: [2, 10, 14],
+                    tambourine: [1, 3, 5, 7, 9, 11, 13, 15],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 2, 4, 6],
+                    cowbell: [0, 1, 2, 3, 4, 5, 6, 7],
+                    crash: [0, 6],
+                    length: 8
+                },
+                fillLeft: {
+                    cowbell: [0, 2, 4, 6],
+                    clap: [1, 3, 5, 7],
+                    length: 8
+                },
+                fillRight: {
+                    tambourine: [0, 1, 2, 3, 4, 5, 6, 7],
+                    kick: [0, 4],
+                    length: 8
+                }
+            },
+
+            // 7. Reggae One
+            7: {
+                intro: {
+                    hihat: [2, 6, 10, 14],
+                    snare: [0, 4, 8, 12],
+                    kick: [12],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 6, 8, 14],
+                    snare: [2, 10],
+                    hihat: [4, 12],
+                    openhat: [6, 14],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 6, 8, 10, 14],
+                    snare: [2, 10],
+                    hihat: [4, 12],
+                    clap: [4, 12],
+                    cowbell: [1, 5, 9, 13],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 6],
+                    snare: [2, 4],
+                    hihat: [0, 2, 4, 6],
+                    crash: [0],
+                    length: 8
+                },
+                fillLeft: {
+                    snare: [0, 2, 4, 6],
+                    hihat: [1, 3, 5, 7],
+                    length: 8
+                },
+                fillRight: {
+                    cowbell: [0, 2, 4, 6],
+                    clap: [7],
+                    length: 8
+                }
+            },
+
+            // 8. Country Beat
+            8: {
+                intro: {
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    kick: [0, 8],
+                    snare: [4, 12],
+                    crash: [0],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 6, 8, 14],
+                    snare: [4, 12],
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 6, 8, 10, 14],
+                    snare: [4, 12],
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    tambourine: [2, 6, 10, 14],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 2, 4],
+                    snare: [1, 3, 5, 6, 7],
+                    crash: [0],
+                    length: 8
+                },
+                fillLeft: {
+                    snare: [0, 2, 4, 6],
+                    kick: [0, 4],
+                    length: 8
+                },
+                fillRight: {
+                    hightom: [0, 2],
+                    midtom: [4],
+                    lowtom: [6],
+                    kick: [0, 6],
+                    length: 8
+                }
+            },
+
+            // 9. Soul Pocket
+            9: {
+                intro: {
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    clap: [4, 12],
+                    tambourine: [2, 6, 10, 14],
+                    kick: [8, 12],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 5, 10],
+                    snare: [4, 12],
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    clap: [8],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 5, 6, 10, 13],
+                    snare: [4, 12],
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    openhat: [7, 15],
+                    tambourine: [1, 5, 9, 13],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 4],
+                    clap: [0, 2, 4, 6],
+                    tambourine: [1, 3, 5, 7],
+                    crash: [0],
+                    length: 8
+                },
+                fillLeft: {
+                    clap: [0, 2, 4, 6],
+                    shaker: [0, 1, 2, 3, 4, 5, 6, 7],
+                    length: 8
+                },
+                fillRight: {
+                    snare: [0, 2, 4, 6],
+                    tambourine: [1, 3, 5, 7],
+                    length: 8
+                }
+            },
+
+            // 10. Disco Fever
+            10: {
+                intro: {
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    kick: [0, 8],
+                    clap: [4, 12],
+                    crash: [0],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 4, 8, 12],
+                    snare: [4, 12],
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    openhat: [2, 6, 10, 14],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 3, 4, 8, 11, 12],
+                    snare: [4, 12],
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    clap: [2, 6, 10, 14],
+                    crash: [0, 8],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 2, 4, 6],
+                    clap: [0, 1, 2, 3, 4, 5, 6, 7],
+                    crash: [0, 4],
+                    length: 8
+                },
+                fillLeft: {
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7],
+                    clap: [0, 4],
+                    length: 8
+                },
+                fillRight: {
+                    cowbell: [0, 2, 4, 6],
+                    kick: [0, 4],
+                    crash: [7],
+                    length: 8
+                }
+            },
+
+            // 11. R&B Smooth
+            11: {
+                intro: {
+                    shaker: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    hihat: [0, 4, 8, 12],
+                    snare: [12],
+                    kick: [14],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 6, 10],
+                    snare: [4, 12],
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    shaker: [1, 3, 5, 7, 9, 11, 13, 15],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 5, 6, 10, 13, 15],
+                    snare: [4, 12],
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    clap: [8],
+                    tambourine: [1, 5, 9, 13],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 4],
+                    snare: [2, 6],
+                    shaker: [0, 1, 2, 3, 4, 5, 6, 7],
+                    crash: [0],
+                    length: 8
+                },
+                fillLeft: {
+                    snare: [0, 2, 4, 6],
+                    shaker: [0, 1, 2, 3, 4, 5, 6, 7],
+                    length: 8
+                },
+                fillRight: {
+                    tambourine: [0, 1, 2, 3, 4, 5, 6, 7],
+                    clap: [0, 4],
+                    length: 8
+                }
+            },
+
+            // 12. Gospel Spirit
+            12: {
+                intro: {
+                    clap: [0, 2, 4, 6, 8, 10, 12, 14],
+                    tambourine: [1, 3, 5, 7, 9, 11, 13, 15],
+                    kick: [0, 8],
+                    crash: [0],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 6, 10],
+                    snare: [4, 12],
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    clap: [4, 12],
+                    tambourine: [1, 5, 9, 13],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 5, 6, 10, 13],
+                    snare: [4, 8, 12],
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    clap: [2, 4, 10, 12, 14],
+                    tambourine: [1, 3, 5, 7, 9, 11, 13, 15],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 2, 4, 6],
+                    clap: [0, 1, 2, 3, 4, 5, 6, 7],
+                    tambourine: [0, 1, 2, 3, 4, 5, 6, 7],
+                    crash: [0, 6],
+                    length: 8
+                },
+                fillLeft: {
+                    clap: [0, 1, 2, 3, 4, 5, 6, 7],
+                    kick: [0, 4],
+                    length: 8
+                },
+                fillRight: {
+                    tambourine: [0, 1, 2, 3, 4, 5, 6, 7],
+                    clap: [0, 2, 4, 6],
+                    length: 8
+                }
+            },
+
+            // 13. Metal Blast
+            13: {
+                intro: {
+                    kick: [0, 2, 4, 6, 8, 10, 12, 14],
+                    crash: [0, 8],
+                    hihat: [1, 3, 5, 7, 9, 11, 13, 15],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 2, 4, 6, 8, 10, 12, 14],
+                    snare: [4, 12],
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    snare: [4, 12],
+                    crash: [0, 8],
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 1, 2, 3, 4, 5, 6, 7],
+                    crash: [0, 2, 4, 6],
+                    snare: [1, 3, 5, 7],
+                    length: 8
+                },
+                fillLeft: {
+                    hightom: [0, 1, 2, 3],
+                    midtom: [4, 5],
+                    lowtom: [6, 7],
+                    length: 8
+                },
+                fillRight: {
+                    snare: [0, 1, 2, 3, 4, 5, 6, 7],
+                    crash: [0, 7],
+                    length: 8
+                }
+            },
+
+            // 14. Punk Energy
+            14: {
+                intro: {
+                    crash: [0],
+                    snare: [2, 4, 6, 10, 12, 14],
+                    kick: [0, 8],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 2, 4, 6, 8, 10, 12, 14],
+                    snare: [4, 12],
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    crash: [0],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 1, 2, 4, 6, 8, 10, 12, 14],
+                    snare: [3, 4, 11, 12],
+                    openhat: [0, 4, 8, 12],
+                    crash: [0, 8],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 2, 4, 6],
+                    snare: [1, 3, 5, 7],
+                    crash: [0, 4],
+                    length: 8
+                },
+                fillLeft: {
+                    snare: [0, 1, 2, 3, 4, 5, 6, 7],
+                    kick: [0, 4],
+                    length: 8
+                },
+                fillRight: {
+                    crash: [0, 4],
+                    snare: [2, 6],
+                    kick: [0, 2, 4, 6],
+                    length: 8
+                }
+            },
+
+            // 15. Indie Alt
+            15: {
+                intro: {
+                    ride: [0, 2, 4, 6, 8, 10, 12, 14],
+                    kick: [0],
+                    snare: [8],
+                    tambourine: [4, 12],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 6, 10],
+                    snare: [4, 12],
+                    ride: [0, 2, 4, 6, 8, 10, 12, 14],
+                    tambourine: [2, 6, 10, 14],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 5, 6, 10, 13],
+                    snare: [4, 12],
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    crash: [0],
+                    clap: [8],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 4],
+                    snare: [2, 6],
+                    ride: [0, 2, 4, 6],
+                    crash: [0, 6],
+                    length: 8
+                },
+                fillLeft: {
+                    snare: [0, 2, 4, 6],
+                    tambourine: [1, 3, 5, 7],
+                    length: 8
+                },
+                fillRight: {
+                    hightom: [0, 2, 4],
+                    midtom: [1, 3, 5],
+                    crash: [6],
+                    length: 8
+                }
+            },
+
+            // ═══════════════════════════════════════════════════════
+            // USER 2 - RYTHMES ÉLECTRONIQUES ET WORLD
+            // ═══════════════════════════════════════════════════════
+
+            // 16. Electronic House
+            16: {
+                intro: {
+                    kick: [0, 4, 8, 12],
+                    hihat: [2, 6, 10, 14],
+                    clap: [8],
+                    crash: [0],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 4, 8, 12],
+                    snare: [4, 12],
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    openhat: [6, 14],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 3, 4, 8, 11, 12],
+                    snare: [4, 12],
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    clap: [8],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 4],
+                    clap: [2, 6],
+                    hihat: [0, 2, 4, 6],
+                    crash: [0],
+                    length: 8
+                },
+                fillLeft: {
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7],
+                    clap: [0, 4],
+                    length: 8
+                },
+                fillRight: {
+                    snare: [0, 2, 4, 6],
+                    kick: [1, 3, 5, 7],
+                    length: 8
+                }
+            },
+
+            // 17. Techno Pulse
+            17: {
+                intro: {
+                    kick: [0, 4, 8, 12],
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    crash: [0],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 4, 8, 12],
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    clap: [4, 12],
+                    openhat: [6, 14],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 2, 4, 6, 8, 10, 12, 14],
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    snare: [4, 12],
+                    crash: [0],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 2, 4, 6],
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7],
+                    crash: [0, 6],
+                    length: 8
+                },
+                fillLeft: {
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7],
+                    kick: [0, 4],
+                    length: 8
+                },
+                fillRight: {
+                    clap: [0, 2, 4, 6],
+                    snare: [1, 3, 5, 7],
+                    length: 8
+                }
+            },
+
+            // 18. Dubstep Drop
+            18: {
+                intro: {
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    snare: [8, 12],
+                    kick: [0],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 8],
+                    snare: [4, 12],
+                    hihat: [2, 6, 10, 14],
+                    crash: [0],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 3, 8, 11],
+                    snare: [4, 6, 12, 14],
+                    hihat: [1, 2, 5, 7, 9, 10, 13, 15],
+                    crash: [0, 8],
+                    length: 16
+                },
+                outro: {
+                    kick: [0],
+                    snare: [2, 4, 6],
+                    crash: [0, 6],
+                    length: 8
+                },
+                fillLeft: {
+                    snare: [0, 1, 2, 3, 4, 5, 6, 7],
+                    length: 8
+                },
+                fillRight: {
+                    kick: [0, 4],
+                    lowtom: [2, 6],
+                    crash: [7],
+                    length: 8
+                }
+            },
+
+            // 19. Trap 808
+            19: {
+                intro: {
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    snare: [8],
+                    kick: [12],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 6],
+                    snare: [4, 12],
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    openhat: [3, 7, 11, 15],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 3, 6, 9],
+                    snare: [4, 10, 12, 14],
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    clap: [8],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 4],
+                    snare: [2, 6],
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7],
+                    length: 8
+                },
+                fillLeft: {
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7],
+                    snare: [2, 4, 6],
+                    length: 8
+                },
+                fillRight: {
+                    snare: [0, 1, 2, 3, 4, 5, 6, 7],
+                    kick: [0, 4],
+                    length: 8
+                }
+            },
+
+            // 20. Hip Hop Boom
+            20: {
+                intro: {
+                    kick: [0],
+                    snare: [8],
+                    hihat: [0, 4, 8, 12],
+                    shaker: [2, 6, 10, 14],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 6, 10],
+                    snare: [4, 12],
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    shaker: [3, 7, 11, 15],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 5, 6, 10, 13],
+                    snare: [4, 12],
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    clap: [8],
+                    openhat: [7, 15],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 4],
+                    snare: [2, 6],
+                    shaker: [0, 1, 2, 3, 4, 5, 6, 7],
+                    length: 8
+                },
+                fillLeft: {
+                    snare: [0, 2, 4, 6],
+                    hihat: [1, 3, 5, 7],
+                    length: 8
+                },
+                fillRight: {
+                    hightom: [0, 2],
+                    midtom: [4],
+                    lowtom: [6],
+                    kick: [0, 6],
+                    length: 8
+                }
+            },
+
+            // 21. Breakbeat
+            21: {
+                intro: {
+                    snare: [0, 3, 6, 9, 12, 15],
+                    kick: [0, 8],
+                    hihat: [2, 6, 10, 14],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 5, 8, 13],
+                    snare: [3, 6, 11, 14],
+                    hihat: [0, 2, 4, 6, 8, 10, 12, 14],
+                    crash: [0],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 3, 5, 8, 10, 13],
+                    snare: [2, 6, 9, 11, 14],
+                    hihat: [0, 1, 2, 4, 6, 8, 10, 12, 14],
+                    openhat: [7, 15],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 2, 4, 6],
+                    snare: [1, 3, 5, 7],
+                    crash: [0, 6],
+                    length: 8
+                },
+                fillLeft: {
+                    snare: [0, 1, 3, 4, 6, 7],
+                    kick: [0, 4],
+                    length: 8
+                },
+                fillRight: {
+                    hightom: [0, 1, 2],
+                    midtom: [3, 4],
+                    lowtom: [5, 6],
+                    crash: [7],
+                    length: 8
+                }
+            },
+
+            // 22. Drum n Bass
+            22: {
+                intro: {
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    kick: [0, 8],
+                    snare: [4, 12],
+                    crash: [0],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 3, 8, 11],
+                    snare: [4, 12],
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    crash: [0],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 2, 3, 5, 8, 10, 11, 13],
+                    snare: [4, 6, 12, 14],
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    openhat: [7, 15],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 2, 4, 6],
+                    snare: [1, 3, 5, 7],
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7],
+                    crash: [0],
+                    length: 8
+                },
+                fillLeft: {
+                    snare: [0, 1, 2, 3, 4, 5, 6, 7],
+                    hihat: [0, 2, 4, 6],
+                    length: 8
+                },
+                fillRight: {
+                    kick: [0, 2, 4, 6],
+                    snare: [1, 3, 5, 7],
+                    length: 8
+                }
+            },
+
+            // 23. Ambient Chill
+            23: {
+                intro: {
+                    ride: [0, 8],
+                    shaker: [2, 6, 10, 14],
+                    kick: [12],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 8],
+                    snare: [6, 14],
+                    ride: [0, 4, 8, 12],
+                    shaker: [2, 6, 10, 14],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 10],
+                    snare: [6, 14],
+                    ride: [0, 2, 4, 6, 8, 10, 12, 14],
+                    tambourine: [3, 7, 11, 15],
+                    length: 16
+                },
+                outro: {
+                    kick: [0],
+                    ride: [0, 4],
+                    shaker: [2, 6],
+                    crash: [0],
+                    length: 8
+                },
+                fillLeft: {
+                    shaker: [0, 1, 2, 3, 4, 5, 6, 7],
+                    ride: [0, 4],
+                    length: 8
+                },
+                fillRight: {
+                    tambourine: [0, 2, 4, 6],
+                    ride: [1, 3, 5, 7],
+                    length: 8
+                }
+            },
+
+            // 24. World Percussion
+            24: {
+                intro: {
+                    cowbell: [0, 4, 8, 12],
+                    shaker: [2, 6, 10, 14],
+                    hightom: [1, 5, 9, 13],
+                    lowtom: [3, 7, 11, 15],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 6, 10],
+                    snare: [4, 12],
+                    cowbell: [0, 2, 4, 6, 8, 10, 12, 14],
+                    shaker: [1, 3, 5, 7, 9, 11, 13, 15],
+                    hightom: [2, 10],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 5, 6, 10, 13],
+                    snare: [4, 12],
+                    cowbell: [0, 2, 4, 6, 8, 10, 12, 14],
+                    tambourine: [1, 3, 5, 7, 9, 11, 13, 15],
+                    hightom: [2, 6, 10, 14],
+                    lowtom: [3, 7, 11, 15],
+                    length: 16
+                },
+                outro: {
+                    cowbell: [0, 2, 4, 6],
+                    hightom: [0, 2, 4, 6],
+                    lowtom: [1, 3, 5, 7],
+                    crash: [0, 6],
+                    length: 8
+                },
+                fillLeft: {
+                    cowbell: [0, 2, 4, 6],
+                    shaker: [0, 1, 2, 3, 4, 5, 6, 7],
+                    length: 8
+                },
+                fillRight: {
+                    hightom: [0, 1, 2, 3],
+                    lowtom: [4, 5, 6, 7],
+                    length: 8
+                }
+            },
+
+            // 25. Afrobeat
+            25: {
+                intro: {
+                    shaker: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    cowbell: [0, 4, 8, 12],
+                    clap: [6, 14],
+                    kick: [12],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 6, 10, 12],
+                    snare: [4],
+                    hihat: [2, 6, 10, 14],
+                    shaker: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    cowbell: [0, 4, 8, 12],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 5, 6, 10, 11, 12, 15],
+                    snare: [4, 8],
+                    hihat: [2, 6, 10, 14],
+                    shaker: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    clap: [2, 6, 10, 14],
+                    cowbell: [0, 2, 4, 6, 8, 10, 12, 14],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 2, 4, 6],
+                    cowbell: [0, 1, 2, 3, 4, 5, 6, 7],
+                    clap: [0, 2, 4, 6],
+                    crash: [0, 6],
+                    length: 8
+                },
+                fillLeft: {
+                    shaker: [0, 1, 2, 3, 4, 5, 6, 7],
+                    clap: [0, 2, 4, 6],
+                    length: 8
+                },
+                fillRight: {
+                    cowbell: [0, 1, 2, 3, 4, 5, 6, 7],
+                    kick: [0, 4],
+                    length: 8
+                }
+            },
+
+            // 26. Bossa Nova
+            26: {
+                intro: {
+                    ride: [0, 3, 6, 9, 12, 15],
+                    shaker: [1, 4, 7, 10, 13],
+                    kick: [0, 12],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 6, 10],
+                    snare: [4, 14],
+                    ride: [0, 3, 6, 9, 12, 15],
+                    shaker: [1, 4, 7, 10, 13],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 5, 6, 10, 13],
+                    snare: [4, 11, 14],
+                    ride: [0, 3, 6, 9, 12, 15],
+                    tambourine: [1, 4, 7, 10, 13],
+                    hihat: [2, 8],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 6],
+                    ride: [0, 2, 4, 6],
+                    shaker: [1, 3, 5, 7],
+                    crash: [0],
+                    length: 8
+                },
+                fillLeft: {
+                    snare: [0, 3, 6],
+                    shaker: [0, 1, 2, 3, 4, 5, 6, 7],
+                    length: 8
+                },
+                fillRight: {
+                    tambourine: [0, 1, 2, 3, 4, 5, 6, 7],
+                    ride: [0, 3, 6],
+                    length: 8
+                }
+            },
+
+            // 27. Samba Heat
+            27: {
+                intro: {
+                    shaker: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    hightom: [0, 4, 8, 12],
+                    lowtom: [2, 6, 10, 14],
+                    whistle: [8],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 6, 8, 14],
+                    snare: [4, 12],
+                    shaker: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    hightom: [2, 10],
+                    tambourine: [0, 4, 8, 12],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 5, 6, 8, 13, 14],
+                    snare: [4, 12],
+                    shaker: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    hightom: [2, 6, 10, 14],
+                    lowtom: [3, 7, 11, 15],
+                    tambourine: [0, 2, 4, 6, 8, 10, 12, 14],
+                    whistle: [0, 8],
+                    length: 16
+                },
+                outro: {
+                    shaker: [0, 1, 2, 3, 4, 5, 6, 7],
+                    hightom: [0, 2, 4, 6],
+                    lowtom: [1, 3, 5, 7],
+                    whistle: [0, 4],
+                    crash: [0],
+                    length: 8
+                },
+                fillLeft: {
+                    shaker: [0, 1, 2, 3, 4, 5, 6, 7],
+                    whistle: [0, 4],
+                    length: 8
+                },
+                fillRight: {
+                    hightom: [0, 1, 2, 3],
+                    lowtom: [4, 5, 6, 7],
+                    tambourine: [0, 2, 4, 6],
+                    length: 8
+                }
+            },
+
+            // 28. Flamenco Fire
+            28: {
+                intro: {
+                    clap: [0, 2, 3, 6, 8, 10, 11, 14],
+                    hightom: [4, 12],
+                    kick: [0, 8],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 6, 10],
+                    snare: [4, 12],
+                    clap: [0, 2, 3, 6, 8, 10, 11, 14],
+                    hightom: [1, 9],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 5, 6, 10, 13],
+                    snare: [4, 12],
+                    clap: [0, 1, 2, 3, 6, 8, 9, 10, 11, 14],
+                    hightom: [2, 7, 10, 15],
+                    midtom: [4, 12],
+                    length: 16
+                },
+                outro: {
+                    clap: [0, 1, 2, 3, 4, 5, 6, 7],
+                    hightom: [0, 2, 4, 6],
+                    crash: [0],
+                    length: 8
+                },
+                fillLeft: {
+                    clap: [0, 1, 2, 3, 4, 5, 6, 7],
+                    kick: [0, 4],
+                    length: 8
+                },
+                fillRight: {
+                    hightom: [0, 1, 2, 3],
+                    midtom: [4, 5],
+                    lowtom: [6, 7],
+                    length: 8
+                }
+            },
+
+            // 29. Middle Eastern
+            29: {
+                intro: {
+                    hightom: [0, 3, 6, 9, 12, 15],
+                    lowtom: [2, 5, 8, 11, 14],
+                    tambourine: [1, 4, 7, 10, 13],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 6, 10],
+                    snare: [4, 12],
+                    hightom: [0, 3, 6, 9, 12, 15],
+                    tambourine: [1, 5, 9, 13],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 5, 6, 10, 13],
+                    snare: [4, 8, 12],
+                    hightom: [0, 2, 3, 6, 8, 9, 12, 14, 15],
+                    lowtom: [1, 5, 7, 11, 13],
+                    tambourine: [1, 3, 5, 7, 9, 11, 13, 15],
+                    length: 16
+                },
+                outro: {
+                    hightom: [0, 2, 4, 6],
+                    lowtom: [1, 3, 5, 7],
+                    tambourine: [0, 1, 2, 3, 4, 5, 6, 7],
+                    crash: [0],
+                    length: 8
+                },
+                fillLeft: {
+                    hightom: [0, 2, 4, 6],
+                    tambourine: [0, 1, 2, 3, 4, 5, 6, 7],
+                    length: 8
+                },
+                fillRight: {
+                    lowtom: [0, 2, 4, 6],
+                    hightom: [1, 3, 5, 7],
+                    length: 8
+                }
+            },
+
+            // 30. Industrial
+            30: {
+                intro: {
+                    kick: [0, 4, 8, 12],
+                    snare: [2, 6, 10, 14],
+                    crash: [0, 8],
+                    hihat: [1, 3, 5, 7, 9, 11, 13, 15],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 2, 4, 6, 8, 10, 12, 14],
+                    snare: [4, 12],
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    crash: [0],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 1, 2, 4, 6, 8, 10, 12, 14],
+                    snare: [3, 4, 11, 12],
+                    hihat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    crash: [0, 8],
+                    cowbell: [2, 6, 10, 14],
+                    length: 16
+                },
+                outro: {
+                    kick: [0, 1, 2, 3, 4, 5, 6, 7],
+                    crash: [0, 2, 4, 6],
+                    snare: [1, 3, 5, 7],
+                    length: 8
+                },
+                fillLeft: {
+                    snare: [0, 1, 2, 3, 4, 5, 6, 7],
+                    crash: [0, 4],
+                    length: 8
+                },
+                fillRight: {
+                    cowbell: [0, 2, 4, 6],
+                    kick: [0, 2, 4, 6],
+                    crash: [7],
+                    length: 8
+                }
+            },
+
+            // 31. Experimental
+            31: {
+                intro: {
+                    whistle: [0, 8],
+                    shaker: [2, 4, 6, 10, 12, 14],
+                    hightom: [3, 11],
+                    lowtom: [7, 15],
+                    length: 16
+                },
+                main: {
+                    kick: [0, 7, 10],
+                    snare: [5, 13],
+                    hihat: [2, 6, 9, 14],
+                    cowbell: [1, 4, 8, 12],
+                    shaker: [3, 7, 11, 15],
+                    length: 16
+                },
+                variation: {
+                    kick: [0, 3, 7, 10, 13],
+                    snare: [5, 11, 13],
+                    openhat: [2, 6, 9, 14],
+                    cowbell: [0, 2, 4, 6, 8, 10, 12, 14],
+                    tambourine: [1, 3, 5, 7, 9, 11, 13, 15],
+                    whistle: [4, 12],
+                    length: 16
+                },
+                outro: {
+                    whistle: [0, 4],
+                    shaker: [0, 1, 2, 3, 4, 5, 6, 7],
+                    crash: [0, 6],
+                    hightom: [2, 6],
+                    lowtom: [3, 7],
+                    length: 8
+                },
+                fillLeft: {
+                    whistle: [0, 2, 4, 6],
+                    shaker: [0, 1, 2, 3, 4, 5, 6, 7],
+                    length: 8
+                },
+                fillRight: {
+                    cowbell: [0, 2, 4, 6],
+                    tambourine: [1, 3, 5, 7],
+                    crash: [7],
+                    length: 8
+                }
+            }
+        };
+
+        // Fonction helper pour obtenir le pattern selon le groupe et la section
+        function getPattern(groupId, section) {
+            const groupPattern = DRUM_PATTERNS_LIBRARY[groupId];
+            if (!groupPattern) {
+                console.error(`Groupe ${groupId} non trouvé dans la bibliothèque`);
+                return DRUM_PATTERNS_LIBRARY[0][section]; // Fallback sur Rock Standard
+            }
+            return groupPattern[section] || groupPattern.main;
+        }
 
         // Initialisation
         function init() {
@@ -936,6 +2314,49 @@
             startNewSection(groupId, section);
         }
 
+        function playFill(type) {
+            if (!isPlaying || isPaused) {
+                console.log('⚠️ Aucun rythme en cours - Fill ignoré');
+                return;
+            }
+            
+            if (isPlayingFill) {
+                console.log('⚠️ Fill déjà en cours - Fill ignoré');
+                return;
+            }
+            
+            console.log(`═══ Fill ${type} déclenché ═══`);
+            
+            // Sauvegarder la section actuelle
+            sectionBeforeFill = activeSection;
+            groupBeforeFill = activeGroup;
+            
+            // Passer en mode fill
+            isPlayingFill = true;
+            fillType = type;
+            beatPosition = 0;
+            
+            // Redémarrer le playback avec le pattern de fill
+            stopPlayback();
+            startPlayback();
+        }
+
+        function endFill() {
+            console.log('✓ Fill terminé - Retour à la section précédente');
+            
+            isPlayingFill = false;
+            fillType = null;
+            beatPosition = 0;
+            
+            // Restaurer la section d'avant
+            activeSection = sectionBeforeFill;
+            activeGroup = groupBeforeFill;
+            
+            // Redémarrer le playback
+            stopPlayback();
+            startPlayback();
+        }
+
         function startNewSection(groupId, section) {
             stopPlayback();
             stopTransitionBlink();
@@ -947,6 +2368,8 @@
             beatPosition = 0;
             isPlaying = true;
             isPaused = false;
+            isPlayingFill = false;
+            fillType = null;
             
             console.log(`✓ Démarrage: Groupe ${groupId}, Section ${section}`);
             
@@ -1002,8 +2425,16 @@
                 console.log('Mode simulation actif');
             }
             
-            const pattern = DRUM_PATTERNS[activeSection];
+            // Déterminer quelle section/fill jouer
+            const sectionToPlay = isPlayingFill ? fillType : activeSection;
+            const pattern = getPattern(activeGroup, sectionToPlay);
             const beatDuration = (60 / tempo) * 1000 / 4; // Durée d'un 16ème de note en ms
+            
+            if (isPlayingFill) {
+                console.log(`Démarrage fill - Type: ${fillType}, Pattern length: ${pattern.length}`);
+            } else {
+                console.log(`Démarrage playback - Groupe: ${activeGroup}, Section: ${activeSection}, Tempo: ${tempo}, Pattern length: ${pattern.length}`);
+            }
             
             intervalId = setInterval(() => {
                 if (isPaused) return;
@@ -1013,8 +2444,15 @@
                 
                 // Vérifier si on a atteint la fin de la boucle
                 if (beatPosition >= pattern.length) {
-                    console.log(`Fin de boucle ${activeSection} (${pattern.length} beats)`);
                     beatPosition = 0;
+                    
+                    // Si c'était un fill, revenir à la section d'avant
+                    if (isPlayingFill) {
+                        endFill();
+                        return;
+                    }
+                    
+                    console.log(`Fin de boucle ${activeSection} (${pattern.length} beats)`);
                     
                     // Gérer la transition automatique de l'intro
                     if (activeSection === 'intro') {
@@ -1048,10 +2486,18 @@
         function playBeat(position, pattern) {
             const channel = 9; // Canal 10 (0-indexed) pour les drums
             
-            // Jouer les notes actives à cette position
-            Object.keys(DRUM_NOTES).forEach(drumName => {
-                if (pattern[drumName] && pattern[drumName].includes(position)) {
-                    const note = DRUM_NOTES[drumName];
+            // Jouer toutes les notes actives à cette position pour tous les instruments
+            Object.keys(pattern).forEach(instrumentName => {
+                if (instrumentName === 'length') return; // Skip la propriété length
+                
+                const positions = pattern[instrumentName];
+                if (positions && positions.includes(position)) {
+                    const note = DRUM_NOTES[instrumentName];
+                    if (!note) {
+                        console.warn(`Instrument inconnu: ${instrumentName}`);
+                        return;
+                    }
+                    
                     const velocity = 100;
                     
                     if (midiOutputCTK) {
@@ -1060,11 +2506,13 @@
                         
                         // Note OFF après 50ms
                         setTimeout(() => {
-                            midiOutputCTK.send([0x80 + channel, note, 0]);
+                            if (midiOutputCTK) {
+                                midiOutputCTK.send([0x80 + channel, note, 0]);
+                            }
                         }, 50);
                     } else {
-                        // Mode simulation - afficher dans la console
-                        console.log(`Beat ${position}: ${drumName} (note ${note})`);
+                        // Mode simulation - logging minimal
+                        // console.log(`Beat ${position}: ${instrumentName} (note ${note})`);
                     }
                 }
             });
@@ -1091,6 +2539,10 @@
             beatPosition = 0;
             isPlaying = false;
             isPaused = false;
+            isPlayingFill = false;
+            fillType = null;
+            sectionBeforeFill = null;
+            groupBeforeFill = null;
             
             // Envoyer All Notes Off seulement si CTK est connecté
             if (midiOutputCTK) {
@@ -1106,6 +2558,7 @@
             
             updatePadColors();
             updatePlaybackState();
+            syncLaunchpadColors();
             console.log('✓ Rythme arrêté');
             console.log('════════════════════');
         }
@@ -1441,6 +2894,14 @@
                 else if (cc === 105) {
                     color = 45; // Bleu
                 }
+                // Left (CC 106) - Fill Left
+                else if (cc === 106) {
+                    color = isPlaying ? 53 : COLORS.off; // Rose si rythme en cours, éteint sinon
+                }
+                // Right (CC 107) - Fill Right
+                else if (cc === 107) {
+                    color = isPlaying ? 53 : COLORS.off; // Rose si rythme en cours, éteint sinon
+                }
                 // User 1 (CC 109) - Allumé en vert si USER 1 actif, éteint sinon
                 else if (cc === 109) {
                     color = currentUserMode === 1 ? COLORS.active : COLORS.off;
@@ -1518,8 +2979,18 @@
                     const ccNames = ['Up/Tempo+', 'Down/Tempo-', 'Left', 'Right', 'Session', 'User1', 'User2', 'Mixer'];
                     console.log(`✓ Bouton haut ${btnIndex} cliqué - CC ${note} - Fonction: ${ccNames[btnIndex]}`);
                     
+                    // Left (CC 106) = Fill Left
+                    else if (note === 106) {
+                        console.log('→ Fill Left');
+                        playFill('fillLeft');
+                    }
+                    // Right (CC 107) = Fill Right
+                    else if (note === 107) {
+                        console.log('→ Fill Right');
+                        playFill('fillRight');
+                    }
                     // Up (CC 104) = Tempo +
-                    if (note === 104) {
+                    else if (note === 104) {
                         console.log('→ Tempo +5');
                         adjustTempo(5);
                     }
