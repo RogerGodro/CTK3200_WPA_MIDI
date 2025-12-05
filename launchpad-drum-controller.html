@@ -546,9 +546,10 @@
                 <strong>Contrôles Launchpad (si connecté):</strong><br>
                 • <strong>Pads 8×8:</strong> Démarrer les rythmes (intro/corps/variation/outro)<br>
                 • <strong>Boutons de droite:</strong> 6 premiers = drum sets, 7e = STOP, 8e = PAUSE<br>
-                • <strong>Bouton User 1 (haut):</strong> Basculer USER 1 ↔ USER 2<br>
-                • <strong>Bouton User 2 (haut):</strong> Tempo +5 BPM<br>
-                • <strong>Bouton Mixer (haut):</strong> Tempo -5 BPM
+                • <strong>Bouton User 1 (haut):</strong> Activer USER 1 (vert = actif, éteint = inactif)<br>
+                • <strong>Bouton User 2 (haut):</strong> Activer USER 2 (vert = actif, éteint = inactif)<br>
+                • <strong>Bouton Up (haut):</strong> Tempo +5 BPM (bleu)<br>
+                • <strong>Bouton Down (haut):</strong> Tempo -5 BPM (bleu)
             </p>
             
             <h3>Légende des pads</h3>
@@ -772,34 +773,26 @@
             const row = document.getElementById('bottomRow');
             row.innerHTML = '';
             
-            // 5 boutons vides
-            for (let i = 0; i < 5; i++) {
+            // 6 boutons vides
+            for (let i = 0; i < 6; i++) {
                 const btn = document.createElement('div');
                 btn.className = 'bottom-btn';
                 row.appendChild(btn);
             }
             
-            // User 1 - basculer USER1/USER2 (CC 109)
-            const user1Btn = document.createElement('div');
-            user1Btn.className = 'bottom-btn';
-            user1Btn.textContent = 'U1/U2';
-            user1Btn.title = 'Basculer USER 1 / USER 2 (CC 109)';
-            user1Btn.addEventListener('click', () => switchUserMode(currentUserMode === 1 ? 2 : 1));
-            row.appendChild(user1Btn);
-            
-            // Tempo + (CC 110 = User 2 sur Launchpad)
+            // Up - Tempo + (CC 104)
             const tempoUp = document.createElement('div');
             tempoUp.className = 'bottom-btn';
             tempoUp.textContent = '▲';
-            tempoUp.title = 'Tempo + (CC 110 = User 2)';
+            tempoUp.title = 'Tempo + (CC 104 = Up)';
             tempoUp.addEventListener('click', () => adjustTempo(5));
             row.appendChild(tempoUp);
             
-            // Tempo - (CC 111 = Mixer sur Launchpad)
+            // Down - Tempo - (CC 105)
             const tempoDown = document.createElement('div');
             tempoDown.className = 'bottom-btn';
             tempoDown.textContent = '▼';
-            tempoDown.title = 'Tempo - (CC 111 = Mixer)';
+            tempoDown.title = 'Tempo - (CC 105 = Down)';
             tempoDown.addEventListener('click', () => adjustTempo(-5));
             row.appendChild(tempoDown);
         }
@@ -1235,17 +1228,21 @@
                 const cc = 104 + i;
                 let color = COLORS.off;
                 
-                // User 1 (CC 109) - indicateur USER1/USER2
-                if (cc === 109) {
-                    color = currentUserMode === 1 ? COLORS.active : 37; // Vert si USER1, bleu clair si USER2
+                // Up (CC 104) - Tempo +
+                if (cc === 104) {
+                    color = 45; // Bleu
                 }
-                // User 2 (CC 110) - Tempo +
+                // Down (CC 105) - Tempo -
+                else if (cc === 105) {
+                    color = 45; // Bleu
+                }
+                // User 1 (CC 109) - Allumé en vert si USER 1 actif, éteint sinon
+                else if (cc === 109) {
+                    color = currentUserMode === 1 ? COLORS.active : COLORS.off;
+                }
+                // User 2 (CC 110) - Allumé en vert si USER 2 actif, éteint sinon
                 else if (cc === 110) {
-                    color = 45; // Bleu pour tempo+
-                }
-                // Mixer (CC 111) - Tempo -
-                else if (cc === 111) {
-                    color = 45; // Bleu pour tempo-
+                    color = currentUserMode === 2 ? COLORS.active : COLORS.off;
                 }
                 
                 midiOutputLaunchpad.send([0xB0, cc, color]);
@@ -1307,17 +1304,21 @@
                     const btnIndex = note - 104;
                     console.log(`Bouton haut ${btnIndex} cliqué (CC ${note})`);
                     
-                    // User 2 (CC 110) = Tempo +
-                    if (note === 110) {
+                    // Up (CC 104) = Tempo +
+                    if (note === 104) {
                         adjustTempo(5);
                     }
-                    // Mixer (CC 111) = Tempo -
-                    else if (note === 111) {
+                    // Down (CC 105) = Tempo -
+                    else if (note === 105) {
                         adjustTempo(-5);
                     }
-                    // User 1 (CC 109) pourrait basculer entre USER1/USER2
+                    // User 1 (CC 109) = Activer USER 1
                     else if (note === 109) {
-                        switchUserMode(currentUserMode === 1 ? 2 : 1);
+                        switchUserMode(1);
+                    }
+                    // User 2 (CC 110) = Activer USER 2
+                    else if (note === 110) {
+                        switchUserMode(2);
                     }
                 }
             }
