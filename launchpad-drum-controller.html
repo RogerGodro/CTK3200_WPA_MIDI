@@ -485,6 +485,7 @@
                 <div class="status-card">
                     <div class="status-label">Drum Set Actuel</div>
                     <div class="status-value" id="currentDrumset">STANDARD</div>
+                    <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: 5px;" id="currentDrumsetProgram">Program 0</div>
                 </div>
                 <div class="status-card">
                     <div class="status-label">État</div>
@@ -512,6 +513,21 @@
             <div class="controls-row">
                 <button class="btn" onclick="connectDevices()">Connecter les appareils</button>
                 <button class="btn secondary" onclick="stopAllRhythms()">Arrêter tout</button>
+                <button class="btn secondary" onclick="togglePause()">Pause/Resume</button>
+            </div>
+
+            <div class="controls-row" style="margin-top: 10px;">
+                <div style="font-size: 0.85rem; color: var(--text-dim); width: 100%;">
+                    <strong>Test rapide des drum sets:</strong> Cliquez sur les boutons ci-dessous pour tester
+                </div>
+            </div>
+            <div class="controls-row" style="flex-wrap: wrap; gap: 10px;">
+                <button class="btn" style="padding: 8px 16px; font-size: 0.9rem;" onclick="selectDrumset(0)">DS0: STANDARD</button>
+                <button class="btn" style="padding: 8px 16px; font-size: 0.9rem;" onclick="selectDrumset(1)">DS1: ROOM</button>
+                <button class="btn" style="padding: 8px 16px; font-size: 0.9rem;" onclick="selectDrumset(2)">DS2: POWER</button>
+                <button class="btn" style="padding: 8px 16px; font-size: 0.9rem;" onclick="selectDrumset(3)">DS3: SYNTH</button>
+                <button class="btn" style="padding: 8px 16px; font-size: 0.9rem;" onclick="selectDrumset(4)">DS4: BRUSH</button>
+                <button class="btn" style="padding: 8px 16px; font-size: 0.9rem;" onclick="selectDrumset(5)">DS5: ORCHESTRA</button>
             </div>
         </div>
 
@@ -537,6 +553,13 @@
             <p style="margin-bottom: 15px;">
                 <strong>Connexion:</strong> Cliquez sur "Connecter les appareils" pour connecter votre Launchpad MK2 et CTK-3200. 
                 L'application peut également fonctionner en mode simulation si les appareils ne sont pas connectés.
+            </p>
+            <p style="margin-bottom: 15px;">
+                <strong>🐛 DÉBOGAGE:</strong> Ouvrez la console du navigateur (F12 ou Ctrl+Shift+I) pour voir les logs détaillés. 
+                Chaque action affiche des messages dans la console pour diagnostiquer les problèmes.
+                <span style="background: var(--surface-bright); padding: 2px 6px; border-radius: 3px; margin-left: 5px;">
+                    Appuyez sur F12 maintenant!
+                </span>
             </p>
             <p style="margin-bottom: 15px;">
                 <strong>Navigation:</strong> Utilisez le menu déroulant pour sélectionner un groupe de rythme, 
@@ -684,6 +707,10 @@
             createBottomRow();
             updateTempo(120);
             
+            // Initialiser l'affichage du drum set
+            document.getElementById('currentDrumset').textContent = DRUM_SETS[0].name;
+            document.getElementById('currentDrumsetProgram').textContent = `Program ${DRUM_SETS[0].program}`;
+            
             document.getElementById('tempoInput').addEventListener('input', (e) => {
                 updateTempo(parseInt(e.target.value));
             });
@@ -693,6 +720,9 @@
                     highlightGroup(parseInt(e.target.value));
                 }
             });
+            
+            console.log('Application initialisée');
+            console.log('Drum Set par défaut:', DRUM_SETS[0].name);
         }
 
         function populateRhythmSelect() {
@@ -925,6 +955,9 @@
         }
 
         function stopAllRhythms() {
+            console.log('═══ STOP DÉCLENCHÉ ═══');
+            console.log('Arrêt du rythme en cours...');
+            
             stopPlayback();
             
             activeGroup = null;
@@ -937,43 +970,77 @@
             if (midiOutputCTK) {
                 try {
                     midiOutputCTK.send([0xB9, 123, 0]); // All Notes Off sur canal 10
+                    console.log('✓ All Notes Off envoyé au CTK-3200');
                 } catch (error) {
                     console.error('Erreur lors de l\'envoi de All Notes Off:', error);
                 }
+            } else {
+                console.warn('⚠️ CTK-3200 non connecté');
             }
             
             updatePadColors();
             updatePlaybackState();
+            console.log('✓ Rythme arrêté');
+            console.log('════════════════════');
         }
 
         function togglePause() {
-            if (!isPlaying) return;
+            console.log('═══ PAUSE/RESUME DÉCLENCHÉ ═══');
+            
+            if (!isPlaying) {
+                console.log('⚠️ Aucun rythme en cours - PAUSE ignoré');
+                console.log('═════════════════════════════');
+                return;
+            }
             
             isPaused = !isPaused;
+            console.log(`État: ${isPaused ? 'EN PAUSE' : 'LECTURE'}`);
+            
             updatePlaybackState();
             
             // Synchroniser avec le Launchpad
             syncLaunchpadColors();
+            console.log('✓ État mis à jour');
+            console.log('═════════════════════════════');
         }
 
         function selectDrumset(index) {
+            if (index < 0 || index >= DRUM_SETS.length) {
+                console.error(`Index de drum set invalide: ${index}`);
+                return;
+            }
+            
             currentDrumset = index;
+            const drumset = DRUM_SETS[index];
+            
+            console.log(`═══ Sélection Drum Set ${index} ═══`);
+            console.log(`Nom: ${drumset.name}`);
+            console.log(`Program: ${drumset.program}`);
             
             if (midiOutputCTK) {
                 // Envoyer Program Change sur canal 10 (drums)
-                const channel = 9;
-                midiOutputCTK.send([0xC0 + channel, DRUM_SETS[index].program]);
+                const channel = 9; // Canal 10 = index 9
+                const programChange = [0xC0 + channel, drumset.program];
+                console.log(`→ Envoi Program Change: [${programChange[0].toString(16)}, ${programChange[1]}]`);
+                midiOutputCTK.send(programChange);
+                console.log('✓ Program Change envoyé au CTK-3200');
+            } else {
+                console.warn('⚠️ CTK-3200 non connecté - mode simulation');
             }
             
-            document.getElementById('currentDrumset').textContent = DRUM_SETS[index].name;
+            document.getElementById('currentDrumset').textContent = drumset.name;
+            document.getElementById('currentDrumsetProgram').textContent = `Program ${drumset.program}`;
+            console.log(`Interface mise à jour: ${drumset.name}`);
             
-            // Mettre à jour les boutons
+            // Mettre à jour les boutons de l'interface
             document.querySelectorAll('.side-btn.drumset').forEach((btn, i) => {
                 btn.classList.toggle('active', i === index);
             });
             
             // Synchroniser avec le Launchpad
+            console.log('Synchronisation des LEDs du Launchpad...');
             syncLaunchpadColors();
+            console.log('═══════════════════════════════');
         }
 
         function switchUserMode(mode) {
@@ -1203,6 +1270,9 @@
             
             // Mettre à jour les boutons ronds de droite (Note On: 89, 79, 69, 59, 49, 39, 29, 19)
             const rightButtons = [89, 79, 69, 59, 49, 39, 29, 19];
+            const rightButtonNames = ['Volume/DS0', 'Pan/DS1', 'SendA/DS2', 'SendB/DS3', 'Stop/DS4', 'Mute/DS5', 'Solo/STOP', 'RecArm/PAUSE'];
+            
+            console.log('Mise à jour LEDs boutons droite:');
             for (let i = 0; i < 8; i++) {
                 const note = rightButtons[i];
                 let color = COLORS.off;
@@ -1218,6 +1288,7 @@
                     color = isPaused ? COLORS.active : 9; // Vert si en pause, orange sinon
                 }
                 
+                console.log(`  ${rightButtonNames[i]} (note ${note}): couleur ${color}`);
                 // Envoyer un message Note On pour allumer la LED
                 midiOutputLaunchpad.send([0x90, note, color]);
             }
@@ -1268,30 +1339,36 @@
                     if (ones >= 1 && ones <= 8 && tens >= 1 && tens <= 8) {
                         const row = tens - 1; // Ligne 0-7 (0 = bas)
                         const col = ones - 1; // Colonne 0-7 (0 = gauche)
-                        console.log(`Pad cliqué - Note ${note} -> Row: ${row}, Col: ${col}`);
+                        console.log(`✓ Pad cliqué - Note ${note} -> Row: ${row}, Col: ${col}`);
                         handlePadClick(row, col);
                     }
                 }
                 // Boutons ronds de droite (Note On: 89, 79, 69, 59, 49, 39, 29, 19)
-                // Mapping pour l'application: 
                 // 89=Volume(drumset0), 79=Pan(drumset1), 69=SendA(drumset2), 
                 // 59=SendB(drumset3), 49=Stop(drumset4), 39=Mute(drumset5),
                 // 29=Solo(STOP), 19=RecordArm(PAUSE)
                 else if ([89, 79, 69, 59, 49, 39, 29, 19].includes(note)) {
                     const rightButtons = [89, 79, 69, 59, 49, 39, 29, 19];
                     const btnIndex = rightButtons.indexOf(note);
-                    console.log(`Bouton droit ${btnIndex} cliqué (note ${note})`);
+                    const btnNames = ['Volume/STANDARD', 'Pan/ROOM', 'SendA/POWER', 'SendB/SYNTH', 'Stop/BRUSH', 'Mute/ORCHESTRA', 'Solo/STOP', 'RecordArm/PAUSE'];
+                    
+                    console.log(`✓ Bouton droit ${btnIndex} cliqué - Note ${note} - Fonction: ${btnNames[btnIndex]}`);
                     
                     if (btnIndex < 6) {
                         // Les 6 premiers = drum sets
+                        console.log(`→ Sélection drum set ${btnIndex}`);
                         selectDrumset(btnIndex);
                     } else if (btnIndex === 6) {
                         // Solo = STOP
+                        console.log('→ STOP déclenché');
                         stopAllRhythms();
                     } else if (btnIndex === 7) {
                         // Record Arm = PAUSE
+                        console.log('→ PAUSE/RESUME déclenché');
                         togglePause();
                     }
+                } else {
+                    console.log(`⚠️ Note On non gérée: ${note}`);
                 }
             }
             // Messages Control Change (0xB0) - pour les boutons du haut
@@ -1302,22 +1379,27 @@
                 // 104=Up, 105=Down, 106=Left, 107=Right, 108=Session, 109=User1, 110=User2, 111=Mixer
                 if (note >= 104 && note <= 111) {
                     const btnIndex = note - 104;
-                    console.log(`Bouton haut ${btnIndex} cliqué (CC ${note})`);
+                    const ccNames = ['Up/Tempo+', 'Down/Tempo-', 'Left', 'Right', 'Session', 'User1', 'User2', 'Mixer'];
+                    console.log(`✓ Bouton haut ${btnIndex} cliqué - CC ${note} - Fonction: ${ccNames[btnIndex]}`);
                     
                     // Up (CC 104) = Tempo +
                     if (note === 104) {
+                        console.log('→ Tempo +5');
                         adjustTempo(5);
                     }
                     // Down (CC 105) = Tempo -
                     else if (note === 105) {
+                        console.log('→ Tempo -5');
                         adjustTempo(-5);
                     }
                     // User 1 (CC 109) = Activer USER 1
                     else if (note === 109) {
+                        console.log('→ Activation USER 1');
                         switchUserMode(1);
                     }
                     // User 2 (CC 110) = Activer USER 2
                     else if (note === 110) {
+                        console.log('→ Activation USER 2');
                         switchUserMode(2);
                     }
                 }
