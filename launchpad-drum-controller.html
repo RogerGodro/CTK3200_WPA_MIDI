@@ -2980,7 +2980,7 @@
                     console.log(`✓ Bouton haut ${btnIndex} cliqué - CC ${note} - Fonction: ${ccNames[btnIndex]}`);
                     
                     // Left (CC 106) = Fill Left
-                    else if (note === 106) {
+                    if (note === 106) {
                         console.log('→ Fill Left');
                         playFill('fillLeft');
                     }
