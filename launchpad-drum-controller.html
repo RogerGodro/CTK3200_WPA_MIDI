@@ -1158,14 +1158,15 @@
             }
             
             // Mettre à jour les boutons de droite (Round buttons)
-            // Notes 89-96 pour les 8 boutons de droite
+            // Ces boutons utilisent des messages CC pour les LEDs
+            const rightButtonCCs = [19, 29, 39, 49, 59, 69, 79, 89];
             for (let i = 0; i < 8; i++) {
-                const note = 89 + i;
+                const cc = rightButtonCCs[i];
                 let color = COLORS.off;
                 
                 if (i < 6) {
                     // Boutons de drum sets
-                    color = (i === currentDrumset) ? COLORS.active : 19; // Vert pale si actif, sinon gris
+                    color = (i === currentDrumset) ? COLORS.active : 19; // Vert si actif, sinon gris
                 } else if (i === 6) {
                     // Bouton STOP
                     color = 5; // Rouge
@@ -1174,13 +1175,13 @@
                     color = isPaused ? COLORS.active : 9; // Vert si en pause, orange sinon
                 }
                 
-                midiOutputLaunchpad.send([0x90, note, color]);
+                // Envoyer un message CC pour allumer la LED
+                midiOutputLaunchpad.send([0xB0, cc, color]);
             }
             
-            // Mettre à jour les boutons du bas
-            // Notes 104-111 pour les 8 boutons du bas
+            // Mettre à jour les boutons du bas (aussi en CC)
             for (let i = 0; i < 8; i++) {
-                const note = 104 + i;
+                const cc = 104 + i;
                 let color = COLORS.off;
                 
                 if (i === 6 || i === 7) {
@@ -1188,16 +1189,16 @@
                     color = 45; // Bleu
                 }
                 
-                midiOutputLaunchpad.send([0x90, note, color]);
+                midiOutputLaunchpad.send([0xB0, cc, color]);
             }
         }
 
         function handleLaunchpadMessage(message) {
             const [status, note, velocity] = message.data;
             
-            if (velocity === 0) return; // Ignorer les note off
+            if (velocity === 0) return; // Ignorer les note off et CC à 0
             
-            console.log('MIDI message reçu:', status, note, velocity);
+            console.log('MIDI message reçu - Status:', status.toString(16), 'Note/CC:', note, 'Velocity:', velocity);
             
             // Messages Note On (0x90)
             if (status === 0x90) {
@@ -1208,23 +1209,14 @@
                     const row = Math.floor(noteOffset / 10);
                     
                     if (col < 8 && row < 8) {
+                        console.log(`Pad cliqué - Row: ${row}, Col: ${col}`);
                         handlePadClick(row, col);
                     }
                 }
-                // Boutons de droite (notes 89-96)
-                else if (note >= 89 && note <= 96) {
-                    const btnIndex = note - 89;
-                    if (btnIndex < 6) {
-                        selectDrumset(btnIndex);
-                    } else if (btnIndex === 6) {
-                        stopAllRhythms();
-                    } else if (btnIndex === 7) {
-                        togglePause();
-                    }
-                }
-                // Boutons du bas (notes 104-111)
+                // Boutons du bas (notes 104-111) - aussi en Note On
                 else if (note >= 104 && note <= 111) {
                     const btnIndex = note - 104;
+                    console.log(`Bouton bas ${btnIndex} cliqué`);
                     if (btnIndex === 6) {
                         adjustTempo(-5); // Tempo -
                     } else if (btnIndex === 7) {
@@ -1232,10 +1224,35 @@
                     }
                 }
             }
-            // Messages Control Change (0xB0) - alternative pour certains boutons
+            // Messages Control Change (0xB0) - pour les boutons ronds de droite
             else if (status === 0xB0) {
-                // Les boutons du haut et de droite peuvent aussi envoyer des CC
-                console.log('CC message:', note, velocity);
+                console.log('CC message - Controller:', note, 'Value:', velocity);
+                
+                // Boutons ronds de droite (CC 19, 29, 39, 49, 59, 69, 79, 89)
+                const rightButtonCCs = [19, 29, 39, 49, 59, 69, 79, 89];
+                const ccIndex = rightButtonCCs.indexOf(note);
+                
+                if (ccIndex !== -1) {
+                    console.log(`Bouton droit ${ccIndex} cliqué`);
+                    if (ccIndex < 6) {
+                        selectDrumset(ccIndex);
+                    } else if (ccIndex === 6) {
+                        stopAllRhythms();
+                    } else if (ccIndex === 7) {
+                        togglePause();
+                    }
+                }
+                
+                // Boutons du haut peuvent aussi être en CC (CC 104-111)
+                else if (note >= 104 && note <= 111) {
+                    const btnIndex = note - 104;
+                    console.log(`Bouton haut ${btnIndex} cliqué (CC)`);
+                    if (btnIndex === 6) {
+                        adjustTempo(-5);
+                    } else if (btnIndex === 7) {
+                        adjustTempo(5);
+                    }
+                }
             }
         }
 
