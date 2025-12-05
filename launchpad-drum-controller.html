@@ -532,6 +532,20 @@
         </div>
 
         <div class="info-panel">
+            <h3>Instructions</h3>
+            <p style="margin-bottom: 15px;">
+                <strong>Connexion:</strong> Cliquez sur "Connecter les appareils" pour connecter votre Launchpad MK2 et CTK-3200. 
+                L'application peut également fonctionner en mode simulation si les appareils ne sont pas connectés.
+            </p>
+            <p style="margin-bottom: 15px;">
+                <strong>Navigation:</strong> Utilisez le menu déroulant pour sélectionner un groupe de rythme, 
+                ou cliquez directement sur les pads. Basculez entre USER 1 et USER 2 pour accéder aux 32 groupes.
+            </p>
+            <p style="margin-bottom: 15px;">
+                <strong>Contrôle:</strong> Le Launchpad physique (si connecté) reflète l'interface et peut être utilisé pour 
+                contrôler les rythmes, changer le drum set, ajuster le tempo, et arrêter/pauser la lecture.
+            </p>
+            
             <h3>Légende des pads</h3>
             <div class="legend">
                 <div class="legend-item">
@@ -806,6 +820,9 @@
                     }
                 }
             });
+            
+            // Synchroniser avec le Launchpad physique
+            syncLaunchpadColors();
         }
 
         function handlePadClick(row, col) {
@@ -864,8 +881,6 @@
         }
 
         function playBeat(position, pattern) {
-            if (!midiOutputCTK) return;
-            
             const channel = 9; // Canal 10 (0-indexed) pour les drums
             
             // Jouer les notes actives à cette position
@@ -874,13 +889,18 @@
                     const note = DRUM_NOTES[drumName];
                     const velocity = 100;
                     
-                    // Note ON
-                    midiOutputCTK.send([0x90 + channel, note, velocity]);
-                    
-                    // Note OFF après 50ms
-                    setTimeout(() => {
-                        midiOutputCTK.send([0x80 + channel, note, 0]);
-                    }, 50);
+                    if (midiOutputCTK) {
+                        // Note ON
+                        midiOutputCTK.send([0x90 + channel, note, velocity]);
+                        
+                        // Note OFF après 50ms
+                        setTimeout(() => {
+                            midiOutputCTK.send([0x80 + channel, note, 0]);
+                        }, 50);
+                    } else {
+                        // Mode simulation - afficher dans la console
+                        console.log(`Beat ${position}: ${drumName} (note ${note})`);
+                    }
                 }
             });
         }
@@ -901,9 +921,13 @@
             isPlaying = false;
             isPaused = false;
             
-            // Envoyer All Notes Off
+            // Envoyer All Notes Off seulement si CTK est connecté
             if (midiOutputCTK) {
-                midiOutputCTK.send([0xB9, 123, 0]); // All Notes Off sur canal 10
+                try {
+                    midiOutputCTK.send([0xB9, 123, 0]); // All Notes Off sur canal 10
+                } catch (error) {
+                    console.error('Erreur lors de l\'envoi de All Notes Off:', error);
+                }
             }
             
             updatePadColors();
@@ -915,6 +939,9 @@
             
             isPaused = !isPaused;
             updatePlaybackState();
+            
+            // Synchroniser avec le Launchpad
+            syncLaunchpadColors();
         }
 
         function selectDrumset(index) {
@@ -932,6 +959,9 @@
             document.querySelectorAll('.side-btn.drumset').forEach((btn, i) => {
                 btn.classList.toggle('active', i === index);
             });
+            
+            // Synchroniser avec le Launchpad
+            syncLaunchpadColors();
         }
 
         function switchUserMode(mode) {
@@ -1004,36 +1034,48 @@
             }
 
             try {
-                const midiAccess = await navigator.requestMIDIAccess();
+                // Demander l'accès MIDI avec support SysEx
+                const midiAccess = await navigator.requestMIDIAccess({ sysex: true });
+                
+                console.log('Appareils MIDI disponibles:');
+                console.log('Inputs:', Array.from(midiAccess.inputs.values()).map(i => i.name));
+                console.log('Outputs:', Array.from(midiAccess.outputs.values()).map(o => o.name));
                 
                 // Trouver le Launchpad
                 for (let input of midiAccess.inputs.values()) {
-                    if (input.name.includes('Launchpad')) {
+                    if (input.name.toLowerCase().includes('launchpad')) {
                         midiInputLaunchpad = input;
                         midiInputLaunchpad.onmidimessage = handleLaunchpadMessage;
                         document.getElementById('launchpadStatus').classList.add('connected');
                         document.querySelector('#launchpadStatus .status-value').textContent = 'Connecté';
+                        console.log('Launchpad input connecté:', input.name);
                     }
                 }
                 
                 for (let output of midiAccess.outputs.values()) {
-                    if (output.name.includes('Launchpad')) {
+                    if (output.name.toLowerCase().includes('launchpad')) {
                         midiOutputLaunchpad = output;
+                        console.log('Launchpad output connecté:', output.name);
                         initializeLaunchpad();
                     }
-                    if (output.name.includes('CTK') || output.name.includes('Casio')) {
+                    if (output.name.toLowerCase().includes('ctk') || 
+                        output.name.toLowerCase().includes('casio') ||
+                        output.name.toLowerCase().includes('keyboard')) {
                         midiOutputCTK = output;
                         document.getElementById('ctkStatus').classList.add('connected');
                         document.querySelector('#ctkStatus .status-value').textContent = 'Connecté';
+                        console.log('CTK-3200 output connecté:', output.name);
                         selectDrumset(0); // Initialiser avec STANDARD SET
                     }
                 }
                 
                 if (!midiInputLaunchpad || !midiOutputLaunchpad) {
-                    alert('Launchpad MK2 non trouvé');
+                    console.warn('Launchpad MK2 non trouvé');
+                    alert('Launchpad MK2 non trouvé. Vérifiez qu\'il est bien connecté.');
                 }
                 if (!midiOutputCTK) {
-                    alert('CTK-3200 non trouvé');
+                    console.warn('CTK-3200 non trouvé');
+                    alert('CTK-3200 non trouvé. L\'application peut quand même être utilisée sans le clavier.');
                 }
             } catch (error) {
                 console.error('Erreur de connexion MIDI:', error);
@@ -1044,16 +1086,110 @@
         function initializeLaunchpad() {
             if (!midiOutputLaunchpad) return;
             
-            // Mettre le Launchpad en mode programmeur
-            midiOutputLaunchpad.send([0xF0, 0x00, 0x20, 0x29, 0x02, 0x18, 0x0E, 0x01, 0xF7]);
-            
-            // Synchroniser les couleurs
-            syncLaunchpadColors();
+            try {
+                // Mettre le Launchpad MK2 en mode programmeur (Programmer Mode)
+                // SysEx: F0h 00h 20h 29h 02h 18h 0Eh 01h F7h
+                midiOutputLaunchpad.send([0xF0, 0x00, 0x20, 0x29, 0x02, 0x18, 0x0E, 0x01, 0xF7]);
+                
+                // Effacer toutes les LEDs
+                for (let i = 0; i < 64; i++) {
+                    midiOutputLaunchpad.send([0x90, 11 + (i % 8) + Math.floor(i / 8) * 10, 0]);
+                }
+                
+                // Synchroniser les couleurs
+                setTimeout(() => syncLaunchpadColors(), 100);
+                
+                console.log('Launchpad initialisé en mode programmeur');
+            } catch (error) {
+                console.error('Erreur lors de l\'initialisation du Launchpad:', error);
+            }
         }
 
         function syncLaunchpadColors() {
-            // À implémenter: envoyer les couleurs au Launchpad MK2
-            // Utiliser les messages SysEx appropriés pour le MK2
+            if (!midiOutputLaunchpad) return;
+            
+            // Définir les couleurs pour le Launchpad MK2
+            const COLORS = {
+                off: 0,
+                intro: 45,      // Bleu
+                main: 37,       // Bleu clair
+                variation: 5,   // Rouge
+                outro: 9,       // Orange
+                inactive: 13,   // Jaune
+                active: 21      // Vert brillant pour le pad actif
+            };
+            
+            // Mettre à jour les pads de la grille 8x8
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const groupIndex = row * 2 + Math.floor(col / 4);
+                    const actualGroupId = currentUserMode === 1 ? groupIndex : groupIndex + 16;
+                    const padType = col % 4;
+                    
+                    // Calculer la note MIDI pour ce pad (grille Launchpad MK2)
+                    const note = 11 + col + (row * 10);
+                    
+                    let color = COLORS.off;
+                    
+                    if (actualGroupId < RHYTHM_GROUPS.length) {
+                        if (activeGroup !== null && activeGroup !== actualGroupId) {
+                            color = COLORS.inactive;
+                        } else {
+                            switch (padType) {
+                                case 0: color = COLORS.intro; break;
+                                case 1: color = COLORS.main; break;
+                                case 2: color = COLORS.variation; break;
+                                case 3: color = COLORS.outro; break;
+                            }
+                            
+                            // Marquer le pad actif
+                            if (activeGroup === actualGroupId) {
+                                const sections = ['intro', 'main', 'variation', 'outro'];
+                                if (sections[padType] === activeSection) {
+                                    color = COLORS.active;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Envoyer la couleur au Launchpad
+                    midiOutputLaunchpad.send([0x90, note, color]);
+                }
+            }
+            
+            // Mettre à jour les boutons de droite (Round buttons)
+            // Notes 89-96 pour les 8 boutons de droite
+            for (let i = 0; i < 8; i++) {
+                const note = 89 + i;
+                let color = COLORS.off;
+                
+                if (i < 6) {
+                    // Boutons de drum sets
+                    color = (i === currentDrumset) ? COLORS.active : 19; // Vert pale si actif, sinon gris
+                } else if (i === 6) {
+                    // Bouton STOP
+                    color = 5; // Rouge
+                } else if (i === 7) {
+                    // Bouton PAUSE
+                    color = isPaused ? COLORS.active : 9; // Vert si en pause, orange sinon
+                }
+                
+                midiOutputLaunchpad.send([0x90, note, color]);
+            }
+            
+            // Mettre à jour les boutons du bas
+            // Notes 104-111 pour les 8 boutons du bas
+            for (let i = 0; i < 8; i++) {
+                const note = 104 + i;
+                let color = COLORS.off;
+                
+                if (i === 6 || i === 7) {
+                    // Boutons tempo - et +
+                    color = 45; // Bleu
+                }
+                
+                midiOutputLaunchpad.send([0x90, note, color]);
+            }
         }
 
         function handleLaunchpadMessage(message) {
@@ -1061,14 +1197,45 @@
             
             if (velocity === 0) return; // Ignorer les note off
             
-            // Mapper les messages MIDI du Launchpad aux fonctions
-            if (status === 0x90) { // Note On
-                const row = Math.floor(note / 10);
-                const col = note % 10;
-                
-                if (row < 8 && col < 8) {
-                    handlePadClick(row, col);
+            console.log('MIDI message reçu:', status, note, velocity);
+            
+            // Messages Note On (0x90)
+            if (status === 0x90) {
+                // Pads de la grille principale (notes 11-88)
+                if (note >= 11 && note <= 88) {
+                    const noteOffset = note - 11;
+                    const col = noteOffset % 10;
+                    const row = Math.floor(noteOffset / 10);
+                    
+                    if (col < 8 && row < 8) {
+                        handlePadClick(row, col);
+                    }
                 }
+                // Boutons de droite (notes 89-96)
+                else if (note >= 89 && note <= 96) {
+                    const btnIndex = note - 89;
+                    if (btnIndex < 6) {
+                        selectDrumset(btnIndex);
+                    } else if (btnIndex === 6) {
+                        stopAllRhythms();
+                    } else if (btnIndex === 7) {
+                        togglePause();
+                    }
+                }
+                // Boutons du bas (notes 104-111)
+                else if (note >= 104 && note <= 111) {
+                    const btnIndex = note - 104;
+                    if (btnIndex === 6) {
+                        adjustTempo(-5); // Tempo -
+                    } else if (btnIndex === 7) {
+                        adjustTempo(5);  // Tempo +
+                    }
+                }
+            }
+            // Messages Control Change (0xB0) - alternative pour certains boutons
+            else if (status === 0xB0) {
+                // Les boutons du haut et de droite peuvent aussi envoyer des CC
+                console.log('CC message:', note, velocity);
             }
         }
 
