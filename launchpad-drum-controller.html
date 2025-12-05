@@ -277,7 +277,7 @@
             border: 2px solid var(--border);
             border-radius: 8px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s, opacity 0.15s ease;
             position: relative;
             overflow: hidden;
         }
@@ -566,6 +566,14 @@
                 ou cliquez directement sur les pads. Basculez entre USER 1 et USER 2 pour accéder aux 32 groupes.
             </p>
             <p style="margin-bottom: 15px;">
+                <strong>🎵 Transitions Musicales:</strong><br>
+                • <strong>Tempo:</strong> Les changements de tempo conservent la position dans la mesure<br>
+                • <strong>Main/Variation:</strong> La transition attend la fin de la boucle actuelle (pas de coupure)<br>
+                • <strong>Intro/Outro:</strong> Transition immédiate possible<br>
+                • <strong>Clignotement:</strong> Les deux pads clignotent pendant la transition planifiée<br>
+                • <strong>État:</strong> "Lecture → Corps" indique une transition en attente
+            </p>
+            <p style="margin-bottom: 15px;">
                 <strong>Contrôles Launchpad (si connecté):</strong><br>
                 • <strong>Pads 8×8:</strong> Démarrer les rythmes (intro/corps/variation/outro)<br>
                 • <strong>Boutons de droite:</strong> 6 premiers = drum sets, 7e = STOP, 8e = PAUSE<br>
@@ -660,8 +668,11 @@
         let isPaused = false;
         let activeGroup = null;
         let activeSection = null; // 'intro', 'main', 'variation', 'outro'
+        let pendingSection = null; // Section en attente pour transition fluide
+        let pendingGroup = null; // Groupe en attente pour transition fluide
         let beatPosition = 0;
         let intervalId = null;
+        let blinkIntervalId = null; // Pour le clignotement pendant transition
 
         // Patterns de rythmes (notes MIDI pour chaque drum)
         const DRUM_PATTERNS = {
@@ -879,13 +890,65 @@
         }
 
         function playSection(groupId, section) {
+            console.log(`═══ Demande de lecture: Groupe ${groupId}, Section ${section} ═══`);
+            
+            // Si rien ne joue, démarrer immédiatement
+            if (!isPlaying) {
+                console.log('Aucun rythme en cours → Démarrage immédiat');
+                startNewSection(groupId, section);
+                return;
+            }
+            
+            // Si c'est le même groupe et la même section, ignorer
+            if (activeGroup === groupId && activeSection === section) {
+                console.log('Même section déjà active → Ignoré');
+                return;
+            }
+            
+            // Si on est sur intro ou outro, transition immédiate
+            if (activeSection === 'intro' || activeSection === 'outro') {
+                console.log(`Section ${activeSection} → Transition immédiate`);
+                startNewSection(groupId, section);
+                return;
+            }
+            
+            // Si on est sur main ou variation, planifier la transition à la fin de la boucle
+            if (activeSection === 'main' || activeSection === 'variation') {
+                const pattern = DRUM_PATTERNS[activeSection];
+                const beatsRemaining = pattern.length - beatPosition;
+                
+                console.log(`Section ${activeSection} en cours (beat ${beatPosition}/${pattern.length})`);
+                console.log(`→ Transition planifiée dans ${beatsRemaining} beats`);
+                
+                pendingSection = section;
+                pendingGroup = groupId;
+                
+                // Mettre à jour l'affichage
+                updatePlaybackState();
+                
+                // Démarrer le clignotement pour indiquer la transition en attente
+                startTransitionBlink(groupId, section);
+                
+                return;
+            }
+            
+            // Sinon, démarrer immédiatement (fallback)
+            startNewSection(groupId, section);
+        }
+
+        function startNewSection(groupId, section) {
             stopPlayback();
+            stopTransitionBlink();
             
             activeGroup = groupId;
             activeSection = section;
+            pendingSection = null;
+            pendingGroup = null;
             beatPosition = 0;
             isPlaying = true;
             isPaused = false;
+            
+            console.log(`✓ Démarrage: Groupe ${groupId}, Section ${section}`);
             
             updatePadColors();
             updatePlaybackState();
@@ -893,8 +956,51 @@
             startPlayback();
         }
 
+        function startTransitionBlink(groupId, section) {
+            stopTransitionBlink(); // Arrêter tout clignotement précédent
+            
+            let blinkState = false;
+            blinkIntervalId = setInterval(() => {
+                blinkState = !blinkState;
+                
+                // Faire clignoter les pads concernés
+                const pads = document.querySelectorAll('.pad');
+                pads.forEach(pad => {
+                    const row = parseInt(pad.dataset.row);
+                    const col = parseInt(pad.dataset.col);
+                    const groupIndex = row * 2 + Math.floor(col / 4);
+                    const actualGroupId = currentUserMode === 1 ? groupIndex : groupIndex + 16;
+                    const padType = col % 4;
+                    const sections = ['intro', 'main', 'variation', 'outro'];
+                    
+                    // Clignoter le pad actuel ET le pad en attente
+                    const isCurrentPad = (actualGroupId === activeGroup && sections[padType] === activeSection);
+                    const isPendingPad = (actualGroupId === groupId && sections[padType] === section);
+                    
+                    if (isCurrentPad || isPendingPad) {
+                        pad.style.opacity = blinkState ? '1' : '0.3';
+                    }
+                });
+            }, 150); // Clignoter toutes les 150ms
+        }
+
+        function stopTransitionBlink() {
+            if (blinkIntervalId) {
+                clearInterval(blinkIntervalId);
+                blinkIntervalId = null;
+                
+                // Remettre l'opacité normale
+                const pads = document.querySelectorAll('.pad');
+                pads.forEach(pad => {
+                    pad.style.opacity = '1';
+                });
+            }
+        }
+
         function startPlayback() {
-            if (!midiOutputCTK) return;
+            if (!midiOutputCTK && !intervalId) {
+                console.log('Mode simulation actif');
+            }
             
             const pattern = DRUM_PATTERNS[activeSection];
             const beatDuration = (60 / tempo) * 1000 / 4; // Durée d'un 16ème de note en ms
@@ -905,19 +1011,36 @@
                 playBeat(beatPosition, pattern);
                 beatPosition++;
                 
-                // Vérifier si on doit passer à la section suivante
+                // Vérifier si on a atteint la fin de la boucle
                 if (beatPosition >= pattern.length) {
+                    console.log(`Fin de boucle ${activeSection} (${pattern.length} beats)`);
                     beatPosition = 0;
                     
+                    // Gérer la transition automatique de l'intro
                     if (activeSection === 'intro') {
-                        // Passer automatiquement au corps
-                        activeSection = 'main';
-                        updatePadColors();
-                    } else if (activeSection === 'outro') {
-                        // Arrêter après l'outro
-                        stopAllRhythms();
+                        console.log('Intro terminée → Passage automatique au corps');
+                        startNewSection(activeGroup, 'main');
+                        return;
                     }
-                    // Les sections main et variation loopent
+                    
+                    // Gérer la transition automatique de l'outro
+                    if (activeSection === 'outro') {
+                        console.log('Outro terminée → Arrêt automatique');
+                        stopAllRhythms();
+                        return;
+                    }
+                    
+                    // Gérer les transitions planifiées (depuis main ou variation)
+                    if (pendingSection !== null) {
+                        console.log(`Transition planifiée détectée → ${pendingSection}`);
+                        const nextGroup = pendingGroup;
+                        const nextSection = pendingSection;
+                        startNewSection(nextGroup, nextSection);
+                        return;
+                    }
+                    
+                    // Sinon, continuer de boucler (main et variation)
+                    console.log(`Bouclage de ${activeSection}`);
                 }
             }, beatDuration);
         }
@@ -959,9 +1082,12 @@
             console.log('Arrêt du rythme en cours...');
             
             stopPlayback();
+            stopTransitionBlink();
             
             activeGroup = null;
             activeSection = null;
+            pendingSection = null;
+            pendingGroup = null;
             beatPosition = 0;
             isPlaying = false;
             isPaused = false;
@@ -1092,10 +1218,11 @@
             document.getElementById('tempoInput').value = tempo;
             document.getElementById('tempoDisplay').textContent = tempo;
             
-            // Redémarrer le playback si en cours
-            if (isPlaying && !isPaused) {
-                stopPlayback();
-                startPlayback();
+            // Si un rythme est en cours, ajuster l'intervalle sans redémarrer
+            if (isPlaying && !isPaused && intervalId) {
+                console.log(`Changement de tempo: ${tempo} BPM - Position ${beatPosition} maintenue`);
+                stopPlayback(); // Arrêter l'ancien intervalle
+                startPlayback(); // Redémarrer avec le nouveau tempo, mais garde beatPosition
             }
         }
 
@@ -1115,7 +1242,14 @@
         }
 
         function updatePlaybackState() {
-            const stateText = isPaused ? 'En pause' : (isPlaying ? 'Lecture' : 'Arrêté');
+            let stateText = isPaused ? 'En pause' : (isPlaying ? 'Lecture' : 'Arrêté');
+            
+            // Ajouter l'info de transition si en attente
+            if (pendingSection !== null) {
+                const sectionNames = { intro: 'Intro', main: 'Corps', variation: 'Variation', outro: 'Outro' };
+                stateText += ` → ${sectionNames[pendingSection] || pendingSection}`;
+            }
+            
             document.getElementById('playbackState').textContent = stateText;
         }
 
