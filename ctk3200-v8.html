@@ -3,15 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="description" content="CTK-3200 V8 Ultimate - Professional MIDI Arranger with Complete Launchpad MK2 Integration">
+    <meta name="description" content="CTK-3200 V8 REVISED - Full Launchpad MK2 Integration">
     <meta name="theme-color" content="#0a0a0f">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <title>CTK-3200 Arranger V8 Ultimate</title>
-    
-    <link rel="manifest" href='data:application/manifest+json,{"name":"CTK V8 Ultimate","short_name":"CTK V8","display":"fullscreen","orientation":"landscape","start_url":".","theme_color":"#0a0a0f","background_color":"#000000"}'>
-    
+    <title>CTK-3200 V8 REVISED - LAUNCHPAD MK2</title>
     <style>
         * {
             margin: 0;
@@ -19,7 +13,7 @@
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
             user-select: none;
-            font-family: -apple-system, 'SF Pro Display', 'Inter', system-ui, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
         }
 
         :root {
@@ -28,28 +22,34 @@
             --accent: #00aaff;
             --warning: #ff8800;
             --danger: #ff3333;
+            --success: #00ff00;
             
             --bg-dark: #0a0a0f;
             --bg-medium: #14141a;
             --bg-light: #1f1f28;
             --bg-lighter: #2a2a35;
             
-            --border: #2a2a35;
-            --border-light: #3a3a45;
-            
             --text-primary: #ffffff;
             --text-secondary: #aaaaaa;
             --text-dim: #666666;
             
-            /* Launchpad Colors */
+            /* Launchpad Colors - Using Novation's actual color values */
+            --lp-off: #1e1e1e;
             --lp-red: #ff3333;
             --lp-orange: #ff8800;
+            --lp-amber: #ffbb00;
             --lp-yellow: #ffff00;
+            --lp-lime: #88ff00;
             --lp-green: #00ff00;
+            --lp-turquoise: #00ff88;
             --lp-cyan: #00ffff;
+            --lp-sky: #00aaff;
             --lp-blue: #0088ff;
+            --lp-orchid: #5500ff;
             --lp-purple: #aa00ff;
             --lp-pink: #ff00aa;
+            --lp-magenta: #ff0088;
+            --lp-white: #ffffff;
         }
 
         body {
@@ -58,23 +58,15 @@
             overflow: hidden;
             height: 100vh;
             width: 100vw;
-            touch-action: none;
             position: fixed;
+            touch-action: none;
         }
 
         .app-container {
             height: 100vh;
             display: grid;
             grid-template-rows: 70px 1fr;
-            background: linear-gradient(135deg, #0a0a0f 0%, #14141a 50%, #0a0a0f 100%);
-        }
-
-        /* Glass effect */
-        .glass {
-            background: rgba(255, 255, 255, 0.02);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: radial-gradient(ellipse at center, #14141a 0%, #0a0a0f 100%);
         }
 
         /* Header */
@@ -83,236 +75,181 @@
             align-items: center;
             justify-content: space-between;
             padding: 0 25px;
-            background: linear-gradient(90deg, rgba(0,0,0,0.9) 0%, rgba(20,20,26,0.9) 50%, rgba(0,0,0,0.9) 100%);
-            border-bottom: 2px solid var(--primary);
-            gap: 20px;
-        }
-
-        .logo-section {
-            display: flex;
-            align-items: center;
-            gap: 25px;
+            background: linear-gradient(180deg, rgba(31,31,40,0.95) 0%, rgba(20,20,26,0.95) 100%);
+            border-bottom: 1px solid var(--primary);
         }
 
         .logo {
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 900;
             background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             letter-spacing: -1px;
-            text-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
         }
 
-        .status-displays {
+        .status-group {
             display: flex;
-            gap: 15px;
+            gap: 20px;
+            align-items: center;
             flex: 1;
+            justify-content: center;
         }
 
         .status-item {
-            padding: 10px 18px;
-            background: var(--bg-light);
-            border-radius: 30px;
-            border: 1px solid var(--border);
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 10px;
+            padding: 5px 15px;
+            background: var(--bg-light);
+            border-radius: 12px;
+            border: 1px solid var(--bg-lighter);
         }
 
         .status-label {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--text-dim);
             text-transform: uppercase;
             letter-spacing: 1px;
         }
 
         .status-value {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
             color: var(--primary);
-        }
-
-        .tempo-display {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px 20px;
-            background: var(--bg-light);
-            border-radius: 30px;
-            border: 1px solid var(--primary);
-        }
-
-        .tempo-value {
-            font-size: 24px;
-            font-weight: 800;
-            color: var(--accent);
-            min-width: 50px;
-            text-align: center;
+            margin-top: 2px;
         }
 
         .tempo-controls {
             display: flex;
-            flex-direction: column;
-            gap: 2px;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            background: var(--bg-light);
+            border-radius: 25px;
+            border: 1px solid var(--accent);
+        }
+
+        .tempo-display {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--accent);
+            min-width: 60px;
+            text-align: center;
         }
 
         .tempo-btn {
             width: 24px;
-            height: 14px;
+            height: 24px;
             background: var(--bg-lighter);
-            border: 1px solid var(--border);
-            color: var(--text-dim);
-            font-size: 10px;
+            border: 1px solid var(--accent);
+            border-radius: 4px;
+            color: var(--accent);
             cursor: pointer;
             transition: all 0.1s;
-            border-radius: 3px;
+            font-size: 12px;
         }
 
         .tempo-btn:hover {
-            background: var(--primary);
-            color: var(--bg-dark);
-            border-color: var(--primary);
-        }
-
-        .tap-tempo-btn {
-            padding: 12px 24px;
-            background: linear-gradient(135deg, var(--bg-light) 0%, var(--bg-lighter) 100%);
-            border: 2px solid var(--accent);
-            border-radius: 30px;
-            color: var(--accent);
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .tap-tempo-btn:hover {
             background: var(--accent);
             color: var(--bg-dark);
-            transform: scale(1.05);
         }
 
-        .tap-tempo-btn.tapped {
-            background: var(--primary);
-            border-color: var(--primary);
+        .tap-btn {
+            padding: 10px 20px;
+            background: var(--bg-lighter);
+            border: 2px solid var(--warning);
+            border-radius: 25px;
+            color: var(--warning);
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.1s;
+            text-transform: uppercase;
+        }
+
+        .tap-btn:active {
+            background: var(--warning);
             color: var(--bg-dark);
-            animation: tapPulse 0.2s;
+            transform: scale(0.95);
         }
 
-        @keyframes tapPulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-
-        .header-controls {
+        .midi-status {
             display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .midi-indicators {
-            display: flex;
-            gap: 12px;
+            gap: 10px;
         }
 
         .midi-device {
-            padding: 8px 14px;
+            padding: 6px 12px;
             background: var(--bg-light);
-            border-radius: 25px;
+            border-radius: 20px;
             font-size: 11px;
             display: flex;
             align-items: center;
-            gap: 8px;
-            border: 1px solid var(--border);
-            transition: all 0.2s;
+            gap: 6px;
         }
 
         .midi-led {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             background: #444;
             border-radius: 50%;
             transition: all 0.2s;
         }
 
         .midi-led.active {
-            background: var(--primary);
-            box-shadow: 0 0 12px var(--primary);
-            animation: midiPulse 2s infinite;
-        }
-
-        @keyframes midiPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
         }
 
         .connect-btn {
-            padding: 12px 24px;
+            padding: 10px 20px;
             background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
             border: none;
             border-radius: 25px;
             color: var(--bg-dark);
-            font-size: 12px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.2s;
-            text-transform: uppercase;
         }
 
         .connect-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(0, 255, 136, 0.4);
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
         }
 
-        /* Main Layout */
+        /* Main Content */
         .main-content {
             display: grid;
-            grid-template-columns: 280px 1fr 340px;
+            grid-template-columns: 260px 1fr 360px;
             gap: 20px;
             padding: 20px;
             height: calc(100vh - 70px);
-            overflow: hidden;
         }
 
-        /* Left Panel */
+        /* Left Panel - Rhythm & Style */
         .left-panel {
             display: flex;
             flex-direction: column;
             gap: 15px;
-            overflow-y: auto;
         }
 
         .panel-section {
             background: var(--bg-medium);
-            border-radius: 16px;
-            padding: 16px;
-            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid var(--bg-lighter);
         }
 
-        .section-header {
+        .section-title {
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 2px;
             color: var(--text-dim);
             margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            padding-left: 8px;
+            border-left: 3px solid var(--primary);
         }
 
-        .section-header::before {
-            content: '';
-            width: 3px;
-            height: 12px;
-            background: var(--primary);
-            border-radius: 2px;
-        }
-
-        /* Style Selection */
         .style-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -320,127 +257,101 @@
         }
 
         .style-btn {
-            padding: 12px;
+            padding: 10px;
             background: var(--bg-light);
-            border: 2px solid var(--border);
-            border-radius: 10px;
+            border: 2px solid var(--bg-lighter);
+            border-radius: 8px;
             color: var(--text-secondary);
             font-size: 12px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.15s;
         }
 
         .style-btn:hover {
-            background: var(--bg-lighter);
             border-color: var(--primary);
             color: var(--primary);
         }
 
         .style-btn.active {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            color: var(--bg-dark);
-            border-color: transparent;
-        }
-
-        /* Sections & Variations */
-        .section-controls {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-        }
-
-        .section-btn {
-            padding: 14px;
-            background: linear-gradient(145deg, var(--bg-light) 0%, var(--bg-lighter) 100%);
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            color: var(--text-secondary);
-            font-size: 11px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .section-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 0;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: width 0.3s;
-        }
-
-        .section-btn:hover::before {
-            width: 100%;
-        }
-
-        .section-btn:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-            transform: translateY(-1px);
-        }
-
-        .section-btn.active {
             background: var(--primary);
             color: var(--bg-dark);
             border-color: var(--primary);
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
         }
 
-        .variation-buttons {
+        .section-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+
+        .section-btn {
+            padding: 12px 8px;
+            background: var(--bg-light);
+            border: 2px solid var(--bg-lighter);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.15s;
+        }
+
+        .section-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .section-btn.active {
+            background: var(--accent);
+            color: var(--bg-dark);
+            border-color: var(--accent);
+        }
+
+        .variation-row {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
+            gap: 6px;
         }
 
         .var-btn {
             aspect-ratio: 1;
             background: var(--bg-light);
-            border: 2px solid var(--border);
-            border-radius: 10px;
-            color: var(--text-secondary);
-            font-size: 16px;
+            border: 2px solid var(--bg-lighter);
+            border-radius: 8px;
+            font-size: 14px;
             font-weight: 700;
+            color: var(--text-secondary);
             cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            transition: all 0.15s;
         }
 
         .var-btn:hover {
-            background: var(--bg-lighter);
-            border-color: var(--accent);
-            color: var(--accent);
+            border-color: var(--secondary);
+            color: var(--secondary);
         }
 
         .var-btn.active {
-            background: var(--accent);
+            background: var(--secondary);
             color: var(--bg-dark);
-            border-color: var(--accent);
-            box-shadow: 0 0 15px rgba(0, 170, 255, 0.4);
+            border-color: var(--secondary);
         }
 
         /* Center Panel */
         .center-panel {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 15px;
         }
 
-        /* Chord Display */
-        .chord-display-container {
-            height: 140px;
-            background: linear-gradient(135deg, var(--bg-medium) 0%, var(--bg-light) 100%);
-            border-radius: 20px;
-            border: 2px solid var(--border);
+        /* Current Chord Display */
+        .chord-display {
+            height: 120px;
+            background: linear-gradient(135deg, var(--bg-medium) 0%, var(--bg-light) 50%);
+            border-radius: 16px;
+            border: 2px solid var(--bg-lighter);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -448,126 +359,86 @@
             overflow: hidden;
         }
 
-        .chord-display-container::before {
+        .chord-display::before {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
-            opacity: 0;
-            animation: chordPulse 3s infinite;
+            top: -100%;
+            left: -100%;
+            width: 300%;
+            height: 300%;
+            background: radial-gradient(circle, rgba(0, 255, 136, 0.1) 0%, transparent 70%);
+            animation: chordGlow 4s ease-in-out infinite;
         }
 
-        @keyframes chordPulse {
-            0%, 100% { opacity: 0; transform: scale(0.5); }
-            50% { opacity: 0.05; transform: scale(1); }
+        @keyframes chordGlow {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
         }
 
-        .chord-display {
-            text-align: center;
-            z-index: 1;
-        }
-
-        .current-chord {
-            font-size: 72px;
+        .chord-text {
+            font-size: 56px;
             font-weight: 900;
             background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 40px rgba(0, 255, 170, 0.4);
-            line-height: 1;
+            z-index: 1;
         }
 
-        .chord-info {
-            font-size: 18px;
-            color: var(--text-secondary);
-            margin-top: 8px;
-            letter-spacing: 2px;
-        }
-
-        /* Chord Grid */
-        .chord-container {
+        /* Chord Pads */
+        .chord-grid-container {
             flex: 1;
             background: var(--bg-medium);
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            padding: 20px;
-            overflow: hidden;
+            border-radius: 16px;
+            border: 1px solid var(--bg-lighter);
+            padding: 15px;
         }
 
         .chord-grid {
             display: grid;
             grid-template-columns: repeat(6, 1fr);
             grid-template-rows: repeat(4, 1fr);
-            gap: 10px;
+            gap: 8px;
             height: 100%;
         }
 
         .chord-pad {
             background: linear-gradient(145deg, var(--bg-light) 0%, var(--bg-lighter) 100%);
-            border: 2px solid var(--border);
-            border-radius: 12px;
+            border: 2px solid var(--bg-lighter);
+            border-radius: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             transition: all 0.15s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .chord-pad::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
-            transform: translate(-50%, -50%);
-            transition: all 0.3s;
         }
 
         .chord-pad:hover {
-            transform: translateY(-3px);
+            transform: translateY(-2px);
             border-color: var(--primary);
-            box-shadow: 0 5px 20px rgba(0, 255, 170, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 255, 136, 0.2);
         }
 
-        .chord-pad:active,
         .chord-pad.active {
-            transform: scale(0.95);
-            background: linear-gradient(145deg, var(--primary) 0%, var(--accent) 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
             border-color: var(--primary);
+            transform: scale(0.95);
         }
 
-        .chord-pad:active::before,
-        .chord-pad.active::before {
-            width: 100%;
-            height: 100%;
-            opacity: 0.3;
-        }
-
-        .chord-root {
-            font-size: 24px;
+        .chord-name {
+            font-size: 20px;
             font-weight: 700;
             color: var(--text-primary);
         }
 
         .chord-type {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--text-dim);
-            margin-top: 4px;
+            margin-top: 2px;
             text-transform: uppercase;
-            letter-spacing: 1px;
         }
 
-        .chord-pad:active .chord-root,
-        .chord-pad.active .chord-root,
-        .chord-pad:active .chord-type,
+        .chord-pad.active .chord-name,
         .chord-pad.active .chord-type {
             color: var(--bg-dark);
         }
@@ -576,27 +447,26 @@
         .pattern-container {
             background: var(--bg-medium);
             border-radius: 16px;
-            border: 1px solid var(--border);
-            padding: 16px;
+            border: 1px solid var(--bg-lighter);
+            padding: 15px;
         }
 
         .pattern-grid {
             display: grid;
-            grid-template-rows: repeat(4, 1fr);
-            gap: 6px;
-            height: 140px;
+            grid-template-rows: repeat(4, 30px);
+            gap: 4px;
         }
 
         .pattern-row {
             display: grid;
             grid-template-columns: repeat(16, 1fr);
-            gap: 3px;
+            gap: 2px;
         }
 
         .pattern-cell {
             background: var(--bg-light);
-            border: 1px solid var(--border);
-            border-radius: 4px;
+            border: 1px solid var(--bg-lighter);
+            border-radius: 3px;
             cursor: pointer;
             transition: all 0.1s;
             position: relative;
@@ -610,42 +480,36 @@
         .pattern-cell.active {
             background: var(--primary);
             border-color: var(--primary);
-            box-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
         }
 
         .pattern-cell.playing {
-            background: var(--accent);
-            border-color: var(--accent);
-            animation: cellFlash 0.1s;
+            background: var(--accent) !important;
+            border-color: var(--accent) !important;
+            animation: beatPulse 0.1s;
         }
 
-        @keyframes cellFlash {
+        @keyframes beatPulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.2); }
             100% { transform: scale(1); }
         }
 
         /* Beat markers */
-        .pattern-cell:nth-child(1),
-        .pattern-cell:nth-child(5),
-        .pattern-cell:nth-child(9),
-        .pattern-cell:nth-child(13) {
-            border-left: 2px solid var(--primary);
+        .pattern-cell:nth-child(4n+1) {
+            border-left: 2px solid var(--accent);
         }
 
-        /* Right Panel */
+        /* Right Panel - Launchpad */
         .right-panel {
             display: flex;
             flex-direction: column;
             gap: 15px;
-            overflow-y: auto;
         }
 
-        /* Transport Controls */
-        .transport-section {
-            background: linear-gradient(135deg, var(--bg-medium) 0%, var(--bg-light) 100%);
-            border-radius: 20px;
-            border: 1px solid var(--border);
+        /* Transport */
+        .transport-container {
+            background: var(--bg-medium);
+            border-radius: 16px;
             padding: 20px;
             display: flex;
             justify-content: center;
@@ -653,18 +517,18 @@
         }
 
         .transport-btn {
-            width: 80px;
-            height: 80px;
-            background: var(--bg-dark);
-            border: 3px solid var(--border);
+            width: 70px;
+            height: 70px;
+            background: var(--bg-light);
+            border: 3px solid var(--bg-lighter);
             border-radius: 50%;
-            color: var(--text-secondary);
-            font-size: 32px;
+            font-size: 28px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.15s;
             display: flex;
             align-items: center;
             justify-content: center;
+            color: var(--text-secondary);
         }
 
         .transport-btn:hover {
@@ -672,153 +536,50 @@
             border-color: var(--primary);
         }
 
-        .transport-btn.play {
-            width: 90px;
-            height: 90px;
+        #playBtn {
             background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
             color: var(--bg-dark);
             border-color: var(--primary);
-            font-size: 36px;
         }
 
-        .transport-btn.play.playing {
-            background: linear-gradient(135deg, var(--warning) 0%, var(--secondary) 100%);
-            border-color: var(--warning);
-            animation: playPulse 1s infinite;
+        #playBtn.playing {
+            background: linear-gradient(135deg, var(--warning) 0%, var(--danger) 100%);
+            animation: playingPulse 1s infinite;
         }
 
-        @keyframes playPulse {
-            0%, 100% { box-shadow: 0 0 20px rgba(255, 136, 0, 0.4); }
-            50% { box-shadow: 0 0 30px rgba(255, 136, 0, 0.6); }
+        @keyframes playingPulse {
+            0%, 100% { box-shadow: 0 0 15px rgba(255, 136, 0, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(255, 136, 0, 0.6); }
         }
 
-        .transport-btn.record {
+        #stopBtn:hover {
             background: var(--danger);
-            color: white;
             border-color: var(--danger);
+            color: white;
         }
 
-        .transport-btn.record.recording {
-            animation: recordPulse 1s infinite;
+        #recBtn.recording {
+            background: var(--danger);
+            border-color: var(--danger);
+            color: white;
+            animation: recPulse 1s infinite;
         }
 
-        @keyframes recordPulse {
+        @keyframes recPulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.6; }
-        }
-
-        .transport-btn.stop {
-            background: var(--bg-lighter);
-            border-color: var(--border-light);
-        }
-
-        .transport-btn.stop:hover {
-            background: var(--danger);
-            border-color: var(--danger);
-            color: white;
         }
 
         /* Launchpad View */
         .launchpad-container {
             background: var(--bg-medium);
             border-radius: 16px;
-            border: 1px solid var(--border);
-            padding: 16px;
+            padding: 15px;
             flex: 1;
-        }
-
-        .launchpad-main {
-            display: flex;
-            gap: 10px;
-        }
-
-        .launchpad-grid {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            grid-template-rows: repeat(8, 1fr);
-            gap: 4px;
-            aspect-ratio: 1;
-            flex: 1;
-        }
-
-        .lp-pad {
-            background: var(--bg-light);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            transition: all 0.1s;
-            position: relative;
-            cursor: pointer;
-        }
-
-        .lp-pad::after {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            right: 2px;
-            bottom: 2px;
-            border-radius: 4px;
-            background: inherit;
-            opacity: 0;
-            transition: opacity 0.1s;
-        }
-
-        .lp-pad:hover::after {
-            opacity: 0.3;
-        }
-
-        .lp-pad.active {
-            box-shadow: 0 0 12px currentColor;
-            transform: scale(0.95);
-        }
-
-        /* Launchpad colors */
-        .lp-pad[data-color="red"] { background: var(--lp-red); border-color: var(--lp-red); }
-        .lp-pad[data-color="orange"] { background: var(--lp-orange); border-color: var(--lp-orange); }
-        .lp-pad[data-color="yellow"] { background: var(--lp-yellow); border-color: var(--lp-yellow); }
-        .lp-pad[data-color="green"] { background: var(--lp-green); border-color: var(--lp-green); }
-        .lp-pad[data-color="cyan"] { background: var(--lp-cyan); border-color: var(--lp-cyan); }
-        .lp-pad[data-color="blue"] { background: var(--lp-blue); border-color: var(--lp-blue); }
-        .lp-pad[data-color="purple"] { background: var(--lp-purple); border-color: var(--lp-purple); }
-        .lp-pad[data-color="pink"] { background: var(--lp-pink); border-color: var(--lp-pink); }
-
-        /* Right buttons */
-        .launchpad-right-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            width: 40px;
-        }
-
-        .lp-btn {
-            aspect-ratio: 1;
-            background: var(--bg-light);
-            border: 2px solid var(--border);
-            border-radius: 50%;
-            cursor: pointer;
-            transition: all 0.1s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            color: var(--text-dim);
-        }
-
-        .lp-btn:hover {
-            background: var(--bg-lighter);
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-
-        .lp-btn.active {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: var(--bg-dark);
-            box-shadow: 0 0 10px var(--primary);
         }
 
         /* Top buttons */
-        .launchpad-top-buttons {
+        .lp-top-buttons {
             display: grid;
             grid-template-columns: repeat(8, 1fr);
             gap: 4px;
@@ -826,20 +587,19 @@
         }
 
         .lp-top-btn {
-            padding: 8px;
+            padding: 6px;
             background: var(--bg-light);
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            font-size: 10px;
+            border: 2px solid var(--bg-lighter);
+            border-radius: 6px;
+            font-size: 9px;
+            font-weight: 700;
             color: var(--text-dim);
             cursor: pointer;
-            transition: all 0.1s;
             text-align: center;
-            font-weight: 600;
+            transition: all 0.1s;
         }
 
         .lp-top-btn:hover {
-            background: var(--bg-lighter);
             border-color: var(--primary);
             color: var(--primary);
         }
@@ -850,100 +610,167 @@
             color: var(--bg-dark);
         }
 
-        /* Control Knobs */
-        .controls-section {
-            background: var(--bg-medium);
-            border-radius: 16px;
-            border: 1px solid var(--border);
-            padding: 16px;
+        /* Main launchpad area */
+        .lp-main-area {
+            display: flex;
+            gap: 8px;
         }
 
-        .control-knobs {
+        .lp-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            gap: 3px;
+            aspect-ratio: 1;
+            flex: 1;
+        }
+
+        .lp-pad {
+            background: var(--bg-light);
+            border: 1px solid var(--bg-lighter);
+            border-radius: 4px;
+            transition: all 0.1s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .lp-pad::after {
+            content: '';
+            position: absolute;
+            inset: 2px;
+            border-radius: 2px;
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
+
+        .lp-pad.active::after {
+            opacity: 1;
+        }
+
+        /* Launchpad pad colors */
+        .lp-pad[data-color="red"] { background: var(--lp-red) !important; }
+        .lp-pad[data-color="orange"] { background: var(--lp-orange) !important; }
+        .lp-pad[data-color="amber"] { background: var(--lp-amber) !important; }
+        .lp-pad[data-color="yellow"] { background: var(--lp-yellow) !important; }
+        .lp-pad[data-color="lime"] { background: var(--lp-lime) !important; }
+        .lp-pad[data-color="green"] { background: var(--lp-green) !important; }
+        .lp-pad[data-color="turquoise"] { background: var(--lp-turquoise) !important; }
+        .lp-pad[data-color="cyan"] { background: var(--lp-cyan) !important; }
+        .lp-pad[data-color="sky"] { background: var(--lp-sky) !important; }
+        .lp-pad[data-color="blue"] { background: var(--lp-blue) !important; }
+        .lp-pad[data-color="orchid"] { background: var(--lp-orchid) !important; }
+        .lp-pad[data-color="purple"] { background: var(--lp-purple) !important; }
+        .lp-pad[data-color="pink"] { background: var(--lp-pink) !important; }
+        .lp-pad[data-color="magenta"] { background: var(--lp-magenta) !important; }
+        .lp-pad[data-color="white"] { background: var(--lp-white) !important; }
+
+        .lp-pad.playing {
+            animation: padFlash 0.1s;
+        }
+
+        @keyframes padFlash {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Right buttons */
+        .lp-right-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            width: 35px;
+        }
+
+        .lp-right-btn {
+            aspect-ratio: 1;
+            background: var(--bg-light);
+            border: 2px solid var(--bg-lighter);
+            border-radius: 50%;
+            font-size: 8px;
+            font-weight: 700;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lp-right-btn:hover {
+            border-color: var(--primary);
+            transform: scale(1.1);
+        }
+
+        .lp-right-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: var(--bg-dark);
+        }
+
+        .lp-right-btn[data-function="play"] { background: var(--success); border-color: var(--success); }
+        .lp-right-btn[data-function="stop"] { background: var(--danger); border-color: var(--danger); }
+
+        /* Controls */
+        .controls-container {
+            background: var(--bg-medium);
+            border-radius: 16px;
+            padding: 15px;
+        }
+
+        .controls-row {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 15px;
         }
 
-        .knob-container {
+        .control-item {
             text-align: center;
         }
 
-        .knob {
-            width: 60px;
-            height: 60px;
+        .control-knob {
+            width: 50px;
+            height: 50px;
             background: radial-gradient(circle at 30% 30%, var(--bg-lighter) 0%, var(--bg-light) 100%);
-            border: 3px solid var(--border);
+            border: 3px solid var(--bg-lighter);
             border-radius: 50%;
-            margin: 0 auto 8px;
+            margin: 0 auto 6px;
             position: relative;
-            cursor: grab;
-            transition: all 0.2s;
+            cursor: ew-resize;
+            transition: all 0.15s;
         }
 
-        .knob:hover {
+        .control-knob:hover {
             border-color: var(--primary);
-            transform: scale(1.05);
         }
 
-        .knob:active {
-            cursor: grabbing;
-            transform: scale(0.95);
-        }
-
-        .knob-indicator {
+        .control-indicator {
             position: absolute;
-            top: 8px;
+            top: 6px;
             left: 50%;
             transform: translateX(-50%);
             width: 3px;
-            height: 20px;
+            height: 18px;
             background: var(--primary);
             border-radius: 2px;
             pointer-events: none;
-            transition: all 0.1s;
         }
 
-        .knob-label {
+        .control-label {
             font-size: 10px;
             color: var(--text-dim);
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 4px;
         }
 
-        .knob-value {
-            font-size: 16px;
+        .control-value {
+            font-size: 14px;
             font-weight: 700;
             color: var(--primary);
+            margin-top: 2px;
         }
 
-        /* Responsive */
-        @media (max-width: 1400px) {
-            .main-content {
-                grid-template-columns: 240px 1fr 300px;
-            }
-            
-            .chord-grid {
-                grid-template-columns: repeat(6, 1fr);
-            }
-        }
-
-        @media (max-width: 1200px) {
-            .main-content {
-                grid-template-columns: 200px 1fr 260px;
-            }
-            
-            .status-displays {
-                flex-direction: column;
-                gap: 8px;
-            }
-            
-            .status-item {
-                padding: 6px 12px;
-            }
-        }
-
-        /* Loading Animation */
+        /* Loading */
         .loading {
             position: fixed;
             top: 0;
@@ -954,99 +781,96 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 9999;
-            opacity: 0;
-            pointer-events: none;
+            z-index: 10000;
             transition: opacity 0.3s;
         }
 
-        .loading.active {
-            opacity: 1;
-            pointer-events: all;
+        .loading.hidden {
+            opacity: 0;
+            pointer-events: none;
         }
 
-        .loading-spinner {
-            width: 60px;
-            height: 60px;
-            border: 3px solid var(--border);
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--bg-lighter);
             border-top-color: var(--primary);
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            animation: spin 0.8s linear infinite;
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
 
-        /* Touch feedback */
-        .touch-feedback {
-            position: absolute;
-            width: 40px;
-            height: 40px;
-            background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
-            border-radius: 50%;
-            pointer-events: none;
-            transform: translate(-50%, -50%) scale(0);
-            opacity: 0.5;
-            animation: touchRipple 0.4s ease-out;
+        /* Message Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: var(--bg-dark);
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 700;
+            font-size: 14px;
+            z-index: 5000;
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+            animation: slideUp 0.3s ease;
         }
 
-        @keyframes touchRipple {
-            to {
-                transform: translate(-50%, -50%) scale(3);
-                opacity: 0;
-            }
+        @keyframes slideUp {
+            from { transform: translate(-50%, 100px); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
         }
     </style>
 </head>
 <body>
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
     <div class="app-container">
         <!-- Header -->
         <header class="header">
-            <div class="logo-section">
-                <h1 class="logo">ARRANGER V8</h1>
-                
-                <div class="status-displays">
-                    <div class="status-item">
-                        <span class="status-label">Style</span>
-                        <span class="status-value" id="styleDisplay">8 BEAT</span>
-                    </div>
-                    <div class="status-item">
-                        <span class="status-label">Section</span>
-                        <span class="status-value" id="sectionDisplay">MAIN</span>
-                    </div>
-                    <div class="status-item">
-                        <span class="status-label">Var</span>
-                        <span class="status-value" id="variationDisplay">A</span>
-                    </div>
+            <h1 class="logo">CTK V8 REVISED</h1>
+            
+            <div class="status-group">
+                <div class="status-item">
+                    <span class="status-label">Style</span>
+                    <span class="status-value" id="styleDisplay">8 BEAT</span>
                 </div>
-                
-                <div class="tempo-display">
-                    <span class="status-label">BPM</span>
-                    <span class="tempo-value" id="tempoValue">120</span>
-                    <div class="tempo-controls">
-                        <button class="tempo-btn" onclick="changeTempo(1)">▲</button>
-                        <button class="tempo-btn" onclick="changeTempo(-1)">▼</button>
-                    </div>
+                <div class="status-item">
+                    <span class="status-label">Section</span>
+                    <span class="status-value" id="sectionDisplay">MAIN</span>
                 </div>
-                
-                <button class="tap-tempo-btn" id="tapBtn" onclick="tapTempo()">TAP</button>
+                <div class="status-item">
+                    <span class="status-label">Variation</span>
+                    <span class="status-value" id="varDisplay">A</span>
+                </div>
             </div>
             
-            <div class="header-controls">
-                <div class="midi-indicators">
-                    <div class="midi-device">
-                        <span class="midi-led" id="ctkLed"></span>
-                        <span>CTK-3200</span>
-                    </div>
-                    <div class="midi-device">
-                        <span class="midi-led" id="lpLed"></span>
-                        <span>LAUNCHPAD</span>
-                    </div>
-                </div>
-                
-                <button class="connect-btn" onclick="connectMIDI()">CONNECT MIDI</button>
+            <div class="tempo-controls">
+                <button class="tempo-btn" onclick="changeTempo(-1)">−</button>
+                <div class="tempo-display" id="tempoDisplay">120</div>
+                <button class="tempo-btn" onclick="changeTempo(1)">+</button>
             </div>
+            
+            <button class="tap-btn" onclick="tapTempo()">TAP</button>
+            
+            <div class="midi-status">
+                <div class="midi-device">
+                    <span class="midi-led" id="ctkLed"></span>
+                    <span>CTK-3200</span>
+                </div>
+                <div class="midi-device">
+                    <span class="midi-led" id="lpLed"></span>
+                    <span>LAUNCHPAD</span>
+                </div>
+            </div>
+            
+            <button class="connect-btn" onclick="connectMIDI()">CONNECT</button>
         </header>
 
         <!-- Main Content -->
@@ -1055,207 +879,174 @@
             <aside class="left-panel">
                 <!-- Style Selection -->
                 <div class="panel-section">
-                    <div class="section-header">RHYTHM STYLE</div>
-                    <div class="style-grid">
-                        <button class="style-btn active" onclick="selectStyle('8BEAT')">8 BEAT</button>
-                        <button class="style-btn" onclick="selectStyle('16BEAT')">16 BEAT</button>
-                        <button class="style-btn" onclick="selectStyle('POP')">POP</button>
-                        <button class="style-btn" onclick="selectStyle('ROCK')">ROCK</button>
-                        <button class="style-btn" onclick="selectStyle('JAZZ')">JAZZ</button>
-                        <button class="style-btn" onclick="selectStyle('LATIN')">LATIN</button>
-                    </div>
+                    <div class="section-title">RHYTHM STYLES</div>
+                    <div class="style-grid" id="styleGrid"></div>
                 </div>
-
+                
                 <!-- Sections -->
                 <div class="panel-section">
-                    <div class="section-header">SECTIONS</div>
-                    <div class="section-controls">
-                        <button class="section-btn" onclick="playSection('intro')">INTRO</button>
-                        <button class="section-btn active" onclick="playSection('main')">MAIN</button>
-                        <button class="section-btn" onclick="playSection('chorus')">CHORUS</button>
-                        <button class="section-btn" onclick="playSection('fill')">FILL IN</button>
-                        <button class="section-btn" onclick="playSection('break')">BREAK</button>
-                        <button class="section-btn" onclick="playSection('ending')">ENDING</button>
-                    </div>
+                    <div class="section-title">SECTIONS</div>
+                    <div class="section-grid" id="sectionGrid"></div>
                 </div>
-
+                
                 <!-- Variations -->
                 <div class="panel-section">
-                    <div class="section-header">VARIATIONS</div>
-                    <div class="variation-buttons">
-                        <button class="var-btn active" onclick="setVariation(1)">A</button>
-                        <button class="var-btn" onclick="setVariation(2)">B</button>
-                        <button class="var-btn" onclick="setVariation(3)">C</button>
-                        <button class="var-btn" onclick="setVariation(4)">D</button>
-                    </div>
+                    <div class="section-title">VARIATIONS</div>
+                    <div class="variation-row" id="variationRow"></div>
                 </div>
             </aside>
 
             <!-- Center Panel -->
             <div class="center-panel">
-                <!-- Chord Display -->
-                <div class="chord-display-container">
-                    <div class="chord-display">
-                        <div class="current-chord" id="currentChord">C</div>
-                        <div class="chord-info" id="chordInfo">MAJOR</div>
-                    </div>
+                <!-- Current Chord Display -->
+                <div class="chord-display">
+                    <div class="chord-text" id="currentChord">C</div>
                 </div>
-
+                
                 <!-- Chord Grid -->
-                <div class="chord-container">
-                    <div class="chord-grid" id="chordGrid">
-                        <!-- 24 chord pads will be generated -->
-                    </div>
+                <div class="chord-grid-container">
+                    <div class="chord-grid" id="chordGrid"></div>
                 </div>
-
+                
                 <!-- Pattern Sequencer -->
                 <div class="pattern-container">
-                    <div class="section-header">PATTERN SEQUENCER</div>
-                    <div class="pattern-grid" id="patternGrid">
-                        <!-- Pattern cells will be generated -->
-                    </div>
+                    <div class="section-title">PATTERN SEQUENCER</div>
+                    <div class="pattern-grid" id="patternGrid"></div>
                 </div>
             </div>
 
             <!-- Right Panel -->
-            <div class="right-panel">
-                <!-- Transport Controls -->
-                <div class="transport-section">
-                    <button class="transport-btn stop" id="stopBtn" onclick="stop()">◼</button>
-                    <button class="transport-btn play" id="playBtn" onclick="togglePlay()">▶</button>
-                    <button class="transport-btn record" id="recBtn" onclick="toggleRecord()">●</button>
+            <aside class="right-panel">
+                <!-- Transport -->
+                <div class="transport-container">
+                    <button class="transport-btn" id="stopBtn" onclick="stopPlayback()">◼</button>
+                    <button class="transport-btn" id="playBtn" onclick="togglePlay()">▶</button>
+                    <button class="transport-btn" id="recBtn" onclick="toggleRecord()">●</button>
                 </div>
-
+                
                 <!-- Launchpad View -->
                 <div class="launchpad-container">
-                    <div class="section-header">LAUNCHPAD MK2 VIEW</div>
+                    <div class="section-title">LAUNCHPAD MK2</div>
                     
                     <!-- Top buttons -->
-                    <div class="launchpad-top-buttons">
-                        <button class="lp-top-btn" id="lpUp">▲</button>
-                        <button class="lp-top-btn" id="lpDown">▼</button>
-                        <button class="lp-top-btn" id="lpLeft">◀</button>
-                        <button class="lp-top-btn" id="lpRight">▶</button>
-                        <button class="lp-top-btn active" id="lpSession">SESSION</button>
-                        <button class="lp-top-btn" id="lpUser1">USER 1</button>
-                        <button class="lp-top-btn" id="lpUser2">USER 2</button>
-                        <button class="lp-top-btn" id="lpMixer">MIXER</button>
-                    </div>
+                    <div class="lp-top-buttons" id="lpTopButtons"></div>
                     
-                    <div class="launchpad-main">
+                    <!-- Main area -->
+                    <div class="lp-main-area">
                         <!-- 8x8 Grid -->
-                        <div class="launchpad-grid" id="launchpadGrid">
-                            <!-- 64 pads will be generated -->
-                        </div>
+                        <div class="lp-grid" id="lpGrid"></div>
                         
                         <!-- Right buttons -->
-                        <div class="launchpad-right-buttons" id="launchpadRightButtons">
-                            <!-- 8 buttons will be generated -->
+                        <div class="lp-right-buttons" id="lpRightButtons"></div>
+                    </div>
+                </div>
+                
+                <!-- Controls -->
+                <div class="controls-container">
+                    <div class="controls-row">
+                        <div class="control-item">
+                            <div class="control-label">Swing</div>
+                            <div class="control-knob" id="swingKnob" data-value="50" data-min="0" data-max="100">
+                                <div class="control-indicator"></div>
+                            </div>
+                            <div class="control-value" id="swingValue">50%</div>
+                        </div>
+                        
+                        <div class="control-item">
+                            <div class="control-label">Velocity</div>
+                            <div class="control-knob" id="velocityKnob" data-value="100" data-min="1" data-max="127">
+                                <div class="control-indicator"></div>
+                            </div>
+                            <div class="control-value" id="velocityValue">100</div>
+                        </div>
+                        
+                        <div class="control-item">
+                            <div class="control-label">Humanize</div>
+                            <div class="control-knob" id="humanizeKnob" data-value="0" data-min="0" data-max="100">
+                                <div class="control-indicator"></div>
+                            </div>
+                            <div class="control-value" id="humanizeValue">0%</div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Control Knobs -->
-                <div class="controls-section">
-                    <div class="section-header">CONTROLS</div>
-                    <div class="control-knobs">
-                        <div class="knob-container">
-                            <div class="knob-label">Swing</div>
-                            <div class="knob" id="swingKnob">
-                                <div class="knob-indicator"></div>
-                            </div>
-                            <div class="knob-value" id="swingValue">50%</div>
-                        </div>
-                        
-                        <div class="knob-container">
-                            <div class="knob-label">Velocity</div>
-                            <div class="knob" id="velocityKnob">
-                                <div class="knob-indicator"></div>
-                            </div>
-                            <div class="knob-value" id="velocityValue">100</div>
-                        </div>
-                        
-                        <div class="knob-container">
-                            <div class="knob-label">Humanize</div>
-                            <div class="knob" id="humanizeKnob">
-                                <div class="knob-indicator"></div>
-                            </div>
-                            <div class="knob-value" id="humanizeValue">0%</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            </aside>
         </main>
-    </div>
-
-    <!-- Loading Screen -->
-    <div class="loading" id="loading">
-        <div class="loading-spinner"></div>
     </div>
 
     <script>
         // ==========================================
-        // GLOBAL STATE
+        // GLOBAL STATE & CONFIGURATION
         // ==========================================
+        
         const state = {
             // MIDI Devices
             midiOutCTK: null,
             midiOutLP: null,
             midiInLP: null,
             
-            // Audio Context
-            audioContext: null,
-            
-            // Playback State
+            // Playback State  
             isPlaying: false,
             isRecording: false,
             currentBeat: 0,
+            currentMeasure: 0,
             
-            // Music Parameters
+            // Musical Parameters
             tempo: 120,
             swing: 50,
             velocity: 100,
             humanize: 0,
             
-            // Style & Variations
+            // Style & Sections
             currentStyle: '8BEAT',
             currentSection: 'main',
-            currentVariation: 1,
+            currentVariation: 'A',
             
             // Chord State
-            currentChord: { root: 'C', type: 'maj', notes: [60, 64, 67] },
+            currentChord: 'C',
             chordProgression: [],
             
-            // Pattern Data
+            // Pattern Data (per style/section/variation)
             patterns: {},
             currentPattern: null,
             
-            // Launchpad State
-            launchpadMode: 'session',
+            // Launchpad Mode
+            launchpadMode: 'session', // session, user1, user2
+            
+            // Session Mode Pattern
+            drumPattern: Array(16).fill(null).map(() => ({
+                kick: false,
+                snare: false,
+                hihat: false,
+                open: false
+            })),
+            
+            // User1 Mode - Drum Kit
+            currentDrumSet: 0,
+            
+            // User2 Mode - Bass Sequencer
+            currentBassProgram: 83, // Acoustic Bass
+            bassPattern: Array(16).fill(null).map(() => Array(8).fill(false)),
+            bassUpActive: true, // UP button state for beats 1-8
             
             // Sequencer
             sequencerInterval: null,
+            nextBeatTime: 0,
             
             // Tap Tempo
             tapTimes: [],
             
-            // Drum Sets
-            currentDrumSet: 0,
-            
-            // Bass
-            currentBass: 83,
-            bassSequence: new Array(16).fill(null).map(() => new Array(8).fill(false)),
-            
-            // Touch tracking
+            // Touch/Mouse Tracking
             isDragging: false,
-            dragMode: null
+            dragMode: null,
+            lastTouchedCell: null
         };
 
         // ==========================================
-        // LAUNCHPAD MIDI MAPPING
+        // LAUNCHPAD MK2 MIDI MAPPING
         // ==========================================
-        const LAUNCHPAD_MAPPING = {
-            // Pad notes (8x8 grid)
+        
+        const LP_MAPPING = {
+            // Pad notes (8x8 grid) - Row 8 (top) to Row 1 (bottom)
             pads: [
                 [81, 82, 83, 84, 85, 86, 87, 88], // Row 8 (top)
                 [71, 72, 73, 74, 75, 76, 77, 78], // Row 7
@@ -1267,10 +1058,10 @@
                 [11, 12, 13, 14, 15, 16, 17, 18]  // Row 1 (bottom)
             ],
             
-            // Right button notes
-            rightButtons: [89, 79, 69, 59, 49, 39, 29, 19], // Bottom to top
+            // Right button notes (bottom to top)
+            rightButtons: [89, 79, 69, 59, 49, 39, 29, 19],
             
-            // Top button control changes
+            // Top button CCs
             topButtons: {
                 up: 104,
                 down: 105,
@@ -1282,212 +1073,257 @@
                 mixer: 111
             },
             
-            // Colors (velocity values)
+            // Color velocity values (from Novation's programmer's reference)
             colors: {
                 off: 0,
                 red: 5,
                 orange: 9,
-                yellow: 13,
-                green: 21,
+                amber: 13,
+                yellow: 21,
+                lime: 29,
+                green: 25,
+                turquoise: 33,
                 cyan: 37,
+                sky: 41,
                 blue: 45,
-                purple: 49,
-                pink: 53,
+                orchid: 49,
+                purple: 53,
+                pink: 57,
+                magenta: 60,
                 white: 3
             }
         };
 
-        // ==========================================
-        // DRUM MAPPING FROM CTK-3200
-        // ==========================================
-        const DRUM_MAPPING = {
-            // Standard Set mapping
-            kick: 36,
-            snare: 38,
-            hihat: 42,
-            openHihat: 46,
-            crash: 49,
-            ride: 51,
-            // Percussion
-            clap: 39,
-            cowbell: 56,
-            tambourine: 54,
-            // Toms
-            highTom: 50,
-            midTom: 47,
-            lowTom: 45,
-            // Additional
-            rimshot: 37,
-            sidestick: 37,
-            // More percussion from manual
-            bongo: {high: 60, low: 61},
-            conga: {high: 62, muted: 62, low: 63},
-            timbale: {high: 65, low: 66},
-            agogo: {high: 67, low: 68},
-            cabasa: 69,
-            maracas: 70,
-            whistle: {short: 71, long: 72},
-            guiro: {short: 73, long: 74},
-            claves: 75,
-            woodblock: {high: 76, low: 77},
-            cuica: {mute: 78, open: 79},
-            triangle: {mute: 80, open: 81}
+        // CTK-3200 Program Numbers for Bass (83-94)
+        const BASS_PROGRAMS = [
+            83, // Acoustic Bass
+            84, // Ride Bass
+            85, // Electric Bass  
+            86, // Bass & Cymbal
+            87, // Slap Bass 1
+            88, // Slap Bass 2
+            89, // Synth Bass 1
+            90, // Synth Bass 2
+            91, // Synth Bass 3
+            92, // Synth Bass 4
+            93, // Sine Bass
+            94  // Saw Bass
+        ];
+
+        // CTK-3200 Drum Mapping (Channel 10)
+        const DRUM_MAP = {
+            // Standard Kit
+            35: 'Acoustic Bass Drum',
+            36: 'Bass Drum 1',
+            37: 'Side Stick',
+            38: 'Acoustic Snare',
+            39: 'Hand Clap',
+            40: 'Electric Snare',
+            41: 'Low Floor Tom',
+            42: 'Closed Hi-Hat',
+            43: 'High Floor Tom',
+            44: 'Pedal Hi-Hat',
+            45: 'Low Tom',
+            46: 'Open Hi-Hat',
+            47: 'Low-Mid Tom',
+            48: 'Hi-Mid Tom',
+            49: 'Crash Cymbal 1',
+            50: 'High Tom',
+            51: 'Ride Cymbal 1',
+            52: 'Chinese Cymbal',
+            53: 'Ride Bell',
+            54: 'Tambourine',
+            55: 'Splash Cymbal',
+            56: 'Cowbell',
+            57: 'Crash Cymbal 2',
+            58: 'Vibraslap',
+            59: 'Ride Cymbal 2',
+            60: 'Hi Bongo',
+            61: 'Low Bongo',
+            62: 'Mute Hi Conga',
+            63: 'Open Hi Conga',
+            64: 'Low Conga',
+            65: 'High Timbale',
+            66: 'Low Timbale',
+            67: 'High Agogo',
+            68: 'Low Agogo',
+            69: 'Cabasa',
+            70: 'Maracas',
+            71: 'Short Whistle',
+            72: 'Long Whistle',
+            73: 'Short Guiro',
+            74: 'Long Guiro',
+            75: 'Claves',
+            76: 'Hi Wood Block',
+            77: 'Low Wood Block',
+            78: 'Mute Cuica',
+            79: 'Open Cuica',
+            80: 'Mute Triangle',
+            81: 'Open Triangle'
         };
 
-        // ==========================================
-        // PATTERNS DATA
-        // ==========================================
+        // Drum color groups for User1 mode
+        const DRUM_COLORS = [
+            { notes: [35, 36], color: 'red' },        // Kicks
+            { notes: [37, 38, 39, 40], color: 'orange' }, // Snares
+            { notes: [42, 44, 46], color: 'yellow' },  // Hi-hats
+            { notes: [49, 51, 52, 55, 57, 59], color: 'green' }, // Cymbals
+            { notes: [41, 43, 45, 47, 48, 50], color: 'cyan' }, // Toms
+            { notes: [60, 61, 62, 63, 64], color: 'blue' }, // Congas/Bongos
+            { notes: [65, 66, 67, 68], color: 'purple' }, // Timbale/Agogo
+            { notes: [69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81], color: 'pink' } // Percussion
+        ];
+
+        // Rhythm Patterns (6 styles × 6 sections × 4 variations)
         const RHYTHM_PATTERNS = {
             '8BEAT': {
                 intro: {
-                    duration: 8,
-                    kick: [1,0,0,0,1,0,0,0],
-                    snare: [0,0,1,0,0,0,1,0],
-                    hihat: [1,0,1,0,1,0,1,0],
-                    open: [0,0,0,0,0,0,0,1]
+                    A: { kick: '1000100010001000', snare: '0000100000001000', hihat: '1010101010101010', open: '0000000000000001' },
+                    B: { kick: '1000100010001000', snare: '0000100000001000', hihat: '1111111111111111', open: '0000000000000001' },
+                    C: { kick: '1010101010101010', snare: '0000100000001000', hihat: '1111111111111111', open: '0000000000000001' },
+                    D: { kick: '1010101010101010', snare: '0010100100101001', hihat: '1111111111111111', open: '0001000100010001' }
                 },
                 main: {
-                    duration: 16,
-                    kick: [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
-                    snare: [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
-                    hihat: [1,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1],
-                    open: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+                    A: { kick: '1000100010001000', snare: '0000100000001000', hihat: '1010101010101010', open: '0000000000000000' },
+                    B: { kick: '1000100010001000', snare: '0000100000001000', hihat: '1111111111111111', open: '0000000000000000' },
+                    C: { kick: '1010100010101000', snare: '0000100000001000', hihat: '1111111111111111', open: '0000000000000000' },
+                    D: { kick: '1010101010101010', snare: '0000100100001001', hihat: '1111111111111111', open: '0000000100000001' }
                 },
                 chorus: {
-                    duration: 16,
-                    kick: [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
-                    snare: [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
-                    hihat: [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-                    open: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]
+                    A: { kick: '1010101010101010', snare: '0000100000001000', hihat: '1111111111111111', open: '0000000000000001' },
+                    B: { kick: '1010101010101010', snare: '0000100100001001', hihat: '1111111111111111', open: '0000000000000001' },
+                    C: { kick: '1111101011111010', snare: '0000100100001001', hihat: '1111111111111111', open: '0001000000010000' },
+                    D: { kick: '1111111111111111', snare: '0010100100101001', hihat: '1111111111111111', open: '0001000100010001' }
                 },
                 fill: {
-                    duration: 4,
-                    kick: [1,0,1,0],
-                    snare: [0,1,1,1],
-                    hihat: [0,0,0,0],
-                    open: [0,0,0,1]
+                    A: { kick: '1000100010001111', snare: '0000000011111111', hihat: '0000000000000000', open: '0000000000000001' },
+                    B: { kick: '1010101010101111', snare: '0000001111111111', hihat: '1111110000000000', open: '0000000000000001' },
+                    C: { kick: '1111111111111111', snare: '0101010110101011', hihat: '0000000000000000', open: '0000000000000001' },
+                    D: { kick: '1111111111111111', snare: '1111111111111111', hihat: '0000000000000000', open: '0000000000000001' }
                 },
                 break: {
-                    duration: 16,
-                    kick: [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
-                    snare: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-                    hihat: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                    open: [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1]
+                    A: { kick: '1000000000000000', snare: '0000000000000000', hihat: '0000000000000000', open: '0000000000000001' },
+                    B: { kick: '1000000010000000', snare: '0000100000001000', hihat: '0000000000000000', open: '0000000000000000' },
+                    C: { kick: '1000100010001000', snare: '0000000000000000', hihat: '0000100000001000', open: '0000000000000000' },
+                    D: { kick: '0000000000000000', snare: '0000000000000000', hihat: '1010101010101010', open: '0000000000000000' }
                 },
                 ending: {
-                    duration: 8,
-                    kick: [1,0,1,0,1,0,1,1],
-                    snare: [0,1,0,1,0,1,1,1],
-                    hihat: [0,0,0,0,0,0,0,0],
-                    open: [0,0,0,0,0,0,0,1]
+                    A: { kick: '1000100010001111', snare: '0000100011111111', hihat: '0000000000000000', open: '0000000000000001' },
+                    B: { kick: '1010101011111111', snare: '0101010111111111', hihat: '0000000000000000', open: '0000000000000001' },
+                    C: { kick: '1111111111111111', snare: '1010101011111111', hihat: '0101010100000000', open: '0000000000000001' },
+                    D: { kick: '1111111111111111', snare: '1111111111111111', hihat: '1111111111111111', open: '0000000000000001' }
                 }
             },
-            // Additional patterns for other styles...
-            '16BEAT': {
-                main: {
-                    duration: 16,
-                    kick: [1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0],
-                    snare: [0,0,1,0,0,1,0,0,0,0,1,0,0,1,0,0],
-                    hihat: [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-                    open: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-                }
-            }
+            // Add more styles here (16BEAT, POP, ROCK, JAZZ, LATIN)
         };
 
-        // ==========================================
-        // CHORD DEFINITIONS
-        // ==========================================
-        const CHORD_TYPES = {
-            maj: { symbol: '', name: 'Major', intervals: [0, 4, 7] },
-            min: { symbol: 'm', name: 'Minor', intervals: [0, 3, 7] },
-            '7': { symbol: '7', name: 'Dominant 7', intervals: [0, 4, 7, 10] },
-            maj7: { symbol: 'M7', name: 'Major 7', intervals: [0, 4, 7, 11] },
-            min7: { symbol: 'm7', name: 'Minor 7', intervals: [0, 3, 7, 10] },
-            dim: { symbol: '°', name: 'Diminished', intervals: [0, 3, 6] },
-            aug: { symbol: '+', name: 'Augmented', intervals: [0, 4, 8] },
-            sus4: { symbol: 'sus4', name: 'Sus 4', intervals: [0, 5, 7] },
-            sus2: { symbol: 'sus2', name: 'Sus 2', intervals: [0, 2, 7] },
-            '6': { symbol: '6', name: 'Sixth', intervals: [0, 4, 7, 9] },
-            '9': { symbol: '9', name: 'Ninth', intervals: [0, 4, 7, 14] }
-        };
-
-        const ROOTS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-
-        // Chord progressions for the grid
-        const CHORD_GRID_LAYOUT = [
-            // Row 1 - Major chords
-            { root: 'C', type: 'maj' },
-            { root: 'D', type: 'maj' },
-            { root: 'E', type: 'maj' },
-            { root: 'F', type: 'maj' },
-            { root: 'G', type: 'maj' },
-            { root: 'A', type: 'maj' },
+        // Chord definitions
+        const CHORDS = [
+            // Row 1 - Major
+            { name: 'C', type: 'Major', notes: [60, 64, 67] },
+            { name: 'D', type: 'Major', notes: [62, 66, 69] },
+            { name: 'E', type: 'Major', notes: [64, 68, 71] },
+            { name: 'F', type: 'Major', notes: [65, 69, 72] },
+            { name: 'G', type: 'Major', notes: [67, 71, 74] },
+            { name: 'A', type: 'Major', notes: [69, 73, 76] },
             
-            // Row 2 - Minor chords
-            { root: 'C', type: 'min' },
-            { root: 'D', type: 'min' },
-            { root: 'E', type: 'min' },
-            { root: 'F', type: 'min' },
-            { root: 'G', type: 'min' },
-            { root: 'A', type: 'min' },
+            // Row 2 - Minor
+            { name: 'Cm', type: 'Minor', notes: [60, 63, 67] },
+            { name: 'Dm', type: 'Minor', notes: [62, 65, 69] },
+            { name: 'Em', type: 'Minor', notes: [64, 67, 71] },
+            { name: 'Fm', type: 'Minor', notes: [65, 68, 72] },
+            { name: 'Gm', type: 'Minor', notes: [67, 70, 74] },
+            { name: 'Am', type: 'Minor', notes: [69, 72, 76] },
             
-            // Row 3 - Seventh chords
-            { root: 'C', type: '7' },
-            { root: 'D', type: '7' },
-            { root: 'E', type: '7' },
-            { root: 'F', type: '7' },
-            { root: 'G', type: '7' },
-            { root: 'A', type: '7' },
+            // Row 3 - 7th
+            { name: 'C7', type: '7th', notes: [60, 64, 67, 70] },
+            { name: 'D7', type: '7th', notes: [62, 66, 69, 72] },
+            { name: 'E7', type: '7th', notes: [64, 68, 71, 74] },
+            { name: 'F7', type: '7th', notes: [65, 69, 72, 75] },
+            { name: 'G7', type: '7th', notes: [67, 71, 74, 77] },
+            { name: 'A7', type: '7th', notes: [69, 73, 76, 79] },
             
-            // Row 4 - Special chords
-            { root: 'B', type: 'dim' },
-            { root: 'C', type: 'sus4' },
-            { root: 'D', type: 'sus2' },
-            { root: 'F', type: 'maj7' },
-            { root: 'G', type: 'sus4' },
-            { root: 'A', type: 'min7' }
+            // Row 4 - Special
+            { name: 'B°', type: 'Dim', notes: [71, 74, 77] },
+            { name: 'Csus4', type: 'Sus4', notes: [60, 65, 67] },
+            { name: 'Dsus2', type: 'Sus2', notes: [62, 64, 69] },
+            { name: 'FM7', type: 'Maj7', notes: [65, 69, 72, 76] },
+            { name: 'Gsus4', type: 'Sus4', notes: [67, 72, 74] },
+            { name: 'Am7', type: 'Min7', notes: [69, 72, 76, 79] }
         ];
 
         // ==========================================
         // INITIALIZATION
         // ==========================================
+        
         document.addEventListener('DOMContentLoaded', () => {
             initializeUI();
             setupEventListeners();
-            loadPatterns();
+            initializePatterns();
             
             // Hide loading
             setTimeout(() => {
-                document.getElementById('loading').classList.remove('active');
+                document.getElementById('loading').classList.add('hidden');
             }, 500);
         });
 
         function initializeUI() {
-            // Initialize chord grid
-            const chordGrid = document.getElementById('chordGrid');
-            chordGrid.innerHTML = '';
+            // Initialize Style Grid
+            const styles = ['8BEAT', '16BEAT', 'POP', 'ROCK', 'JAZZ', 'LATIN'];
+            const styleGrid = document.getElementById('styleGrid');
+            styles.forEach(style => {
+                const btn = document.createElement('button');
+                btn.className = 'style-btn';
+                btn.textContent = style;
+                btn.onclick = () => selectStyle(style);
+                if (style === state.currentStyle) btn.classList.add('active');
+                styleGrid.appendChild(btn);
+            });
             
-            CHORD_GRID_LAYOUT.forEach((chord, index) => {
+            // Initialize Section Grid
+            const sections = ['INTRO', 'MAIN', 'CHORUS', 'FILL', 'BREAK', 'ENDING'];
+            const sectionGrid = document.getElementById('sectionGrid');
+            sections.forEach(section => {
+                const btn = document.createElement('button');
+                btn.className = 'section-btn';
+                btn.textContent = section;
+                btn.onclick = () => selectSection(section.toLowerCase());
+                if (section.toLowerCase() === state.currentSection) btn.classList.add('active');
+                sectionGrid.appendChild(btn);
+            });
+            
+            // Initialize Variation Row
+            const variations = ['A', 'B', 'C', 'D'];
+            const varRow = document.getElementById('variationRow');
+            variations.forEach(variation => {
+                const btn = document.createElement('button');
+                btn.className = 'var-btn';
+                btn.textContent = variation;
+                btn.onclick = () => selectVariation(variation);
+                if (variation === state.currentVariation) btn.classList.add('active');
+                varRow.appendChild(btn);
+            });
+            
+            // Initialize Chord Grid
+            const chordGrid = document.getElementById('chordGrid');
+            CHORDS.forEach((chord, index) => {
                 const pad = document.createElement('div');
                 pad.className = 'chord-pad';
                 pad.dataset.index = index;
-                pad.dataset.root = chord.root;
-                pad.dataset.type = chord.type;
                 
-                const rootEl = document.createElement('div');
-                rootEl.className = 'chord-root';
-                rootEl.textContent = chord.root + CHORD_TYPES[chord.type].symbol;
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'chord-name';
+                nameDiv.textContent = chord.name;
                 
-                const typeEl = document.createElement('div');
-                typeEl.className = 'chord-type';
-                typeEl.textContent = CHORD_TYPES[chord.type].name;
+                const typeDiv = document.createElement('div');
+                typeDiv.className = 'chord-type';
+                typeDiv.textContent = chord.type;
                 
-                pad.appendChild(rootEl);
-                pad.appendChild(typeEl);
+                pad.appendChild(nameDiv);
+                pad.appendChild(typeDiv);
                 
-                // Add event listeners
                 pad.addEventListener('mousedown', () => playChord(chord));
-                pad.addEventListener('mouseup', stopChord);
+                pad.addEventListener('mouseup', () => stopChord());
                 pad.addEventListener('touchstart', (e) => {
                     e.preventDefault();
                     playChord(chord);
@@ -1500,14 +1336,13 @@
                 chordGrid.appendChild(pad);
             });
             
-            // Initialize pattern grid
+            // Initialize Pattern Grid
             const patternGrid = document.getElementById('patternGrid');
-            patternGrid.innerHTML = '';
+            const instruments = ['KICK', 'SNARE', 'HIHAT', 'OPEN'];
             
-            for (let row = 0; row < 4; row++) {
+            instruments.forEach((inst, row) => {
                 const rowDiv = document.createElement('div');
                 rowDiv.className = 'pattern-row';
-                rowDiv.dataset.row = row;
                 
                 for (let step = 0; step < 16; step++) {
                     const cell = document.createElement('div');
@@ -1515,108 +1350,189 @@
                     cell.dataset.row = row;
                     cell.dataset.step = step;
                     
-                    // Add touch/mouse events for pattern editing
-                    cell.addEventListener('mousedown', handlePatternCellStart);
-                    cell.addEventListener('mouseenter', handlePatternCellEnter);
-                    cell.addEventListener('touchstart', handlePatternCellStart, { passive: false });
-                    cell.addEventListener('touchmove', handlePatternCellMove, { passive: false });
+                    cell.addEventListener('mousedown', handlePatternCellMouseDown);
+                    cell.addEventListener('mouseenter', handlePatternCellMouseEnter);
+                    cell.addEventListener('touchstart', handlePatternCellTouchStart, { passive: false });
+                    cell.addEventListener('touchmove', handlePatternCellTouchMove, { passive: false });
                     
                     rowDiv.appendChild(cell);
                 }
                 
                 patternGrid.appendChild(rowDiv);
-            }
+            });
             
-            // Initialize Launchpad grid
-            const launchpadGrid = document.getElementById('launchpadGrid');
-            launchpadGrid.innerHTML = '';
+            // Initialize Launchpad Top Buttons
+            const topButtons = ['UP', 'DOWN', 'LEFT', 'RIGHT', 'SESSION', 'USER 1', 'USER 2', 'MIXER'];
+            const topBtnContainer = document.getElementById('lpTopButtons');
             
-            for (let row = 7; row >= 0; row--) { // Start from top
+            topButtons.forEach((btn, index) => {
+                const button = document.createElement('button');
+                button.className = 'lp-top-btn';
+                button.textContent = btn;
+                button.id = `lpTop${btn.replace(' ', '')}`;
+                
+                switch(btn) {
+                    case 'UP':
+                        button.onclick = () => handleLPTopButton('up');
+                        break;
+                    case 'DOWN':
+                        button.onclick = () => handleLPTopButton('down');
+                        break;
+                    case 'LEFT':
+                        button.onclick = () => handleLPTopButton('left');
+                        break;
+                    case 'RIGHT':
+                        button.onclick = () => handleLPTopButton('right');
+                        break;
+                    case 'SESSION':
+                        button.onclick = () => setLaunchpadMode('session');
+                        button.classList.add('active');
+                        break;
+                    case 'USER 1':
+                        button.onclick = () => setLaunchpadMode('user1');
+                        break;
+                    case 'USER 2':
+                        button.onclick = () => setLaunchpadMode('user2');
+                        break;
+                    case 'MIXER':
+                        button.onclick = () => handleMixerButton();
+                        break;
+                }
+                
+                topBtnContainer.appendChild(button);
+            });
+            
+            // Initialize Launchpad Grid
+            const lpGrid = document.getElementById('lpGrid');
+            for (let row = 7; row >= 0; row--) {
                 for (let col = 0; col < 8; col++) {
                     const pad = document.createElement('div');
                     pad.className = 'lp-pad';
                     pad.dataset.row = row;
                     pad.dataset.col = col;
-                    pad.dataset.note = LAUNCHPAD_MAPPING.pads[row][col];
+                    pad.dataset.note = LP_MAPPING.pads[row][col];
+                    pad.id = `lp-${row}-${col}`;
                     
-                    launchpadGrid.appendChild(pad);
+                    pad.addEventListener('mousedown', () => handleLPPadPress(row, col));
+                    pad.addEventListener('mouseup', () => handleLPPadRelease(row, col));
+                    pad.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        handleLPPadPress(row, col);
+                    }, { passive: false });
+                    pad.addEventListener('touchend', (e) => {
+                        e.preventDefault();
+                        handleLPPadRelease(row, col);
+                    }, { passive: false });
+                    
+                    lpGrid.appendChild(pad);
                 }
             }
             
-            // Initialize right buttons
-            const rightButtons = document.getElementById('launchpadRightButtons');
-            rightButtons.innerHTML = '';
+            // Initialize Launchpad Right Buttons
+            const rightBtnContainer = document.getElementById('lpRightButtons');
+            const rightLabels = ['REC', 'SOLO', 'MUTE', 'STOP', 'B', 'A', 'PAN', 'VOL'];
             
-            const buttonLabels = ['VOL', 'PAN', 'A', 'B', 'STOP', 'MUTE', 'SOLO', 'REC'];
-            
-            for (let i = 7; i >= 0; i--) { // Start from top
-                const btn = document.createElement('div');
-                btn.className = 'lp-btn';
+            for (let i = 0; i < 8; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'lp-right-btn';
+                btn.textContent = rightLabels[i];
                 btn.dataset.index = i;
-                btn.dataset.note = LAUNCHPAD_MAPPING.rightButtons[i];
-                btn.textContent = buttonLabels[7 - i];
+                btn.id = `lpRight${i}`;
                 
-                rightButtons.appendChild(btn);
+                btn.addEventListener('mousedown', () => handleLPRightButton(i));
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    handleLPRightButton(i);
+                }, { passive: false });
+                
+                rightBtnContainer.appendChild(btn);
             }
             
-            // Setup knobs
-            setupKnobs();
+            // Initialize control knobs
+            setupKnobControl('swingKnob', 'swingValue', value => {
+                state.swing = value;
+                document.getElementById('swingValue').textContent = value + '%';
+            });
+            
+            setupKnobControl('velocityKnob', 'velocityValue', value => {
+                state.velocity = value;
+                document.getElementById('velocityValue').textContent = value;
+            });
+            
+            setupKnobControl('humanizeKnob', 'humanizeValue', value => {
+                state.humanize = value;
+                document.getElementById('humanizeValue').textContent = value + '%';
+            });
         }
 
         function setupEventListeners() {
-            // Global mouse/touch events
-            document.addEventListener('mouseup', handleGlobalMouseUp);
-            document.addEventListener('touchend', handleGlobalTouchEnd);
+            // Global mouse/touch up to stop dragging
+            document.addEventListener('mouseup', () => {
+                state.isDragging = false;
+                state.lastTouchedCell = null;
+            });
             
-            // Launchpad mode buttons
-            document.getElementById('lpSession').addEventListener('click', () => setLaunchpadMode('session'));
-            document.getElementById('lpUser1').addEventListener('click', () => setLaunchpadMode('user1'));
-            document.getElementById('lpUser2').addEventListener('click', () => setLaunchpadMode('user2'));
-            document.getElementById('lpMixer').addEventListener('click', clearLaunchpad);
+            document.addEventListener('touchend', () => {
+                state.isDragging = false;
+                state.lastTouchedCell = null;
+            });
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                switch(e.key) {
+                    case ' ':
+                        e.preventDefault();
+                        togglePlay();
+                        break;
+                    case 'Escape':
+                        stopPlayback();
+                        break;
+                    case 'r':
+                        toggleRecord();
+                        break;
+                    case '1':
+                        setLaunchpadMode('session');
+                        break;
+                    case '2':
+                        setLaunchpadMode('user1');
+                        break;
+                    case '3':
+                        setLaunchpadMode('user2');
+                        break;
+                }
+            });
         }
 
-        function setupKnobs() {
-            setupKnob('swingKnob', 'swingValue', 0, 100, 50, (val) => {
-                state.swing = val;
-                document.getElementById('swingValue').textContent = `${val}%`;
-            });
-            
-            setupKnob('velocityKnob', 'velocityValue', 1, 127, 100, (val) => {
-                state.velocity = val;
-                document.getElementById('velocityValue').textContent = val;
-            });
-            
-            setupKnob('humanizeKnob', 'humanizeValue', 0, 100, 0, (val) => {
-                state.humanize = val;
-                document.getElementById('humanizeValue').textContent = `${val}%`;
-            });
-        }
-
-        function setupKnob(knobId, valueId, min, max, initial, callback) {
+        function setupKnobControl(knobId, valueId, callback) {
             const knob = document.getElementById(knobId);
-            const indicator = knob.querySelector('.knob-indicator');
-            let value = initial;
+            const indicator = knob.querySelector('.control-indicator');
             let startX = 0;
             let startValue = 0;
             
-            const updateKnob = (val) => {
-                value = Math.max(min, Math.min(max, val));
+            const updateKnob = (value) => {
+                const min = parseInt(knob.dataset.min);
+                const max = parseInt(knob.dataset.max);
+                value = Math.max(min, Math.min(max, value));
+                
+                knob.dataset.value = value;
                 const angle = ((value - min) / (max - min)) * 270 - 135;
                 indicator.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+                
                 callback(value);
             };
             
             const handleStart = (e) => {
                 e.preventDefault();
-                const x = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-                startX = x;
-                startValue = value;
+                startX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                startValue = parseInt(knob.dataset.value);
                 
                 const handleMove = (e) => {
                     const currentX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
                     const diff = currentX - startX;
+                    const min = parseInt(knob.dataset.min);
+                    const max = parseInt(knob.dataset.max);
                     const range = max - min;
-                    const newValue = startValue + (diff / 100) * range;
+                    const newValue = startValue + Math.round(diff / 100 * range);
                     updateKnob(newValue);
                 };
                 
@@ -1636,142 +1552,894 @@
             knob.addEventListener('mousedown', handleStart);
             knob.addEventListener('touchstart', handleStart, { passive: false });
             
-            // Initialize
-            updateKnob(initial);
+            // Initialize value
+            updateKnob(parseInt(knob.dataset.value));
+        }
+
+        // ==========================================
+        // PATTERN MANAGEMENT
+        // ==========================================
+        
+        function initializePatterns() {
+            // Initialize with default pattern
+            loadPattern(state.currentStyle, state.currentSection, state.currentVariation);
+        }
+
+        function loadPattern(style, section, variation) {
+            const patterns = RHYTHM_PATTERNS[style];
+            if (patterns && patterns[section] && patterns[section][variation]) {
+                const pattern = patterns[section][variation];
+                
+                // Convert string patterns to drum pattern array
+                for (let i = 0; i < 16; i++) {
+                    state.drumPattern[i] = {
+                        kick: pattern.kick[i] === '1',
+                        snare: pattern.snare[i] === '1',
+                        hihat: pattern.hihat[i] === '1',
+                        open: pattern.open[i] === '1'
+                    };
+                }
+                
+                updatePatternDisplay();
+                updateLaunchpadDisplay();
+            }
+        }
+
+        function updatePatternDisplay() {
+            const instruments = ['kick', 'snare', 'hihat', 'open'];
+            
+            instruments.forEach((inst, row) => {
+                for (let step = 0; step < 16; step++) {
+                    const cell = document.querySelector(`.pattern-cell[data-row="${row}"][data-step="${step}"]`);
+                    if (cell) {
+                        if (state.drumPattern[step][inst]) {
+                            cell.classList.add('active');
+                        } else {
+                            cell.classList.remove('active');
+                        }
+                    }
+                }
+            });
         }
 
         // ==========================================
         // PATTERN EDITING
         // ==========================================
-        function handlePatternCellStart(e) {
-            e.preventDefault();
-            const cell = e.currentTarget;
-            const isActive = cell.classList.contains('active');
+        
+        function handlePatternCellMouseDown(e) {
+            const row = parseInt(e.target.dataset.row);
+            const step = parseInt(e.target.dataset.step);
+            const instruments = ['kick', 'snare', 'hihat', 'open'];
+            const instrument = instruments[row];
             
+            // Toggle cell
+            state.drumPattern[step][instrument] = !state.drumPattern[step][instrument];
+            e.target.classList.toggle('active');
+            
+            // Start drag mode
             state.isDragging = true;
-            state.dragMode = !isActive; // If cell is off, we're turning on, and vice versa
+            state.dragMode = state.drumPattern[step][instrument]; // Set or unset mode
+            state.lastTouchedCell = e.target;
             
-            cell.classList.toggle('active');
-            updatePatternData(cell.dataset.row, cell.dataset.step, state.dragMode);
-            
-            // Add touch feedback
-            if (e.type.includes('touch')) {
-                addTouchFeedback(e.touches[0].clientX, e.touches[0].clientY);
-            }
+            // Update Launchpad display
+            updateLaunchpadDisplay();
         }
 
-        function handlePatternCellEnter(e) {
+        function handlePatternCellMouseEnter(e) {
             if (state.isDragging) {
-                const cell = e.currentTarget;
-                if (state.dragMode) {
-                    cell.classList.add('active');
-                } else {
-                    cell.classList.remove('active');
-                }
-                updatePatternData(cell.dataset.row, cell.dataset.step, state.dragMode);
-            }
-        }
-
-        function handlePatternCellMove(e) {
-            if (state.isDragging) {
-                e.preventDefault();
-                const touch = e.touches[0];
-                const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                const row = parseInt(e.target.dataset.row);
+                const step = parseInt(e.target.dataset.step);
+                const instruments = ['kick', 'snare', 'hihat', 'open'];
+                const instrument = instruments[row];
                 
-                if (element && element.classList.contains('pattern-cell')) {
-                    if (state.dragMode) {
-                        element.classList.add('active');
-                    } else {
-                        element.classList.remove('active');
+                // Apply drag mode
+                state.drumPattern[step][instrument] = state.dragMode;
+                
+                if (state.dragMode) {
+                    e.target.classList.add('active');
+                } else {
+                    e.target.classList.remove('active');
+                }
+                
+                updateLaunchpadDisplay();
+            }
+        }
+
+        function handlePatternCellTouchStart(e) {
+            e.preventDefault();
+            handlePatternCellMouseDown(e);
+        }
+
+        function handlePatternCellTouchMove(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const element = document.elementFromPoint(touch.clientX, touch.clientY);
+            
+            if (element && element.classList.contains('pattern-cell') && element !== state.lastTouchedCell) {
+                state.lastTouchedCell = element;
+                
+                const row = parseInt(element.dataset.row);
+                const step = parseInt(element.dataset.step);
+                const instruments = ['kick', 'snare', 'hihat', 'open'];
+                const instrument = instruments[row];
+                
+                // Apply drag mode
+                state.drumPattern[step][instrument] = state.dragMode;
+                
+                if (state.dragMode) {
+                    element.classList.add('active');
+                } else {
+                    element.classList.remove('active');
+                }
+                
+                updateLaunchpadDisplay();
+            }
+        }
+
+        // ==========================================
+        // LAUNCHPAD CONTROL
+        // ==========================================
+        
+        function setLaunchpadMode(mode) {
+            state.launchpadMode = mode;
+            
+            // Update UI buttons
+            document.querySelectorAll('.lp-top-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            const btnMap = {
+                'session': 'SESSION',
+                'user1': 'USER1',
+                'user2': 'USER2'
+            };
+            
+            const activeBtn = document.getElementById(`lpTop${btnMap[mode]}`);
+            if (activeBtn) activeBtn.classList.add('active');
+            
+            // Update Launchpad display
+            updateLaunchpadDisplay();
+            
+            // Send mode change to physical Launchpad
+            if (state.midiOutLP) {
+                const ccMap = {
+                    'session': LP_MAPPING.topButtons.session,
+                    'user1': LP_MAPPING.topButtons.user1,
+                    'user2': LP_MAPPING.topButtons.user2
+                };
+                
+                state.midiOutLP.send([0xB0, ccMap[mode], 127]);
+            }
+        }
+
+        function updateLaunchpadDisplay() {
+            // Clear all pads first
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const pad = document.getElementById(`lp-${row}-${col}`);
+                    if (pad) {
+                        pad.dataset.color = '';
+                        pad.classList.remove('active', 'playing');
                     }
-                    updatePatternData(element.dataset.row, element.dataset.step, state.dragMode);
+                }
+            }
+            
+            // Update based on mode
+            switch(state.launchpadMode) {
+                case 'session':
+                    updateLaunchpadSession();
+                    break;
+                case 'user1':
+                    updateLaunchpadUser1();
+                    break;
+                case 'user2':
+                    updateLaunchpadUser2();
+                    break;
+            }
+            
+            // Update physical Launchpad if connected
+            if (state.midiOutLP) {
+                sendLaunchpadUpdate();
+            }
+        }
+
+        function updateLaunchpadSession() {
+            // Session mode - Show drum pattern with rhythm advancing
+            // Top 4 rows (4-7) = beats 1-8
+            // Bottom 4 rows (0-3) = beats 9-16
+            
+            const colors = {
+                kick: 'red',
+                snare: 'yellow',
+                hihat: 'cyan',
+                open: 'purple'
+            };
+            
+            // Display pattern on grid
+            for (let beat = 0; beat < 16; beat++) {
+                const col = beat < 8 ? beat : beat - 8;
+                const rowOffset = beat < 8 ? 4 : 0;
+                
+                const pattern = state.drumPattern[beat];
+                
+                // Kick on row 7/3
+                if (pattern.kick) {
+                    const row = beat < 8 ? 7 : 3;
+                    const pad = document.getElementById(`lp-${row}-${col}`);
+                    if (pad) pad.dataset.color = colors.kick;
+                }
+                
+                // Snare on row 6/2
+                if (pattern.snare) {
+                    const row = beat < 8 ? 6 : 2;
+                    const pad = document.getElementById(`lp-${row}-${col}`);
+                    if (pad) pad.dataset.color = colors.snare;
+                }
+                
+                // HiHat on row 5/1
+                if (pattern.hihat) {
+                    const row = beat < 8 ? 5 : 1;
+                    const pad = document.getElementById(`lp-${row}-${col}`);
+                    if (pad) pad.dataset.color = colors.hihat;
+                }
+                
+                // Open HH on row 4/0
+                if (pattern.open) {
+                    const row = beat < 8 ? 4 : 0;
+                    const pad = document.getElementById(`lp-${row}-${col}`);
+                    if (pad) pad.dataset.color = colors.open;
+                }
+            }
+            
+            // Highlight current beat if playing
+            if (state.isPlaying) {
+                const col = state.currentBeat < 8 ? state.currentBeat : state.currentBeat - 8;
+                const rowStart = state.currentBeat < 8 ? 4 : 0;
+                
+                for (let i = 0; i < 4; i++) {
+                    const pad = document.getElementById(`lp-${rowStart + i}-${col}`);
+                    if (pad) pad.classList.add('playing');
+                }
+            }
+            
+            // Update right buttons for drum set selection
+            for (let i = 0; i < 6; i++) {
+                const btn = document.getElementById(`lpRight${7 - i}`);
+                if (btn) {
+                    btn.classList.toggle('active', i === state.currentDrumSet);
+                }
+            }
+            
+            // Play/Stop buttons
+            const playBtn = document.getElementById('lpRight1');
+            const stopBtn = document.getElementById('lpRight0');
+            
+            if (playBtn) {
+                playBtn.dataset.function = 'play';
+                playBtn.classList.toggle('active', state.isPlaying);
+            }
+            
+            if (stopBtn) {
+                stopBtn.dataset.function = 'stop';
+            }
+        }
+
+        function updateLaunchpadUser1() {
+            // User1 mode - Drum pad mode with color grouping
+            let padIndex = 0;
+            
+            DRUM_COLORS.forEach((group, groupIndex) => {
+                group.notes.forEach(note => {
+                    if (padIndex < 64) {
+                        const row = Math.floor(padIndex / 8);
+                        const col = padIndex % 8;
+                        const pad = document.getElementById(`lp-${7 - row}-${col}`);
+                        
+                        if (pad) {
+                            pad.dataset.color = group.color;
+                            pad.dataset.drumNote = note;
+                        }
+                        
+                        padIndex++;
+                    }
+                });
+            });
+        }
+
+        function updateLaunchpadUser2() {
+            // User2 mode - Bass sequencer
+            // Show current half (UP = beats 1-8, DOWN = beats 9-16)
+            const startBeat = state.bassUpActive ? 0 : 8;
+            
+            for (let beat = 0; beat < 8; beat++) {
+                const actualBeat = startBeat + beat;
+                const pattern = state.bassPattern[actualBeat];
+                
+                for (let note = 0; note < 8; note++) {
+                    const row = 7 - note;
+                    const pad = document.getElementById(`lp-${row}-${beat}`);
+                    
+                    if (pad) {
+                        if (pattern[note]) {
+                            pad.dataset.color = 'blue';
+                            pad.classList.add('active');
+                        } else {
+                            pad.dataset.color = '';
+                            pad.classList.remove('active');
+                        }
+                    }
+                }
+            }
+            
+            // Update UP/DOWN buttons
+            document.getElementById('lpTopUP').classList.toggle('active', state.bassUpActive);
+            document.getElementById('lpTopDOWN').classList.toggle('active', !state.bassUpActive);
+            
+            // Update LEFT/RIGHT for bass tone selection
+            const isLeftActive = state.currentBassProgram < 89;
+            document.getElementById('lpTopLEFT').classList.toggle('active', isLeftActive);
+            document.getElementById('lpTopRIGHT').classList.toggle('active', !isLeftActive);
+            
+            // Update right buttons for bass tone selection
+            const baseIndex = isLeftActive ? 83 : 89;
+            const selectedIndex = state.currentBassProgram - baseIndex;
+            
+            for (let i = 0; i < 6; i++) {
+                const btn = document.getElementById(`lpRight${7 - i}`);
+                if (btn) {
+                    btn.classList.toggle('active', i === selectedIndex);
                 }
             }
         }
 
-        function handleGlobalMouseUp() {
-            state.isDragging = false;
+        function handleLPPadPress(row, col) {
+            switch(state.launchpadMode) {
+                case 'session':
+                    handleSessionPadPress(row, col);
+                    break;
+                case 'user1':
+                    handleUser1PadPress(row, col);
+                    break;
+                case 'user2':
+                    handleUser2PadPress(row, col);
+                    break;
+            }
         }
 
-        function handleGlobalTouchEnd() {
-            state.isDragging = false;
+        function handleLPPadRelease(row, col) {
+            if (state.launchpadMode === 'user1') {
+                // Stop drum sound
+                const pad = document.getElementById(`lp-${row}-${col}`);
+                if (pad && pad.dataset.drumNote) {
+                    if (state.midiOutCTK) {
+                        state.midiOutCTK.send([0x89, parseInt(pad.dataset.drumNote), 0]);
+                    }
+                    pad.classList.remove('active');
+                }
+            }
         }
 
-        function updatePatternData(row, step, active) {
-            // Update the pattern data structure based on row and step
-            if (!state.currentPattern) {
-                state.currentPattern = {
-                    kick: new Array(16).fill(0),
-                    snare: new Array(16).fill(0),
-                    hihat: new Array(16).fill(0),
-                    open: new Array(16).fill(0)
-                };
+        function handleSessionPadPress(row, col) {
+            // Determine beat and instrument
+            let beat, instrument;
+            
+            if (row >= 4) {
+                // Top half - beats 1-8
+                beat = col;
+                instrument = 7 - row; // 0=kick, 1=snare, 2=hihat, 3=open
+            } else {
+                // Bottom half - beats 9-16
+                beat = col + 8;
+                instrument = 3 - row;
             }
             
             const instruments = ['kick', 'snare', 'hihat', 'open'];
-            const instrument = instruments[row];
-            if (instrument) {
-                state.currentPattern[instrument][step] = active ? 1 : 0;
+            const inst = instruments[instrument];
+            
+            if (inst && beat >= 0 && beat < 16) {
+                state.drumPattern[beat][inst] = !state.drumPattern[beat][inst];
+                updatePatternDisplay();
+                updateLaunchpadDisplay();
             }
         }
 
-        function addTouchFeedback(x, y) {
-            const feedback = document.createElement('div');
-            feedback.className = 'touch-feedback';
-            feedback.style.left = x + 'px';
-            feedback.style.top = y + 'px';
-            document.body.appendChild(feedback);
+        function handleUser1PadPress(row, col) {
+            // Play drum sound
+            const pad = document.getElementById(`lp-${row}-${col}`);
+            if (pad && pad.dataset.drumNote) {
+                const note = parseInt(pad.dataset.drumNote);
+                
+                if (state.midiOutCTK) {
+                    state.midiOutCTK.send([0x99, note, state.velocity]);
+                }
+                
+                pad.classList.add('active');
+                
+                // Visual feedback
+                setTimeout(() => {
+                    pad.classList.remove('active');
+                }, 100);
+            }
+        }
+
+        function handleUser2PadPress(row, col) {
+            // Toggle bass note
+            const noteIndex = 7 - row;
+            const beat = state.bassUpActive ? col : col + 8;
             
-            setTimeout(() => feedback.remove(), 400);
+            state.bassPattern[beat][noteIndex] = !state.bassPattern[beat][noteIndex];
+            updateLaunchpadDisplay();
+        }
+
+        function handleLPRightButton(index) {
+            switch(state.launchpadMode) {
+                case 'session':
+                    if (index >= 2 && index <= 7) {
+                        // Drum set selection (buttons 2-7)
+                        state.currentDrumSet = 7 - index;
+                        updateLaunchpadDisplay();
+                    } else if (index === 1) {
+                        // Play button
+                        togglePlay();
+                    } else if (index === 0) {
+                        // Stop button
+                        stopPlayback();
+                    }
+                    break;
+                    
+                case 'user2':
+                    if (index >= 2 && index <= 7) {
+                        // Bass tone selection
+                        const isLeftActive = document.getElementById('lpTopLEFT').classList.contains('active');
+                        const baseIndex = isLeftActive ? 83 : 89;
+                        state.currentBassProgram = baseIndex + (7 - index);
+                        
+                        // Send program change
+                        if (state.midiOutCTK) {
+                            state.midiOutCTK.send([0xC0, state.currentBassProgram, 0]);
+                        }
+                        
+                        updateLaunchpadDisplay();
+                    } else if (index === 1) {
+                        togglePlay();
+                    } else if (index === 0) {
+                        stopPlayback();
+                    }
+                    break;
+            }
+        }
+
+        function handleLPTopButton(button) {
+            switch(button) {
+                case 'up':
+                    if (state.launchpadMode === 'user2') {
+                        state.bassUpActive = true;
+                        updateLaunchpadDisplay();
+                    }
+                    break;
+                    
+                case 'down':
+                    if (state.launchpadMode === 'user2') {
+                        state.bassUpActive = false;
+                        updateLaunchpadDisplay();
+                    }
+                    break;
+                    
+                case 'left':
+                    if (state.launchpadMode === 'user2') {
+                        // Select bass tones 83-88
+                        document.getElementById('lpTopLEFT').classList.add('active');
+                        document.getElementById('lpTopRIGHT').classList.remove('active');
+                        updateLaunchpadDisplay();
+                    }
+                    break;
+                    
+                case 'right':
+                    if (state.launchpadMode === 'user2') {
+                        // Select bass tones 89-94
+                        document.getElementById('lpTopRIGHT').classList.add('active');
+                        document.getElementById('lpTopLEFT').classList.remove('active');
+                        updateLaunchpadDisplay();
+                    }
+                    break;
+            }
+        }
+
+        function handleMixerButton() {
+            // Clear patterns based on current mode
+            if (state.launchpadMode === 'session') {
+                // Clear drum pattern
+                for (let i = 0; i < 16; i++) {
+                    state.drumPattern[i] = {
+                        kick: false,
+                        snare: false,
+                        hihat: false,
+                        open: false
+                    };
+                }
+                updatePatternDisplay();
+            } else if (state.launchpadMode === 'user2') {
+                // Clear bass pattern
+                state.bassPattern = Array(16).fill(null).map(() => Array(8).fill(false));
+            }
+            
+            updateLaunchpadDisplay();
+            showMessage('Pattern cleared');
+        }
+
+        function sendLaunchpadUpdate() {
+            if (!state.midiOutLP) return;
+            
+            // Update all pads
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const pad = document.getElementById(`lp-${row}-${col}`);
+                    const note = LP_MAPPING.pads[row][col];
+                    
+                    let velocity = 0;
+                    if (pad) {
+                        const color = pad.dataset.color;
+                        if (color && LP_MAPPING.colors[color]) {
+                            velocity = LP_MAPPING.colors[color];
+                        }
+                        
+                        if (pad.classList.contains('playing')) {
+                            velocity = LP_MAPPING.colors.white;
+                        }
+                    }
+                    
+                    state.midiOutLP.send([0x90, note, velocity]);
+                }
+            }
         }
 
         // ==========================================
-        // CHORD PLAYBACK
+        // MIDI HANDLING
         // ==========================================
-        function playChord(chord) {
-            state.currentChord = chord;
+        
+        function connectMIDI() {
+            if (navigator.requestMIDIAccess) {
+                navigator.requestMIDIAccess()
+                    .then(onMIDISuccess, onMIDIFailure);
+            } else {
+                showMessage('WebMIDI not supported in this browser');
+            }
+        }
+
+        function onMIDISuccess(midiAccess) {
+            // Find devices
+            const inputs = Array.from(midiAccess.inputs.values());
+            const outputs = Array.from(midiAccess.outputs.values());
             
-            // Update display
-            document.getElementById('currentChord').textContent = 
-                chord.root + CHORD_TYPES[chord.type].symbol;
-            document.getElementById('chordInfo').textContent = 
-                CHORD_TYPES[chord.type].name.toUpperCase();
-            
-            // Calculate notes
-            const rootNote = ROOTS.indexOf(chord.root);
-            const notes = CHORD_TYPES[chord.type].intervals.map(interval => 
-                60 + rootNote + interval
+            // CTK-3200
+            const ctkOut = outputs.find(device => 
+                device.name.includes('CTK') || 
+                device.name.includes('CASIO') ||
+                device.name.includes('3200')
             );
             
-            // Send to CTK-3200
+            if (ctkOut) {
+                state.midiOutCTK = ctkOut;
+                document.getElementById('ctkLed').classList.add('active');
+                showMessage(`Connected: ${ctkOut.name}`);
+            }
+            
+            // Launchpad MK2
+            const lpOut = outputs.find(device => 
+                device.name.includes('Launchpad') || 
+                device.name.includes('MK2') ||
+                device.name.includes('MIDIOUT2')
+            );
+            
+            const lpIn = inputs.find(device => 
+                device.name.includes('Launchpad') || 
+                device.name.includes('MK2') ||
+                device.name.includes('MIDIIN2')
+            );
+            
+            if (lpOut && lpIn) {
+                state.midiOutLP = lpOut;
+                state.midiInLP = lpIn;
+                document.getElementById('lpLed').classList.add('active');
+                
+                // Setup input handler
+                lpIn.onmidimessage = handleLaunchpadMIDI;
+                
+                // Initialize Launchpad
+                initializeLaunchpad();
+                
+                showMessage(`Connected: ${lpOut.name}`);
+            }
+            
+            if (!ctkOut && !lpOut) {
+                showMessage('No MIDI devices found');
+            }
+        }
+
+        function onMIDIFailure() {
+            showMessage('Failed to access MIDI devices');
+        }
+
+        function initializeLaunchpad() {
+            if (!state.midiOutLP) return;
+            
+            // Reset Launchpad
+            state.midiOutLP.send([0xB0, 0, 0]);
+            
+            // Set to Session mode
+            setTimeout(() => {
+                state.midiOutLP.send([0xB0, LP_MAPPING.topButtons.session, 127]);
+                updateLaunchpadDisplay();
+            }, 100);
+        }
+
+        function handleLaunchpadMIDI(message) {
+            const [status, data1, data2] = message.data;
+            
+            if (status === 0x90) {
+                // Note on
+                handleLaunchpadNoteOn(data1, data2);
+            } else if (status === 0x80) {
+                // Note off
+                handleLaunchpadNoteOff(data1);
+            } else if (status === 0xB0) {
+                // Control change (top buttons)
+                handleLaunchpadCC(data1, data2);
+            }
+        }
+
+        function handleLaunchpadNoteOn(note, velocity) {
+            // Find which pad or button
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    if (LP_MAPPING.pads[row][col] === note) {
+                        handleLPPadPress(row, col);
+                        return;
+                    }
+                }
+            }
+            
+            // Check right buttons
+            const rightIndex = LP_MAPPING.rightButtons.indexOf(note);
+            if (rightIndex !== -1) {
+                handleLPRightButton(rightIndex);
+            }
+        }
+
+        function handleLaunchpadNoteOff(note) {
+            // Find which pad
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    if (LP_MAPPING.pads[row][col] === note) {
+                        handleLPPadRelease(row, col);
+                        return;
+                    }
+                }
+            }
+        }
+
+        function handleLaunchpadCC(cc, value) {
+            if (value === 0) return; // Ignore button release
+            
+            switch(cc) {
+                case LP_MAPPING.topButtons.up:
+                    handleLPTopButton('up');
+                    break;
+                case LP_MAPPING.topButtons.down:
+                    handleLPTopButton('down');
+                    break;
+                case LP_MAPPING.topButtons.left:
+                    handleLPTopButton('left');
+                    break;
+                case LP_MAPPING.topButtons.right:
+                    handleLPTopButton('right');
+                    break;
+                case LP_MAPPING.topButtons.session:
+                    setLaunchpadMode('session');
+                    break;
+                case LP_MAPPING.topButtons.user1:
+                    setLaunchpadMode('user1');
+                    break;
+                case LP_MAPPING.topButtons.user2:
+                    setLaunchpadMode('user2');
+                    break;
+                case LP_MAPPING.topButtons.mixer:
+                    handleMixerButton();
+                    break;
+            }
+        }
+
+        // ==========================================
+        // PLAYBACK ENGINE
+        // ==========================================
+        
+        function togglePlay() {
+            if (state.isPlaying) {
+                stopPlayback();
+            } else {
+                startPlayback();
+            }
+        }
+
+        function startPlayback() {
+            state.isPlaying = true;
+            document.getElementById('playBtn').classList.add('playing');
+            document.getElementById('playBtn').textContent = '❚❚';
+            
+            const beatDuration = 60000 / state.tempo / 4; // 16th notes
+            
+            const playBeat = () => {
+                if (!state.isPlaying) return;
+                
+                // Play current beat
+                playCurrentBeat();
+                
+                // Update displays
+                updateBeatDisplay();
+                
+                // Advance beat
+                state.currentBeat++;
+                if (state.currentBeat >= 16) {
+                    state.currentBeat = 0;
+                }
+                
+                // Schedule next beat with swing
+                let nextDelay = beatDuration;
+                if (state.swing > 50 && state.currentBeat % 2 === 1) {
+                    nextDelay += (state.swing - 50) * beatDuration / 50;
+                }
+                
+                setTimeout(playBeat, nextDelay);
+            };
+            
+            playBeat();
+        }
+
+        function stopPlayback() {
+            state.isPlaying = false;
+            state.currentBeat = 0;
+            
+            document.getElementById('playBtn').classList.remove('playing');
+            document.getElementById('playBtn').textContent = '▶';
+            
+            // Stop all sounds with reverb effect
             if (state.midiOutCTK) {
-                notes.forEach(note => {
+                // Add reverb
+                state.midiOutCTK.send([0xB0, 91, 64]); // Reverb effect
+                
+                // Gradual volume fade
+                let volume = state.velocity;
+                const fadeInterval = setInterval(() => {
+                    volume -= 10;
+                    if (volume <= 0) {
+                        clearInterval(fadeInterval);
+                        // All notes off
+                        state.midiOutCTK.send([0xB0, 123, 0]);
+                        // Reset reverb
+                        state.midiOutCTK.send([0xB0, 91, 0]);
+                    } else {
+                        state.midiOutCTK.send([0xB0, 7, volume]);
+                    }
+                }, 100);
+                
+                // Reset volume after fade
+                setTimeout(() => {
+                    state.midiOutCTK.send([0xB0, 7, state.velocity]);
+                }, 2000);
+            }
+            
+            // Clear beat display
+            document.querySelectorAll('.pattern-cell').forEach(cell => {
+                cell.classList.remove('playing');
+            });
+            
+            updateLaunchpadDisplay();
+        }
+
+        function playCurrentBeat() {
+            const pattern = state.drumPattern[state.currentBeat];
+            
+            // Apply humanize
+            const humanizeAmount = state.humanize / 100;
+            const velocityVariation = Math.round((Math.random() - 0.5) * humanizeAmount * 40);
+            const finalVelocity = Math.max(1, Math.min(127, state.velocity + velocityVariation));
+            
+            if (state.midiOutCTK) {
+                // Play drums (channel 10)
+                if (pattern.kick) {
+                    state.midiOutCTK.send([0x99, 36, finalVelocity]);
+                }
+                if (pattern.snare) {
+                    state.midiOutCTK.send([0x99, 38, finalVelocity]);
+                }
+                if (pattern.hihat) {
+                    state.midiOutCTK.send([0x99, 42, finalVelocity]);
+                }
+                if (pattern.open) {
+                    state.midiOutCTK.send([0x99, 46, finalVelocity]);
+                }
+                
+                // Play bass if in User2 mode
+                if (state.launchpadMode === 'user2') {
+                    const bassNotes = state.bassPattern[state.currentBeat];
+                    const noteOffsets = [24, 28, 26, 31, 33, 36, 40, 38]; // C0, E0, D0, G0, A0, C1, E1, D1
+                    
+                    bassNotes.forEach((active, index) => {
+                        if (active) {
+                            const note = noteOffsets[index];
+                            state.midiOutCTK.send([0x90, note, finalVelocity]);
+                            
+                            // Note off after duration
+                            setTimeout(() => {
+                                state.midiOutCTK.send([0x80, note, 0]);
+                            }, 100);
+                        }
+                    });
+                }
+            }
+        }
+
+        function updateBeatDisplay() {
+            // Update pattern sequencer
+            document.querySelectorAll('.pattern-cell').forEach(cell => {
+                cell.classList.remove('playing');
+            });
+            
+            document.querySelectorAll(`.pattern-cell[data-step="${state.currentBeat}"]`).forEach(cell => {
+                cell.classList.add('playing');
+            });
+            
+            // Update Launchpad
+            if (state.launchpadMode === 'session') {
+                updateLaunchpadDisplay();
+            }
+        }
+
+        function toggleRecord() {
+            state.isRecording = !state.isRecording;
+            document.getElementById('recBtn').classList.toggle('recording', state.isRecording);
+            
+            if (state.isRecording) {
+                state.chordProgression = [];
+                showMessage('Recording chord progression...');
+            } else {
+                showMessage(`Recorded ${state.chordProgression.length} chords`);
+            }
+        }
+
+        // ==========================================
+        // CHORD HANDLING
+        // ==========================================
+        
+        function playChord(chord) {
+            state.currentChord = chord.name;
+            document.getElementById('currentChord').textContent = chord.name;
+            
+            if (state.midiOutCTK) {
+                chord.notes.forEach(note => {
                     state.midiOutCTK.send([0x90, note, state.velocity]);
                 });
             }
             
-            // Update Launchpad
-            updateLaunchpadChord(chord);
+            // Record if recording
+            if (state.isRecording) {
+                state.chordProgression.push({
+                    chord: chord.name,
+                    beat: state.currentBeat
+                });
+            }
             
             // Visual feedback
             document.querySelectorAll('.chord-pad').forEach(pad => {
-                if (pad.dataset.root === chord.root && pad.dataset.type === chord.type) {
-                    pad.classList.add('active');
-                } else {
-                    pad.classList.remove('active');
-                }
+                pad.classList.remove('active');
             });
-            
-            // Play test sound if no MIDI
-            if (!state.midiOutCTK) {
-                playTestChord(notes);
-            }
+            event.currentTarget.classList.add('active');
         }
 
         function stopChord() {
             if (state.midiOutCTK) {
-                // Send note off for all notes
-                for (let note = 0; note < 128; note++) {
+                // Send note off for all possible chord notes
+                for (let note = 48; note < 84; note++) {
                     state.midiOutCTK.send([0x80, note, 0]);
                 }
             }
@@ -1781,331 +2449,91 @@
             });
         }
 
-        function playTestChord(notes) {
-            if (!state.audioContext) {
-                state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            
-            notes.forEach((note, i) => {
-                const oscillator = state.audioContext.createOscillator();
-                const gainNode = state.audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(state.audioContext.destination);
-                
-                const frequency = 440 * Math.pow(2, (note - 69) / 12);
-                oscillator.frequency.value = frequency;
-                oscillator.type = 'sawtooth';
-                
-                // Apply humanize
-                const humanizeAmount = (Math.random() - 0.5) * state.humanize / 100;
-                const startTime = state.audioContext.currentTime + i * 0.02 + humanizeAmount * 0.01;
-                
-                gainNode.gain.setValueAtTime(0.02, startTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5);
-                
-                oscillator.start(startTime);
-                oscillator.stop(startTime + 1);
-            });
-        }
-
-        // ==========================================
-        // TRANSPORT CONTROLS
-        // ==========================================
-        function togglePlay() {
-            const btn = document.getElementById('playBtn');
-            
-            if (!state.isPlaying) {
-                state.isPlaying = true;
-                btn.classList.add('playing');
-                btn.textContent = '❚❚';
-                startSequencer();
-            } else {
-                stop();
-            }
-        }
-
-        function stop() {
-            state.isPlaying = false;
-            state.isRecording = false;
-            state.currentBeat = 0;
-            
-            const playBtn = document.getElementById('playBtn');
-            playBtn.classList.remove('playing');
-            playBtn.textContent = '▶';
-            
-            const recBtn = document.getElementById('recBtn');
-            recBtn.classList.remove('recording');
-            
-            stopSequencer();
-            stopChord();
-            
-            // Clear pattern display
-            document.querySelectorAll('.pattern-cell').forEach(cell => {
-                cell.classList.remove('playing');
-            });
-            
-            // Send stop with reverb fadeout
-            if (state.midiOutCTK) {
-                // Add reverb effect (send control change)
-                state.midiOutCTK.send([0xB0, 91, 127]); // Reverb send
-                
-                // Fade out over 2 seconds
-                let fadeVolume = state.velocity;
-                const fadeInterval = setInterval(() => {
-                    fadeVolume -= 5;
-                    if (fadeVolume <= 0) {
-                        clearInterval(fadeInterval);
-                        // Send all notes off
-                        state.midiOutCTK.send([0xB0, 123, 0]);
-                    } else {
-                        state.midiOutCTK.send([0xB0, 7, fadeVolume]); // Volume
-                    }
-                }, 100);
-            }
-        }
-
-        function toggleRecord() {
-            const btn = document.getElementById('recBtn');
-            
-            if (!state.isRecording) {
-                state.isRecording = true;
-                btn.classList.add('recording');
-                state.chordProgression = [];
-            } else {
-                state.isRecording = false;
-                btn.classList.remove('recording');
-            }
-        }
-
-        // ==========================================
-        // SEQUENCER
-        // ==========================================
-        function startSequencer() {
-            const beatDuration = 60000 / state.tempo / 4; // 16th notes
-            
-            // Apply swing
-            let swingDelay = 0;
-            if (state.currentBeat % 2 === 1) {
-                swingDelay = (state.swing - 50) * beatDuration / 100;
-            }
-            
-            state.sequencerInterval = setInterval(() => {
-                playSequencerStep();
-                
-                // Advance beat
-                state.currentBeat = (state.currentBeat + 1) % 16;
-                
-                // Update Launchpad if in session mode
-                if (state.launchpadMode === 'session') {
-                    updateLaunchpadSequencer();
-                }
-            }, beatDuration + swingDelay);
-        }
-
-        function stopSequencer() {
-            if (state.sequencerInterval) {
-                clearInterval(state.sequencerInterval);
-                state.sequencerInterval = null;
-            }
-        }
-
-        function playSequencerStep() {
-            // Update visual
-            document.querySelectorAll('.pattern-cell').forEach(cell => {
-                cell.classList.remove('playing');
-            });
-            
-            document.querySelectorAll(`[data-step="${state.currentBeat}"]`).forEach(cell => {
-                cell.classList.add('playing');
-                
-                // Play sound if active
-                if (cell.classList.contains('active')) {
-                    const row = parseInt(cell.dataset.row);
-                    playDrumSound(row);
-                }
-            });
-            
-            // Play bass sequence if in User2 mode
-            if (state.launchpadMode === 'user2') {
-                playBassStep();
-            }
-        }
-
-        function playDrumSound(row) {
-            const drumNotes = [36, 38, 42, 46]; // Kick, Snare, HiHat, Open HH
-            
-            if (state.midiOutCTK) {
-                // Apply humanize to velocity
-                const humanizedVelocity = Math.round(
-                    state.velocity + (Math.random() - 0.5) * state.humanize
-                );
-                const finalVelocity = Math.max(1, Math.min(127, humanizedVelocity));
-                
-                state.midiOutCTK.send([0x99, drumNotes[row], finalVelocity]); // Channel 10
-            }
-        }
-
-        function playBassStep() {
-            const column = state.currentBeat < 8 ? state.currentBeat : state.currentBeat - 8;
-            const bassNotes = state.bassSequence[state.currentBeat];
-            
-            if (bassNotes) {
-                const noteMap = [24, 28, 26, 31, 33, 36, 40, 38]; // C0, E0, D0, G0, A0, C1, E1, D1
-                
-                bassNotes.forEach((active, index) => {
-                    if (active) {
-                        const note = state.currentBass + noteMap[index] - 60;
-                        if (state.midiOutCTK) {
-                            state.midiOutCTK.send([0x90, note, state.velocity]);
-                        }
-                    }
-                });
-            }
-        }
-
         // ==========================================
         // STYLE & SECTION CONTROLS
         // ==========================================
+        
         function selectStyle(style) {
             state.currentStyle = style;
             document.getElementById('styleDisplay').textContent = style;
             
-            // Update UI
             document.querySelectorAll('.style-btn').forEach(btn => {
                 btn.classList.remove('active');
+                if (btn.textContent === style) {
+                    btn.classList.add('active');
+                }
             });
-            event.target.classList.add('active');
             
-            // Load pattern for current section
-            loadPattern(style, state.currentSection);
+            loadPattern(style, state.currentSection, state.currentVariation);
         }
 
-        function playSection(section) {
+        function selectSection(section) {
             state.currentSection = section;
             document.getElementById('sectionDisplay').textContent = section.toUpperCase();
             
-            // Update UI
             document.querySelectorAll('.section-btn').forEach(btn => {
                 btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            
-            // Load pattern
-            loadPattern(state.currentStyle, section);
-            
-            // Handle special sections
-            if (section === 'intro') {
-                // Play intro then switch to main
-                setTimeout(() => {
-                    if (state.isPlaying) {
-                        playSection('main');
-                    }
-                }, 2000);
-            } else if (section === 'fill') {
-                // Play fill then return to previous section
-                setTimeout(() => {
-                    if (state.isPlaying) {
-                        playSection('main');
-                    }
-                }, 500);
-            } else if (section === 'ending') {
-                // Play ending then stop
-                setTimeout(() => {
-                    stop();
-                }, 2000);
-            }
-        }
-
-        function setVariation(variation) {
-            state.currentVariation = variation;
-            const letters = ['A', 'B', 'C', 'D'];
-            document.getElementById('variationDisplay').textContent = letters[variation - 1];
-            
-            // Update UI
-            document.querySelectorAll('.var-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            
-            // Modify pattern complexity based on variation
-            modifyPatternVariation(variation);
-        }
-
-        function loadPattern(style, section) {
-            const patterns = RHYTHM_PATTERNS[style];
-            if (patterns && patterns[section]) {
-                state.currentPattern = patterns[section];
-                updatePatternDisplay();
-            }
-        }
-
-        function updatePatternDisplay() {
-            if (!state.currentPattern) return;
-            
-            const instruments = ['kick', 'snare', 'hihat', 'open'];
-            
-            instruments.forEach((inst, row) => {
-                const pattern = state.currentPattern[inst];
-                if (pattern) {
-                    pattern.forEach((active, step) => {
-                        const cell = document.querySelector(`[data-row="${row}"][data-step="${step}"]`);
-                        if (cell) {
-                            if (active) {
-                                cell.classList.add('active');
-                            } else {
-                                cell.classList.remove('active');
-                            }
-                        }
-                    });
+                if (btn.textContent.toLowerCase() === section) {
+                    btn.classList.add('active');
                 }
             });
-        }
-
-        function modifyPatternVariation(variation) {
-            if (!state.currentPattern) return;
             
-            // Modify pattern based on variation
-            // A = Simple, B = Add hi-hats, C = Add kicks, D = Full
-            switch(variation) {
-                case 1: // A - Simple
-                    // Keep as is
+            loadPattern(state.currentStyle, section, state.currentVariation);
+            
+            // Handle special sections
+            switch(section) {
+                case 'intro':
+                    // After intro, go to main
+                    setTimeout(() => {
+                        if (state.isPlaying) {
+                            selectSection('main');
+                        }
+                    }, 4000);
                     break;
-                case 2: // B - More hi-hats
-                    state.currentPattern.hihat = state.currentPattern.hihat.map(() => 1);
+                    
+                case 'fill':
+                    // After fill, return to previous
+                    setTimeout(() => {
+                        if (state.isPlaying) {
+                            selectSection('main');
+                        }
+                    }, 1000);
                     break;
-                case 3: // C - More kicks
-                    state.currentPattern.kick = state.currentPattern.kick.map((v, i) => 
-                        i % 4 === 0 || i % 4 === 2 ? 1 : v
-                    );
-                    break;
-                case 4: // D - Full
-                    state.currentPattern.hihat = state.currentPattern.hihat.map(() => 1);
-                    state.currentPattern.kick = state.currentPattern.kick.map((v, i) => 
-                        i % 2 === 0 ? 1 : v
-                    );
+                    
+                case 'ending':
+                    // After ending, stop
+                    setTimeout(() => {
+                        stopPlayback();
+                    }, 4000);
                     break;
             }
+        }
+
+        function selectVariation(variation) {
+            state.currentVariation = variation;
+            document.getElementById('varDisplay').textContent = variation;
             
-            updatePatternDisplay();
-        }
-
-        function loadPatterns() {
-            // Load default pattern
-            loadPattern(state.currentStyle, state.currentSection);
+            document.querySelectorAll('.var-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent === variation) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            loadPattern(state.currentStyle, state.currentSection, variation);
         }
 
         // ==========================================
-        // TAP TEMPO
+        // TEMPO CONTROL
         // ==========================================
+        
+        function changeTempo(delta) {
+            state.tempo = Math.max(40, Math.min(240, state.tempo + delta));
+            document.getElementById('tempoDisplay').textContent = state.tempo;
+        }
+
         function tapTempo() {
             const now = Date.now();
-            const btn = document.getElementById('tapBtn');
-            
-            // Visual feedback
-            btn.classList.add('tapped');
-            setTimeout(() => btn.classList.remove('tapped'), 200);
-            
             state.tapTimes.push(now);
             
             if (state.tapTimes.length > 4) {
@@ -2115,7 +2543,7 @@
             if (state.tapTimes.length >= 2) {
                 const intervals = [];
                 for (let i = 1; i < state.tapTimes.length; i++) {
-                    intervals.push(state.tapTimes[i] - state.tapTimes[i-1]);
+                    intervals.push(state.tapTimes[i] - state.tapTimes[i - 1]);
                 }
                 
                 const avgInterval = intervals.reduce((a, b) => a + b) / intervals.length;
@@ -2123,605 +2551,35 @@
                 
                 if (newTempo >= 40 && newTempo <= 240) {
                     state.tempo = newTempo;
-                    document.getElementById('tempoValue').textContent = state.tempo;
-                    
-                    // Restart sequencer if playing
-                    if (state.isPlaying) {
-                        stopSequencer();
-                        startSequencer();
-                    }
+                    document.getElementById('tempoDisplay').textContent = state.tempo;
                 }
-            }
-        }
-
-        function changeTempo(delta) {
-            state.tempo = Math.max(40, Math.min(240, state.tempo + delta));
-            document.getElementById('tempoValue').textContent = state.tempo;
-            
-            if (state.isPlaying) {
-                stopSequencer();
-                startSequencer();
-            }
-        }
-
-        // ==========================================
-        // LAUNCHPAD INTEGRATION
-        // ==========================================
-        function setLaunchpadMode(mode) {
-            state.launchpadMode = mode;
-            
-            // Update UI
-            document.querySelectorAll('.lp-top-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            switch(mode) {
-                case 'session':
-                    document.getElementById('lpSession').classList.add('active');
-                    updateLaunchpadSession();
-                    break;
-                case 'user1':
-                    document.getElementById('lpUser1').classList.add('active');
-                    updateLaunchpadUser1();
-                    break;
-                case 'user2':
-                    document.getElementById('lpUser2').classList.add('active');
-                    updateLaunchpadUser2();
-                    break;
-            }
-            
-            // Send mode change to Launchpad
-            if (state.midiOutLP) {
-                const modeCC = LAUNCHPAD_MAPPING.topButtons[mode];
-                if (modeCC) {
-                    state.midiOutLP.send([0xB0, modeCC, 127]);
-                }
-            }
-        }
-
-        function updateLaunchpadSession() {
-            // Session mode - Pattern sequencer on Launchpad
-            const grid = document.getElementById('launchpadGrid');
-            const pads = grid.querySelectorAll('.lp-pad');
-            
-            // Clear all pads
-            pads.forEach(pad => {
-                pad.dataset.color = '';
-                pad.classList.remove('active');
-            });
-            
-            // Map pattern to Launchpad
-            // Top 4 rows = beats 1-8, Bottom 4 rows = beats 9-16
-            if (state.currentPattern) {
-                const instruments = ['kick', 'snare', 'hihat', 'open'];
-                const colors = ['red', 'yellow', 'cyan', 'purple'];
-                
-                instruments.forEach((inst, instIndex) => {
-                    const pattern = state.currentPattern[inst];
-                    if (pattern) {
-                        // Beats 1-8 (top 4 rows)
-                        for (let beat = 0; beat < 8; beat++) {
-                            if (pattern[beat]) {
-                                const row = 7 - instIndex; // Top rows
-                                const col = beat;
-                                const pad = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
-                                if (pad) {
-                                    pad.dataset.color = colors[instIndex];
-                                }
-                            }
-                        }
-                        
-                        // Beats 9-16 (bottom 4 rows)
-                        for (let beat = 8; beat < 16; beat++) {
-                            if (pattern[beat]) {
-                                const row = 3 - instIndex; // Bottom rows
-                                const col = beat - 8;
-                                const pad = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
-                                if (pad) {
-                                    pad.dataset.color = colors[instIndex];
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-            
-            // Update right buttons for drum set selection
-            const rightButtons = document.querySelectorAll('.lp-btn');
-            rightButtons.forEach((btn, index) => {
-                btn.classList.remove('active');
-                if (index < 6) {
-                    // First 6 buttons for drum sets
-                    if (index === state.currentDrumSet) {
-                        btn.classList.add('active');
-                    }
-                } else if (index === 6) {
-                    // Play button
-                    if (state.isPlaying) {
-                        btn.classList.add('active');
-                        btn.style.background = 'var(--lp-green)';
-                    }
-                } else if (index === 7) {
-                    // Stop button
-                    btn.style.background = 'var(--lp-red)';
-                }
-            });
-        }
-
-        function updateLaunchpadUser1() {
-            // User1 mode - Drum pad mode
-            const drumColors = {
-                0: 'red',    // Kicks
-                1: 'orange', // Snares
-                2: 'yellow', // Hi-hats
-                3: 'green',  // Cymbals
-                4: 'cyan',   // Toms
-                5: 'blue',   // Percussion 1
-                6: 'purple', // Percussion 2
-                7: 'pink'    // Percussion 3
-            };
-            
-            // Map all drum sounds to pads with logical color grouping
-            const grid = document.getElementById('launchpadGrid');
-            const pads = grid.querySelectorAll('.lp-pad');
-            
-            pads.forEach((pad, index) => {
-                const row = Math.floor(index / 8);
-                pad.dataset.color = drumColors[row] || 'white';
-                pad.classList.remove('active');
-            });
-        }
-
-        function updateLaunchpadUser2() {
-            // User2 mode - Bass sequencer
-            const grid = document.getElementById('launchpadGrid');
-            const pads = grid.querySelectorAll('.lp-pad');
-            
-            // Clear all pads
-            pads.forEach(pad => {
-                pad.dataset.color = '';
-                pad.classList.remove('active');
-            });
-            
-            // Show bass sequence
-            for (let beat = 0; beat < 16; beat++) {
-                const column = beat < 8 ? beat : beat - 8;
-                const isTopHalf = beat < 8;
-                
-                state.bassSequence[beat].forEach((active, noteIndex) => {
-                    if (active) {
-                        const row = isTopHalf ? 7 - noteIndex : 3 - noteIndex;
-                        const pad = document.querySelector(`[data-row="${row}"][data-col="${column}"]`);
-                        if (pad) {
-                            pad.dataset.color = 'blue';
-                            pad.classList.add('active');
-                        }
-                    }
-                });
-            }
-            
-            // Update UP/DOWN buttons
-            document.getElementById('lpUp').classList.toggle('active', state.currentBeat < 8);
-            document.getElementById('lpDown').classList.toggle('active', state.currentBeat >= 8);
-        }
-
-        function updateLaunchpadSequencer() {
-            if (state.launchpadMode !== 'session') return;
-            
-            // Highlight current beat column
-            const col = state.currentBeat < 8 ? state.currentBeat : state.currentBeat - 8;
-            const isTopHalf = state.currentBeat < 8;
-            
-            // Clear previous highlights
-            document.querySelectorAll('.lp-pad.playing').forEach(pad => {
-                pad.classList.remove('playing');
-            });
-            
-            // Highlight current column
-            for (let row = 0; row < 8; row++) {
-                if ((isTopHalf && row >= 4) || (!isTopHalf && row < 4)) {
-                    const pad = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
-                    if (pad) {
-                        pad.classList.add('playing');
-                    }
-                }
-            }
-            
-            // Send to physical Launchpad
-            if (state.midiOutLP) {
-                updatePhysicalLaunchpad();
-            }
-        }
-
-        function updateLaunchpadChord(chord) {
-            // Light up pads based on chord notes
-            // This would be implemented based on your specific chord-to-pad mapping
-        }
-
-        function clearLaunchpad() {
-            // MIXER button - Clear all active pads
-            if (state.launchpadMode === 'session' || state.launchpadMode === 'user2') {
-                // Clear pattern or bass sequence
-                if (state.launchpadMode === 'session' && state.currentPattern) {
-                    Object.keys(state.currentPattern).forEach(inst => {
-                        if (Array.isArray(state.currentPattern[inst])) {
-                            state.currentPattern[inst].fill(0);
-                        }
-                    });
-                    updatePatternDisplay();
-                    updateLaunchpadSession();
-                } else if (state.launchpadMode === 'user2') {
-                    state.bassSequence = new Array(16).fill(null).map(() => new Array(8).fill(false));
-                    updateLaunchpadUser2();
-                }
-            }
-        }
-
-        function updatePhysicalLaunchpad() {
-            if (!state.midiOutLP) return;
-            
-            // Send color data to physical Launchpad
-            const pads = document.querySelectorAll('.lp-pad');
-            pads.forEach(pad => {
-                const note = parseInt(pad.dataset.note);
-                const color = pad.dataset.color;
-                const isActive = pad.classList.contains('active');
-                const isPlaying = pad.classList.contains('playing');
-                
-                let velocity = 0;
-                if (isPlaying) {
-                    velocity = LAUNCHPAD_MAPPING.colors.white;
-                } else if (isActive && color) {
-                    velocity = LAUNCHPAD_MAPPING.colors[color] || 0;
-                }
-                
-                state.midiOutLP.send([0x90, note, velocity]);
-            });
-        }
-
-        function handleLaunchpadInput(message) {
-            const [status, data1, data2] = message.data;
-            
-            if (status === 0x90) { // Note on
-                handleLaunchpadPadPress(data1, data2);
-            } else if (status === 0x80) { // Note off
-                handleLaunchpadPadRelease(data1);
-            } else if (status === 0xB0) { // Control change
-                handleLaunchpadControlChange(data1, data2);
-            }
-        }
-
-        function handleLaunchpadPadPress(note, velocity) {
-            if (velocity === 0) {
-                handleLaunchpadPadRelease(note);
-                return;
-            }
-            
-            // Find which pad was pressed
-            let row = -1, col = -1;
-            
-            LAUNCHPAD_MAPPING.pads.forEach((rowPads, r) => {
-                const c = rowPads.indexOf(note);
-                if (c !== -1) {
-                    row = r;
-                    col = c;
-                }
-            });
-            
-            if (row !== -1 && col !== -1) {
-                // Handle based on current mode
-                switch(state.launchpadMode) {
-                    case 'session':
-                        handleSessionPadPress(row, col);
-                        break;
-                    case 'user1':
-                        handleUser1PadPress(row, col);
-                        break;
-                    case 'user2':
-                        handleUser2PadPress(row, col);
-                        break;
-                }
-            }
-            
-            // Check right buttons
-            const rightIndex = LAUNCHPAD_MAPPING.rightButtons.indexOf(note);
-            if (rightIndex !== -1) {
-                handleRightButtonPress(rightIndex);
-            }
-        }
-
-        function handleLaunchpadPadRelease(note) {
-            // Handle pad release based on mode
-            if (state.launchpadMode === 'user1') {
-                // Stop drum sound
-                stopDrumSound(note);
-            }
-        }
-
-        function handleLaunchpadControlChange(cc, value) {
-            // Handle top button presses
-            switch(cc) {
-                case LAUNCHPAD_MAPPING.topButtons.up:
-                    // Handle UP button
-                    break;
-                case LAUNCHPAD_MAPPING.topButtons.down:
-                    // Handle DOWN button
-                    break;
-                case LAUNCHPAD_MAPPING.topButtons.left:
-                    // Handle LEFT button
-                    break;
-                case LAUNCHPAD_MAPPING.topButtons.right:
-                    // Handle RIGHT button
-                    break;
-                case LAUNCHPAD_MAPPING.topButtons.session:
-                    setLaunchpadMode('session');
-                    break;
-                case LAUNCHPAD_MAPPING.topButtons.user1:
-                    setLaunchpadMode('user1');
-                    break;
-                case LAUNCHPAD_MAPPING.topButtons.user2:
-                    setLaunchpadMode('user2');
-                    break;
-                case LAUNCHPAD_MAPPING.topButtons.mixer:
-                    clearLaunchpad();
-                    break;
-            }
-        }
-
-        function handleSessionPadPress(row, col) {
-            // Toggle pattern cell
-            const beat = row >= 4 ? col : col + 8;
-            const instrument = row >= 4 ? 7 - row : 3 - row;
-            
-            if (state.currentPattern) {
-                const instruments = ['kick', 'snare', 'hihat', 'open'];
-                const inst = instruments[instrument];
-                if (inst && state.currentPattern[inst]) {
-                    state.currentPattern[inst][beat] = 1 - state.currentPattern[inst][beat];
-                    updatePatternDisplay();
-                    updateLaunchpadSession();
-                }
-            }
-        }
-
-        function handleUser1PadPress(row, col) {
-            // Play drum sound
-            const padIndex = row * 8 + col;
-            playDrumPad(padIndex);
-        }
-
-        function handleUser2PadPress(row, col) {
-            // Toggle bass note
-            const beat = row >= 4 ? col : col + 8;
-            const noteIndex = row >= 4 ? 7 - row : 3 - row;
-            
-            state.bassSequence[beat][noteIndex] = !state.bassSequence[beat][noteIndex];
-            updateLaunchpadUser2();
-        }
-
-        function handleRightButtonPress(index) {
-            switch(state.launchpadMode) {
-                case 'session':
-                    if (index < 6) {
-                        // Select drum set
-                        state.currentDrumSet = index;
-                        updateLaunchpadSession();
-                    } else if (index === 6) {
-                        // Play
-                        togglePlay();
-                    } else if (index === 7) {
-                        // Stop
-                        stop();
-                    }
-                    break;
-                    
-                case 'user2':
-                    if (index < 6) {
-                        // Select bass tone
-                        const bassMap = [83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94];
-                        const leftActive = document.getElementById('lpLeft').classList.contains('active');
-                        const baseIndex = leftActive ? 0 : 6;
-                        state.currentBass = bassMap[baseIndex + index];
-                    } else if (index === 6) {
-                        togglePlay();
-                    } else if (index === 7) {
-                        stop();
-                    }
-                    break;
-            }
-        }
-
-        function playDrumPad(padIndex) {
-            // Map pad index to drum sound
-            const drumNote = 36 + padIndex; // Simple mapping, adjust as needed
-            
-            if (state.midiOutCTK) {
-                state.midiOutCTK.send([0x99, drumNote, state.velocity]);
             }
             
             // Visual feedback
-            const pad = document.querySelectorAll('.lp-pad')[padIndex];
-            if (pad) {
-                pad.classList.add('active');
-                setTimeout(() => pad.classList.remove('active'), 100);
-            }
-        }
-
-        function stopDrumSound(note) {
-            // Stop drum sound if needed
-            if (state.midiOutCTK) {
-                state.midiOutCTK.send([0x89, note, 0]);
-            }
-        }
-
-        // ==========================================
-        // MIDI CONNECTION
-        // ==========================================
-        function connectMIDI() {
-            if (navigator.requestMIDIAccess) {
-                navigator.requestMIDIAccess()
-                    .then(onMIDISuccess, onMIDIFailure);
-            } else {
-                showMessage('WebMIDI not supported');
-            }
-        }
-
-        function onMIDISuccess(midiAccess) {
-            const inputs = Array.from(midiAccess.inputs.values());
-            const outputs = Array.from(midiAccess.outputs.values());
-            
-            // Find CTK-3200
-            const ctkOut = outputs.find(out => 
-                out.name.includes('CTK') || 
-                out.name.includes('CASIO') ||
-                out.name.includes('3200')
-            );
-            
-            if (ctkOut) {
-                state.midiOutCTK = ctkOut;
-                document.getElementById('ctkLed').classList.add('active');
-                showMessage(`CTK-3200 connected: ${ctkOut.name}`);
-            }
-            
-            // Find Launchpad MK2
-            const lpOut = outputs.find(out => 
-                out.name.includes('Launchpad') || 
-                out.name.includes('MK2') ||
-                out.name.includes('MIDIOUT2')
-            );
-            
-            const lpIn = inputs.find(inp => 
-                inp.name.includes('Launchpad') || 
-                inp.name.includes('MK2') ||
-                inp.name.includes('MIDIIN2')
-            );
-            
-            if (lpOut && lpIn) {
-                state.midiOutLP = lpOut;
-                state.midiInLP = lpIn;
-                document.getElementById('lpLed').classList.add('active');
-                
-                // Setup Launchpad input
-                lpIn.onmidimessage = handleLaunchpadInput;
-                
-                showMessage(`Launchpad connected: ${lpOut.name}`);
-                initializeLaunchpad();
-            }
-            
-            if (!ctkOut && !lpOut) {
-                showMessage('No MIDI devices found');
-            }
-        }
-
-        function onMIDIFailure() {
-            showMessage('MIDI connection failed');
-        }
-
-        function initializeLaunchpad() {
-            if (!state.midiOutLP) return;
-            
-            // Reset Launchpad
-            state.midiOutLP.send([0xB0, 0, 0]); // Reset
-            
-            // Set to Session mode
-            state.midiOutLP.send([0xB0, LAUNCHPAD_MAPPING.topButtons.session, 127]);
-            
-            // Initialize display
+            event.target.style.transform = 'scale(0.95)';
             setTimeout(() => {
-                updateLaunchpadSession();
+                event.target.style.transform = 'scale(1)';
             }, 100);
         }
 
         // ==========================================
         // UTILITY FUNCTIONS
         // ==========================================
+        
         function showMessage(text) {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            
             const toast = document.createElement('div');
-            toast.style.cssText = `
-                position: fixed;
-                bottom: 30px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-                color: var(--bg-dark);
-                padding: 14px 28px;
-                border-radius: 30px;
-                font-weight: 700;
-                font-size: 14px;
-                z-index: 2000;
-                animation: slideUp 0.3s ease;
-                box-shadow: 0 5px 20px rgba(0, 255, 170, 0.4);
-            `;
+            toast.className = 'toast';
             toast.textContent = text;
             document.body.appendChild(toast);
             
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes slideUp {
-                    from { transform: translate(-50%, 100px); opacity: 0; }
-                    to { transform: translate(-50%, 0); opacity: 1; }
-                }
-            `;
-            document.head.appendChild(style);
-            
             setTimeout(() => {
-                toast.style.animation = 'slideDown 0.3s ease';
-                setTimeout(() => {
-                    toast.remove();
-                    style.remove();
-                }, 300);
-            }, 2500);
+                toast.style.animation = 'slideDown 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
         }
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            switch(e.key) {
-                case ' ':
-                    e.preventDefault();
-                    togglePlay();
-                    break;
-                case 'r':
-                    toggleRecord();
-                    break;
-                case 's':
-                    stop();
-                    break;
-                case 'ArrowUp':
-                    changeTempo(1);
-                    break;
-                case 'ArrowDown':
-                    changeTempo(-1);
-                    break;
-                case '1':
-                    setLaunchpadMode('session');
-                    break;
-                case '2':
-                    setLaunchpadMode('user1');
-                    break;
-                case '3':
-                    setLaunchpadMode('user2');
-                    break;
-                case 'Escape':
-                    clearLaunchpad();
-                    break;
-            }
-        });
-
-        // Prevent context menu on right click
-        document.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-        });
-
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            // Adjust layout if needed
-        });
-
-        // Initialize on load
-        window.addEventListener('load', () => {
-            // Additional initialization if needed
-            console.log('CTK-3200 V8 Ultimate loaded successfully!');
-        });
     </script>
 </body>
 </html>
