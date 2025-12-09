@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="CTK-3200 MIDI Arranger V7 - Dual MIDI Professional">
+    <meta name="theme-color" content="#0a0a14">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>CTK-3200 Arranger Pro</title>
+    
+    <link rel="manifest" href='data:application/manifest+json,{"name":"CTK Arranger Pro","short_name":"Arranger","display":"fullscreen","orientation":"landscape","start_url":".","theme_color":"#0a0a14","background_color":"#000000"}'>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            font-family: -apple-system, 'SF Pro Display', 'Inter', sans-serif;
+        }
+
+        :root {
+            --primary: #00ffaa;
+            --secondary: #ff00aa;
+            --accent: #00aaff;
+            --bg-dark: #0a0a14;
+            --bg-medium: #14141f;
+            --bg-light: #1f1f2e;
+            --border: #2a2a3a;
+            --text-primary: #ffffff;
+            --text-secondary: #aaaaaa;
+            --text-dim: #666666;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            touch-action: none;
+        }
+
+        .app-container {
+            height: 100vh;
+            display: grid;
+            grid-template-rows: 60px 1fr;
+            background: radial-gradient(ellipse at top, #14141f 0%, #0a0a14 100%);
+        }
+
+        /* Glass morphism effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            background: linear-gradient(90deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 100%);
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+        }
+
+        .rhythm-display {
+            padding: 8px 16px;
+            background: var(--bg-light);
+            border-radius: 25px;
+            border: 1px solid var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .rhythm-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .rhythm-tempo {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .midi-indicators {
+            display: flex;
+            gap: 10px;
+        }
+
+        .midi-device {
+            padding: 6px 12px;
+            background: var(--bg-light);
+            border-radius: 20px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .midi-led {
+            width: 8px;
+            height: 8px;
+            background: #444;
+            border-radius: 50%;
+        }
+
+        .midi-led.active {
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .header-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--bg-light) 0%, var(--bg-medium) 100%);
+            border: 1px solid var(--border);
+            border-radius: 25px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .header-btn:hover {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: var(--bg-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 255, 170, 0.3);
+        }
+
+        /* Main Layout */
+        .main-content {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            gap: 20px;
+            padding: 20px;
+            height: calc(100vh - 60px);
+        }
+
+        /* Left Panel - Rhythm Control */
+        .rhythm-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .panel-section {
+            background: var(--bg-medium);
+            border-radius: 15px;
+            padding: 15px;
+            border: 1px solid var(--border);
+        }
+
+        .section-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 3px;
+            height: 12px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        .rhythm-categories {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .cat-btn {
+            padding: 10px;
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .cat-btn:hover {
+            background: var(--bg-dark);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .cat-btn.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: var(--bg-dark);
+            border-color: transparent;
+            font-weight: 600;
+        }
+
+        .variation-controls {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .var-btn {
+            aspect-ratio: 1;
+            background: var(--bg-light);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .var-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary);
+            transform: scaleX(0);
+            transition: transform 0.3s;
+        }
+
+        .var-btn:hover {
+            background: var(--bg-dark);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .var-btn.active {
+            background: var(--primary);
+            color: var(--bg-dark);
+            border-color: var(--primary);
+        }
+
+        .var-btn.active::before {
+            transform: scaleX(1);
+        }
+
+        .fill-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .fill-btn {
+            padding: 12px;
+            background: linear-gradient(135deg, var(--bg-light) 0%, var(--bg-dark) 100%);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .fill-btn:hover {
+            border-color: var(--secondary);
+            color: var(--secondary);
+        }
+
+        .fill-btn.active {
+            background: var(--secondary);
+            color: var(--bg-dark);
+            border-color: var(--secondary);
+        }
+
+        /* Center - Chord Area */
+        .center-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Chord Display with animation */
+        .chord-display-container {
+            height: 120px;
+            background: linear-gradient(135deg, var(--bg-medium) 0%, var(--bg-light) 100%);
+            border-radius: 20px;
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chord-display-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+            opacity: 0;
+            animation: chordPulse 2s infinite;
+        }
+
+        @keyframes chordPulse {
+            0%, 100% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 0.1; transform: scale(1); }
+        }
+
+        .chord-display {
+            text-align: center;
+            z-index: 1;
+        }
+
+        .current-chord {
+            font-size: 64px;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 40px rgba(0, 255, 170, 0.3);
+        }
+
+        .chord-info {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        /* Chord Grid */
+        .chord-container {
+            flex: 1;
+            background: var(--bg-medium);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            padding: 20px;
+        }
+
+        .chord-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 10px;
+            height: 100%;
+        }
+
+        .chord-pad {
+            background: linear-gradient(145deg, var(--bg-light) 0%, var(--bg-medium) 100%);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chord-pad::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+            transform: translate(-50%, -50%);
+            transition: all 0.3s;
+        }
+
+        .chord-pad:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+            box-shadow: 0 5px 20px rgba(0, 255, 170, 0.2);
+        }
+
+        .chord-pad:active, .chord-pad.active {
+            transform: scale(0.95);
+            background: linear-gradient(145deg, var(--primary) 0%, var(--accent) 100%);
+            border-color: var(--primary);
+        }
+
+        .chord-pad:active::before, .chord-pad.active::before {
+            width: 100%;
+            height: 100%;
+            opacity: 0.3;
+        }
+
+        .chord-root {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .chord-type {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+
+        .chord-pad:active .chord-root, .chord-pad.active .chord-root,
+        .chord-pad:active .chord-type, .chord-pad.active .chord-type {
+            color: var(--bg-dark);
+        }
+
+        /* Progression Bar */
+        .progression-bar {
+            height: 80px;
+            background: var(--bg-medium);
+            border-radius: 15px;
+            border: 1px solid var(--border);
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            overflow-x: auto;
+        }
+
+        .prog-chord {
+            min-width: 60px;
+            height: 50px;
+            background: var(--bg-light);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .prog-chord.current {
+            background: var(--primary);
+            color: var(--bg-dark);
+            border-color: var(--primary);
+            animation: bounce 0.5s;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Right Panel */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Transport */
+        .transport-section {
+            background: linear-gradient(135deg, var(--bg-medium) 0%, var(--bg-light) 100%);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .transport-btn {
+            width: 70px;
+            height: 70px;
+            background: var(--bg-dark);
+            border: 3px solid var(--border);
+            border-radius: 50%;
+            color: var(--text-secondary);
+            font-size: 28px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .transport-btn:hover {
+            transform: scale(1.1);
+            border-color: var(--primary);
+        }
+
+        .transport-btn.play {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: var(--bg-dark);
+            border-color: var(--primary);
+            font-size: 32px;
+        }
+
+        .transport-btn.play.playing {
+            background: linear-gradient(135deg, var(--secondary) 0%, #ff6600 100%);
+            border-color: var(--secondary);
+        }
+
+        .transport-btn.record.recording {
+            background: #ff3333;
+            border-color: #ff3333;
+            color: white;
+            animation: recordPulse 1s infinite;
+        }
+
+        @keyframes recordPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        /* Pattern Display */
+        .pattern-display {
+            background: var(--bg-medium);
+            border-radius: 15px;
+            border: 1px solid var(--border);
+            padding: 15px;
+            flex: 1;
+        }
+
+        .pattern-grid {
+            display: grid;
+            grid-template-rows: repeat(4, 1fr);
+            gap: 5px;
+            height: 100%;
+        }
+
+        .pattern-row {
+            display: grid;
+            grid-template-columns: repeat(16, 1fr);
+            gap: 2px;
+        }
+
+        .pattern-cell {
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.1s;
+            position: relative;
+        }
+
+        .pattern-cell.active {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .pattern-cell.playing {
+            background: var(--accent);
+            border-color: var(--accent);
+            animation: cellFlash 0.1s;
+        }
+
+        @keyframes cellFlash {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .pattern-cell:first-child,
+        .pattern-cell:nth-child(5),
+        .pattern-cell:nth-child(9),
+        .pattern-cell:nth-child(13) {
+            border-left: 2px solid var(--primary);
+        }
+
+        /* Controls */
+        .control-knobs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .knob-container {
+            background: var(--bg-light);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .knob {
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, var(--bg-medium) 0%, var(--bg-dark) 100%);
+            border: 3px solid var(--border);
+            border-radius: 50%;
+            margin: 0 auto 8px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .knob::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 3px;
+            height: 15px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        .knob-label {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+
+        .knob-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* Launchpad Visual */
+        .launchpad-view {
+            background: var(--bg-medium);
+            border-radius: 15px;
+            border: 1px solid var(--border);
+            padding: 15px;
+        }
+
+        .launchpad-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            gap: 4px;
+            aspect-ratio: 1;
+        }
+
+        .lp-pad {
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            transition: all 0.1s;
+        }
+
+        .lp-pad.active {
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        /* Responsive */
+        @media (max-width: 1400px) {
+            .chord-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 200px 1fr 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo-section">
+                <div class="logo">ARRANGER PRO</div>
+                <div class="rhythm-display">
+                    <span class="rhythm-name" id="rhythmName">8 BEAT POP</span>
+                    <span class="rhythm-tempo" id="tempoDisplay">120</span>
+                    <span style="font-size: 10px; color: var(--text-dim);">BPM</span>
+                </div>
+            </div>
+            
+            <div class="header-controls">
+                <div class="midi-indicators">
+                    <div class="midi-device">
+                        <span class="midi-led" id="ctkLed"></span>
+                        <span>CTK-3200</span>
+                    </div>
+                    <div class="midi-device">
+                        <span class="midi-led" id="lpLed"></span>
+                        <span>LAUNCHPAD</span>
+                    </div>
+                </div>
+                <button class="header-btn" onclick="connectMIDI()">CONNECT MIDI</button>
+                <button class="header-btn" onclick="toggleFullscreen()">FULLSCREEN</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Panel - Rhythm Control -->
+            <div class="rhythm-panel">
+                <div class="panel-section">
+                    <div class="section-title">RHYTHM STYLE</div>
+                    <div class="rhythm-categories">
+                        <button class="cat-btn active" onclick="selectCategory('pop')">POP</button>
+                        <button class="cat-btn" onclick="selectCategory('rock')">ROCK</button>
+                        <button class="cat-btn" onclick="selectCategory('jazz')">JAZZ</button>
+                        <button class="cat-btn" onclick="selectCategory('latin')">LATIN</button>
+                        <button class="cat-btn" onclick="selectCategory('dance')">DANCE</button>
+                        <button class="cat-btn" onclick="selectCategory('world')">WORLD</button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <div class="section-title">VARIATIONS</div>
+                    <div class="variation-controls">
+                        <button class="var-btn active" onclick="setVariation(1)">A</button>
+                        <button class="var-btn" onclick="setVariation(2)">B</button>
+                        <button class="var-btn" onclick="setVariation(3)">C</button>
+                        <button class="var-btn" onclick="setVariation(4)">D</button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <div class="section-title">SECTIONS</div>
+                    <div class="fill-buttons">
+                        <button class="fill-btn" onclick="playIntro()">INTRO</button>
+                        <button class="fill-btn" onclick="playFill()">FILL IN</button>
+                        <button class="fill-btn" onclick="playBreak()">BREAK</button>
+                        <button class="fill-btn" onclick="playEnding()">ENDING</button>
+                    </div>
+                </div>
+
+                <div class="panel-section launchpad-view">
+                    <div class="section-title">LAUNCHPAD VIEW</div>
+                    <div class="launchpad-grid" id="launchpadGrid">
+                        <!-- 64 pads will be generated -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Panel -->
+            <div class="center-panel">
+                <!-- Chord Display -->
+                <div class="chord-display-container">
+                    <div class="chord-display">
+                        <div class="current-chord" id="currentChord">C</div>
+                        <div class="chord-info" id="chordInfo">Major Triad</div>
+                    </div>
+                </div>
+
+                <!-- Chord Grid -->
+                <div class="chord-container">
+                    <div class="chord-grid" id="chordGrid">
+                        <!-- 32 chord pads will be generated -->
+                    </div>
+                </div>
+
+                <!-- Progression Bar -->
+                <div class="progression-bar" id="progressionBar">
+                    <!-- Progression chords will be displayed here -->
+                </div>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="right-panel">
+                <!-- Transport -->
+                <div class="transport-section">
+                    <button class="transport-btn" onclick="stop()">◼</button>
+                    <button class="transport-btn play" id="playBtn" onclick="togglePlay()">▶</button>
+                    <button class="transport-btn record" id="recBtn" onclick="toggleRecord()">●</button>
+                </div>
+
+                <!-- Pattern Display -->
+                <div class="pattern-display">
+                    <div class="section-title">PATTERN SEQUENCER</div>
+                    <div class="pattern-grid" id="patternGrid">
+                        <!-- Pattern will be generated -->
+                    </div>
+                </div>
+
+                <!-- Control Knobs -->
+                <div class="panel-section">
+                    <div class="section-title">CONTROLS</div>
+                    <div class="control-knobs">
+                        <div class="knob-container">
+                            <div class="knob-label">SWING</div>
+                            <div class="knob" id="swingKnob"></div>
+                            <div class="knob-value" id="swingValue">50%</div>
+                        </div>
+                        <div class="knob-container">
+                            <div class="knob-label">VELOCITY</div>
+                            <div class="knob" id="velocityKnob"></div>
+                            <div class="knob-value" id="velocityValue">100</div>
+                        </div>
+                        <div class="knob-container">
+                            <div class="knob-label">HUMANIZE</div>
+                            <div class="knob" id="humanizeKnob"></div>
+                            <div class="knob-value" id="humanizeValue">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let midiOutCTK = null;
+        let midiOutLP = null;
+        let midiInLP = null;
+        let audioContext = null;
+        let isPlaying = false;
+        let isRecording = false;
+        let tempo = 120;
+        let currentBeat = 0;
+        let swing = 50;
+        let velocity = 100;
+        let humanize = 0;
+        let currentVariation = 1;
+        let currentRhythm = '8 BEAT POP';
+        let currentChord = { root: 'C', type: 'maj' };
+        let progression = [];
+        let patternInterval = null;
+        let rhythmPattern = [];
+        
+        // Chord definitions
+        const chordTypes = {
+            maj: { symbol: '', name: 'Major', intervals: [0, 4, 7] },
+            min: { symbol: 'm', name: 'Minor', intervals: [0, 3, 7] },
+            '7': { symbol: '7', name: 'Dominant 7', intervals: [0, 4, 7, 10] },
+            maj7: { symbol: 'M7', name: 'Major 7', intervals: [0, 4, 7, 11] },
+            min7: { symbol: 'm7', name: 'Minor 7', intervals: [0, 3, 7, 10] },
+            dim: { symbol: '°', name: 'Diminished', intervals: [0, 3, 6] },
+            aug: { symbol: '+', name: 'Augmented', intervals: [0, 4, 8] },
+            sus4: { symbol: 'sus4', name: 'Suspended 4', intervals: [0, 5, 7] },
+            sus2: { symbol: 'sus2', name: 'Suspended 2', intervals: [0, 2, 7] },
+            '6': { symbol: '6', name: 'Major 6', intervals: [0, 4, 7, 9] },
+            '9': { symbol: '9', name: 'Add 9', intervals: [0, 4, 7, 14] },
+            '11': { symbol: '11', name: 'Add 11', intervals: [0, 4, 7, 17] }
+        };
+        
+        const roots = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        
+        // Rhythm patterns (simplified drum patterns)
+        const rhythmPatterns = {
+            '8 BEAT POP': {
+                kick: [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+                snare: [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
+                hihat: [1,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1],
+                tempo: 120
+            },
+            '16 BEAT': {
+                kick: [1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0],
+                snare: [0,0,1,0,0,1,0,0,0,0,1,0,0,1,0,0],
+                hihat: [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                tempo: 125
+            },
+            'ROCK': {
+                kick: [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+                snare: [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
+                hihat: [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+                tempo: 130
+            }
+        };
+        
+        // Styles database
+        const styles = {
+            pop: ['8 BEAT POP', '16 BEAT', 'SHUFFLE', 'BALLAD', 'FUNK', 'R&B', 'SOUL', 'DISCO'],
+            rock: ['ROCK', 'HARD ROCK', 'METAL', 'PUNK', 'BLUES', 'INDIE', 'GRUNGE', 'PROG'],
+            jazz: ['SWING', 'BEBOP', 'SMOOTH', 'FUSION', 'LATIN JAZZ', 'COOL', 'FREE', 'MODAL'],
+            latin: ['SAMBA', 'BOSSA', 'SALSA', 'RUMBA', 'TANGO', 'REGGAE', 'CHA CHA', 'MAMBO'],
+            dance: ['HOUSE', 'TECHNO', 'TRANCE', 'DRUM N BASS', 'DUBSTEP', 'EDM', 'GARAGE', 'BREAKS'],
+            world: ['AFRICAN', 'INDIAN', 'ARABIC', 'CELTIC', 'ASIAN', 'FOLK', 'COUNTRY', 'BLUEGRASS']
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeChordGrid();
+            initializePatternGrid();
+            initializeLaunchpadView();
+            setupKnobs();
+            setupTempo();
+        });
+
+        function initializeChordGrid() {
+            const grid = document.getElementById('chordGrid');
+            grid.innerHTML = '';
+            
+            // Create 32 chord pads (4x8 grid)
+            const chordLayouts = [
+                // Row 1 - Major chords
+                { root: 'C', type: 'maj' },
+                { root: 'D', type: 'maj' },
+                { root: 'E', type: 'maj' },
+                { root: 'F', type: 'maj' },
+                { root: 'G', type: 'maj' },
+                { root: 'A', type: 'maj' },
+                { root: 'B', type: 'maj' },
+                { root: 'C', type: 'maj7' },
+                
+                // Row 2 - Minor chords
+                { root: 'C', type: 'min' },
+                { root: 'D', type: 'min' },
+                { root: 'E', type: 'min' },
+                { root: 'F', type: 'min' },
+                { root: 'G', type: 'min' },
+                { root: 'A', type: 'min' },
+                { root: 'B', type: 'min' },
+                { root: 'C', type: 'min7' },
+                
+                // Row 3 - Dominant 7
+                { root: 'C', type: '7' },
+                { root: 'D', type: '7' },
+                { root: 'E', type: '7' },
+                { root: 'F', type: '7' },
+                { root: 'G', type: '7' },
+                { root: 'A', type: '7' },
+                { root: 'B', type: '7' },
+                { root: 'C', type: '9' },
+                
+                // Row 4 - Special chords
+                { root: 'C', type: 'sus4' },
+                { root: 'D', type: 'sus2' },
+                { root: 'E', type: 'dim' },
+                { root: 'F', type: 'aug' },
+                { root: 'G', type: 'sus4' },
+                { root: 'A', type: '6' },
+                { root: 'B', type: 'dim' },
+                { root: 'C', type: '11' }
+            ];
+            
+            chordLayouts.forEach((chord, index) => {
+                const pad = document.createElement('div');
+                pad.className = 'chord-pad';
+                pad.dataset.root = chord.root;
+                pad.dataset.type = chord.type;
+                pad.dataset.index = index;
+                
+                const rootEl = document.createElement('div');
+                rootEl.className = 'chord-root';
+                rootEl.textContent = chord.root + chordTypes[chord.type].symbol;
+                
+                const typeEl = document.createElement('div');
+                typeEl.className = 'chord-type';
+                typeEl.textContent = chordTypes[chord.type].name;
+                
+                pad.appendChild(rootEl);
+                pad.appendChild(typeEl);
+                
+                // Events
+                pad.addEventListener('mousedown', () => playChord(chord, index));
+                pad.addEventListener('mouseup', stopChord);
+                pad.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    playChord(chord, index);
+                }, { passive: false });
+                pad.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    stopChord();
+                }, { passive: false });
+                
+                grid.appendChild(pad);
+            });
+        }
+
+        function initializePatternGrid() {
+            const grid = document.getElementById('patternGrid');
+            grid.innerHTML = '';
+            
+            // Create 4 rows x 16 steps
+            const instruments = ['KICK', 'SNARE', 'HIHAT', 'OPEN'];
+            
+            instruments.forEach((inst, row) => {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'pattern-row';
+                rowDiv.dataset.instrument = inst.toLowerCase();
+                
+                for (let step = 0; step < 16; step++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'pattern-cell';
+                    cell.dataset.step = step;
+                    cell.dataset.row = row;
+                    
+                    cell.addEventListener('click', () => togglePatternCell(row, step));
+                    
+                    rowDiv.appendChild(cell);
+                }
+                
+                grid.appendChild(rowDiv);
+            });
+        }
+
+        function initializeLaunchpadView() {
+            const grid = document.getElementById('launchpadGrid');
+            grid.innerHTML = '';
+            
+            // Create 8x8 grid for Launchpad visualization
+            for (let i = 0; i < 64; i++) {
+                const pad = document.createElement('div');
+                pad.className = 'lp-pad';
+                pad.dataset.lpIndex = i;
+                grid.appendChild(pad);
+            }
+        }
+
+        function playChord(chord, padIndex) {
+            currentChord = chord;
+            
+            // Update display
+            document.getElementById('currentChord').textContent = 
+                chord.root + chordTypes[chord.type].symbol;
+            document.getElementById('chordInfo').textContent = 
+                chordTypes[chord.type].name + ' Triad';
+            
+            // Visual feedback
+            document.querySelectorAll('.chord-pad').forEach(pad => {
+                pad.classList.remove('active');
+            });
+            document.querySelector(`[data-index="${padIndex}"]`).classList.add('active');
+            
+            // Calculate and play notes
+            const rootNote = roots.indexOf(chord.root);
+            const notes = chordTypes[chord.type].intervals.map(interval => 
+                60 + rootNote + interval
+            );
+            
+            // Send to CTK-3200
+            if (midiOutCTK) {
+                notes.forEach(note => {
+                    midiOutCTK.send([0x90, note, velocity]);
+                });
+            }
+            
+            // Update Launchpad
+            if (midiOutLP) {
+                // Light up corresponding pad on Launchpad
+                const row = Math.floor(padIndex / 8);
+                const col = padIndex % 8;
+                const lpNote = (row * 16) + col;
+                midiOutLP.send([0x90, lpNote, 60]); // Green color
+            }
+            
+            // Add to progression if recording
+            if (isRecording) {
+                addToProgression(chord);
+            }
+            
+            // Play test sound if no MIDI
+            if (!midiOutCTK) {
+                playTestChord(notes);
+            }
+        }
+
+        function stopChord() {
+            if (midiOutCTK) {
+                // Send note off for all notes
+                for (let note = 0; note < 128; note++) {
+                    midiOutCTK.send([0x80, note, 0]);
+                }
+            }
+            
+            document.querySelectorAll('.chord-pad').forEach(pad => {
+                pad.classList.remove('active');
+            });
+        }
+
+        function playTestChord(notes) {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            notes.forEach((note, i) => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                const frequency = 440 * Math.pow(2, (note - 69) / 12);
+                oscillator.frequency.value = frequency;
+                oscillator.type = 'sawtooth';
+                
+                gainNode.gain.setValueAtTime(0.03, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.5);
+                
+                oscillator.start(audioContext.currentTime + i * 0.02);
+                oscillator.stop(audioContext.currentTime + 1);
+            });
+        }
+
+        // Pattern sequencer
+        function togglePatternCell(row, step) {
+            const cell = document.querySelector(`[data-row="${row}"][data-step="${step}"]`);
+            cell.classList.toggle('active');
+            
+            // Update internal pattern
+            if (!rhythmPattern[row]) rhythmPattern[row] = new Array(16).fill(0);
+            rhythmPattern[row][step] = cell.classList.contains('active') ? 1 : 0;
+        }
+
+        function startPattern() {
+            const beatDuration = 60000 / tempo / 4; // 16th notes
+            
+            patternInterval = setInterval(() => {
+                // Update visual
+                document.querySelectorAll('.pattern-cell').forEach(cell => {
+                    cell.classList.remove('playing');
+                });
+                
+                document.querySelectorAll(`[data-step="${currentBeat}"]`).forEach(cell => {
+                    cell.classList.add('playing');
+                    
+                    // Play sound if active
+                    if (cell.classList.contains('active')) {
+                        const row = parseInt(cell.dataset.row);
+                        playDrumSound(row);
+                    }
+                });
+                
+                // Update Launchpad
+                if (midiOutLP) {
+                    updateLaunchpadPattern();
+                }
+                
+                // Advance beat
+                currentBeat = (currentBeat + 1) % 16;
+                
+                // Play progression if exists
+                if (progression.length > 0 && currentBeat % 4 === 0) {
+                    playProgressionStep();
+                }
+            }, beatDuration);
+        }
+
+        function stopPattern() {
+            if (patternInterval) {
+                clearInterval(patternInterval);
+                patternInterval = null;
+            }
+            currentBeat = 0;
+        }
+
+        function playDrumSound(row) {
+            const drumNotes = [36, 38, 42, 46]; // Kick, Snare, HiHat, Open HH
+            
+            if (midiOutCTK) {
+                midiOutCTK.send([0x99, drumNotes[row], velocity]); // Channel 10
+            }
+        }
+
+        // Transport
+        function togglePlay() {
+            const btn = document.getElementById('playBtn');
+            
+            if (!isPlaying) {
+                isPlaying = true;
+                btn.classList.add('playing');
+                btn.textContent = '❚❚';
+                startPattern();
+            } else {
+                stop();
+            }
+        }
+
+        function stop() {
+            isPlaying = false;
+            isRecording = false;
+            currentBeat = 0;
+            
+            document.getElementById('playBtn').classList.remove('playing');
+            document.getElementById('playBtn').textContent = '▶';
+            document.getElementById('recBtn').classList.remove('recording');
+            
+            stopPattern();
+            stopChord();
+        }
+
+        function toggleRecord() {
+            const btn = document.getElementById('recBtn');
+            
+            if (!isRecording) {
+                isRecording = true;
+                btn.classList.add('recording');
+                progression = [];
+                updateProgressionDisplay();
+            } else {
+                isRecording = false;
+                btn.classList.remove('recording');
+            }
+        }
+
+        // Progression
+        function addToProgression(chord) {
+            progression.push(chord);
+            updateProgressionDisplay();
+        }
+
+        function updateProgressionDisplay() {
+            const bar = document.getElementById('progressionBar');
+            bar.innerHTML = '';
+            
+            progression.forEach((chord, index) => {
+                const chordEl = document.createElement('div');
+                chordEl.className = 'prog-chord';
+                chordEl.textContent = chord.root + chordTypes[chord.type].symbol;
+                bar.appendChild(chordEl);
+            });
+        }
+
+        let progressionIndex = 0;
+        function playProgressionStep() {
+            if (progression.length === 0) return;
+            
+            const chord = progression[progressionIndex];
+            
+            // Find and trigger the chord pad
+            document.querySelectorAll('.chord-pad').forEach(pad => {
+                if (pad.dataset.root === chord.root && pad.dataset.type === chord.type) {
+                    const index = parseInt(pad.dataset.index);
+                    playChord(chord, index);
+                }
+            });
+            
+            // Update progression display
+            document.querySelectorAll('.prog-chord').forEach((el, i) => {
+                el.classList.toggle('current', i === progressionIndex);
+            });
+            
+            progressionIndex = (progressionIndex + 1) % progression.length;
+        }
+
+        // Launchpad integration
+        function updateLaunchpadPattern() {
+            if (!midiOutLP) return;
+            
+            // Clear previous column
+            const prevBeat = (currentBeat - 1 + 16) % 16;
+            for (let row = 0; row < 4; row++) {
+                const note = (row * 16) + (prevBeat % 8);
+                midiOutLP.send([0x90, note, 0]);
+            }
+            
+            // Light current column
+            for (let row = 0; row < 4; row++) {
+                const note = (row * 16) + (currentBeat % 8);
+                const cell = document.querySelector(`[data-row="${row}"][data-step="${currentBeat}"]`);
+                const color = cell.classList.contains('active') ? 60 : 12; // Green or dim
+                midiOutLP.send([0x90, note, color]);
+            }
+        }
+
+        // Style selection
+        function selectCategory(category) {
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Load first style from category
+            if (styles[category] && styles[category].length > 0) {
+                loadRhythm(styles[category][0]);
+            }
+        }
+
+        function loadRhythm(rhythmName) {
+            currentRhythm = rhythmName;
+            document.getElementById('rhythmName').textContent = rhythmName;
+            
+            // Load pattern if exists
+            if (rhythmPatterns[rhythmName]) {
+                const pattern = rhythmPatterns[rhythmName];
+                
+                // Update pattern grid
+                ['kick', 'snare', 'hihat'].forEach((inst, row) => {
+                    if (pattern[inst]) {
+                        pattern[inst].forEach((active, step) => {
+                            const cell = document.querySelector(`[data-row="${row}"][data-step="${step}"]`);
+                            if (cell) {
+                                cell.classList.toggle('active', active === 1);
+                            }
+                        });
+                    }
+                });
+                
+                // Update tempo
+                if (pattern.tempo) {
+                    tempo = pattern.tempo;
+                    document.getElementById('tempoDisplay').textContent = tempo;
+                }
+            }
+        }
+
+        // Variations
+        function setVariation(var_num) {
+            currentVariation = var_num;
+            
+            document.querySelectorAll('.var-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Modify pattern complexity based on variation
+            // A = Simple, B = Medium, C = Complex, D = Fill
+        }
+
+        // Sections
+        function playIntro() {
+            // Play intro pattern
+            showMessage('INTRO');
+        }
+
+        function playFill() {
+            // Play fill pattern
+            showMessage('FILL IN');
+        }
+
+        function playBreak() {
+            // Play break pattern  
+            showMessage('BREAK');
+        }
+
+        function playEnding() {
+            // Play ending pattern
+            showMessage('ENDING');
+            setTimeout(stop, 2000);
+        }
+
+        // Controls
+        function setupKnobs() {
+            setupKnob('swingKnob', 'swingValue', 0, 100, 50, (val) => {
+                swing = val;
+                document.getElementById('swingValue').textContent = `${val}%`;
+            });
+            
+            setupKnob('velocityKnob', 'velocityValue', 1, 127, 100, (val) => {
+                velocity = val;
+                document.getElementById('velocityValue').textContent = val;
+            });
+            
+            setupKnob('humanizeKnob', 'humanizeValue', 0, 100, 0, (val) => {
+                humanize = val;
+                document.getElementById('humanizeValue').textContent = `${val}%`;
+            });
+        }
+
+        function setupKnob(knobId, valueId, min, max, initial, callback) {
+            const knob = document.getElementById(knobId);
+            let value = initial;
+            let isDragging = false;
+            let startY = 0;
+            let startValue = 0;
+            
+            knob.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startY = e.clientY;
+                startValue = value;
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                
+                const diff = startY - e.clientY;
+                const range = max - min;
+                const newValue = Math.max(min, Math.min(max, startValue + Math.round(diff * range / 100)));
+                
+                if (newValue !== value) {
+                    value = newValue;
+                    const angle = ((value - min) / range) * 270 - 135;
+                    knob.style.transform = `rotate(${angle}deg)`;
+                    callback(value);
+                }
+            });
+            
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+        }
+
+        function setupTempo() {
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowUp') {
+                    tempo = Math.min(240, tempo + 1);
+                    document.getElementById('tempoDisplay').textContent = tempo;
+                } else if (e.key === 'ArrowDown') {
+                    tempo = Math.max(40, tempo - 1);
+                    document.getElementById('tempoDisplay').textContent = tempo;
+                } else if (e.key === ' ') {
+                    e.preventDefault();
+                    togglePlay();
+                }
+            });
+        }
+
+        // MIDI Connection
+        function connectMIDI() {
+            if (navigator.requestMIDIAccess) {
+                navigator.requestMIDIAccess()
+                    .then(onMIDISuccess, onMIDIFailure);
+            } else {
+                showMessage('WebMIDI not supported');
+            }
+        }
+
+        function onMIDISuccess(midiAccess) {
+            const inputs = Array.from(midiAccess.inputs.values());
+            const outputs = Array.from(midiAccess.outputs.values());
+            
+            // Find CTK-3200
+            const ctkOut = outputs.find(out => 
+                out.name.includes('CTK') || out.name.includes('CASIO')
+            );
+            
+            if (ctkOut) {
+                midiOutCTK = ctkOut;
+                document.getElementById('ctkLed').classList.add('active');
+                showMessage(`CTK-3200 connected: ${ctkOut.name}`);
+            }
+            
+            // Find Launchpad
+            const lpOut = outputs.find(out => 
+                out.name.includes('Launchpad') || out.name.includes('MK2')
+            );
+            const lpIn = inputs.find(inp => 
+                inp.name.includes('Launchpad') || inp.name.includes('MK2')
+            );
+            
+            if (lpOut && lpIn) {
+                midiOutLP = lpOut;
+                midiInLP = lpIn;
+                document.getElementById('lpLed').classList.add('active');
+                
+                // Setup Launchpad input
+                lpIn.onmidimessage = handleLaunchpadInput;
+                
+                showMessage(`Launchpad connected: ${lpOut.name}`);
+                initializeLaunchpad();
+            }
+            
+            if (!ctkOut && !lpOut) {
+                showMessage('No MIDI devices found');
+            }
+        }
+
+        function onMIDIFailure() {
+            showMessage('MIDI connection failed');
+        }
+
+        function handleLaunchpadInput(message) {
+            const [status, note, velocity] = message.data;
+            
+            if (status === 0x90 && velocity > 0) {
+                // Note on
+                const row = Math.floor(note / 16);
+                const col = note % 16;
+                
+                if (col < 8) {
+                    // Regular pad - trigger chord
+                    const padIndex = row * 8 + col;
+                    const pad = document.querySelector(`[data-index="${padIndex}"]`);
+                    if (pad) {
+                        const chord = {
+                            root: pad.dataset.root,
+                            type: pad.dataset.type
+                        };
+                        playChord(chord, padIndex);
+                    }
+                } else if (col === 8) {
+                    // Side buttons - control functions
+                    handleLaunchpadControl(row);
+                }
+                
+                // Update visual
+                const lpPad = document.querySelector(`[data-lpIndex="${row * 8 + (col % 8)}"]`);
+                if (lpPad) {
+                    lpPad.classList.add('active');
+                }
+            } else if (status === 0x80 || (status === 0x90 && velocity === 0)) {
+                // Note off
+                stopChord();
+                
+                // Update visual
+                document.querySelectorAll('.lp-pad').forEach(pad => {
+                    pad.classList.remove('active');
+                });
+            }
+        }
+
+        function handleLaunchpadControl(row) {
+            switch(row) {
+                case 0: togglePlay(); break;
+                case 1: stop(); break;
+                case 2: toggleRecord(); break;
+                case 3: playFill(); break;
+                case 4: setVariation(1); break;
+                case 5: setVariation(2); break;
+                case 6: setVariation(3); break;
+                case 7: setVariation(4); break;
+            }
+        }
+
+        function initializeLaunchpad() {
+            if (!midiOutLP) return;
+            
+            // Clear all pads
+            for (let i = 0; i < 128; i++) {
+                midiOutLP.send([0x90, i, 0]);
+            }
+            
+            // Set up chord pads colors
+            for (let row = 0; row < 4; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const note = (row * 16) + col;
+                    const color = 12 + (row * 10); // Different colors per row
+                    midiOutLP.send([0x90, note, color]);
+                }
+            }
+            
+            // Set up control buttons
+            for (let row = 0; row < 8; row++) {
+                const note = (row * 16) + 8;
+                midiOutLP.send([0x90, note, 60]); // Green
+            }
+        }
+
+        // UI Functions
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function showMessage(text) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 30px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+                color: var(--bg-dark);
+                padding: 12px 24px;
+                border-radius: 25px;
+                font-weight: 600;
+                font-size: 14px;
+                z-index: 2000;
+                animation: slideUp 0.3s ease;
+            `;
+            toast.textContent = text;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideUp 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
