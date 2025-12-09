@@ -1,1379 +1,374 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="description" content="CTK-3200 V8 REVISED - Full Launchpad MK2 Integration">
-    <meta name="theme-color" content="#0a0a0f">
-    <title>CTK-3200 V8 REVISED - LAUNCHPAD MK2</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-        }
-
-        :root {
-            --primary: #00ff88;
-            --secondary: #ff00aa;
-            --accent: #00aaff;
-            --warning: #ff8800;
-            --danger: #ff3333;
-            --success: #00ff00;
-            
-            --bg-dark: #0a0a0f;
-            --bg-medium: #14141a;
-            --bg-light: #1f1f28;
-            --bg-lighter: #2a2a35;
-            
-            --text-primary: #ffffff;
-            --text-secondary: #aaaaaa;
-            --text-dim: #666666;
-            
-            /* Launchpad Colors - Using Novation's actual color values */
-            --lp-off: #1e1e1e;
-            --lp-red: #ff3333;
-            --lp-orange: #ff8800;
-            --lp-amber: #ffbb00;
-            --lp-yellow: #ffff00;
-            --lp-lime: #88ff00;
-            --lp-green: #00ff00;
-            --lp-turquoise: #00ff88;
-            --lp-cyan: #00ffff;
-            --lp-sky: #00aaff;
-            --lp-blue: #0088ff;
-            --lp-orchid: #5500ff;
-            --lp-purple: #aa00ff;
-            --lp-pink: #ff00aa;
-            --lp-magenta: #ff0088;
-            --lp-white: #ffffff;
-        }
-
-        body {
-            background: var(--bg-dark);
-            color: var(--text-primary);
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-            position: fixed;
-            touch-action: none;
-        }
-
-        .app-container {
-            height: 100vh;
-            display: grid;
-            grid-template-rows: 70px 1fr;
-            background: radial-gradient(ellipse at center, #14141a 0%, #0a0a0f 100%);
-        }
-
-        /* Header */
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 25px;
-            background: linear-gradient(180deg, rgba(31,31,40,0.95) 0%, rgba(20,20,26,0.95) 100%);
-            border-bottom: 1px solid var(--primary);
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: 900;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -1px;
-        }
-
-        .status-group {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            flex: 1;
-            justify-content: center;
-        }
-
-        .status-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 5px 15px;
-            background: var(--bg-light);
-            border-radius: 12px;
-            border: 1px solid var(--bg-lighter);
-        }
-
-        .status-label {
-            font-size: 10px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .status-value {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--primary);
-            margin-top: 2px;
-        }
-
-        .tempo-controls {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 16px;
-            background: var(--bg-light);
-            border-radius: 25px;
-            border: 1px solid var(--accent);
-        }
-
-        .tempo-display {
-            font-size: 22px;
-            font-weight: 800;
-            color: var(--accent);
-            min-width: 60px;
-            text-align: center;
-        }
-
-        .tempo-btn {
-            width: 24px;
-            height: 24px;
-            background: var(--bg-lighter);
-            border: 1px solid var(--accent);
-            border-radius: 4px;
-            color: var(--accent);
-            cursor: pointer;
-            transition: all 0.1s;
-            font-size: 12px;
-        }
-
-        .tempo-btn:hover {
-            background: var(--accent);
-            color: var(--bg-dark);
-        }
-
-        .tap-btn {
-            padding: 10px 20px;
-            background: var(--bg-lighter);
-            border: 2px solid var(--warning);
-            border-radius: 25px;
-            color: var(--warning);
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.1s;
-            text-transform: uppercase;
-        }
-
-        .tap-btn:active {
-            background: var(--warning);
-            color: var(--bg-dark);
-            transform: scale(0.95);
-        }
-
-        .midi-status {
-            display: flex;
-            gap: 10px;
-        }
-
-        .midi-device {
-            padding: 6px 12px;
-            background: var(--bg-light);
-            border-radius: 20px;
-            font-size: 11px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .midi-led {
-            width: 8px;
-            height: 8px;
-            background: #444;
-            border-radius: 50%;
-            transition: all 0.2s;
-        }
-
-        .midi-led.active {
-            background: var(--success);
-            box-shadow: 0 0 8px var(--success);
-        }
-
-        .connect-btn {
-            padding: 10px 20px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            border: none;
-            border-radius: 25px;
-            color: var(--bg-dark);
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .connect-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
-        }
-
-        /* Main Content */
-        .main-content {
-            display: grid;
-            grid-template-columns: 260px 1fr 360px;
-            gap: 20px;
-            padding: 20px;
-            height: calc(100vh - 70px);
-        }
-
-        /* Left Panel - Rhythm & Style */
-        .left-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .panel-section {
-            background: var(--bg-medium);
-            border-radius: 12px;
-            padding: 15px;
-            border: 1px solid var(--bg-lighter);
-        }
-
-        .section-title {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: var(--text-dim);
-            margin-bottom: 12px;
-            padding-left: 8px;
-            border-left: 3px solid var(--primary);
-        }
-
-        .style-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-        }
-
-        .style-btn {
-            padding: 10px;
-            background: var(--bg-light);
-            border: 2px solid var(--bg-lighter);
-            border-radius: 8px;
-            color: var(--text-secondary);
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-
-        .style-btn:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-
-        .style-btn.active {
-            background: var(--primary);
-            color: var(--bg-dark);
-            border-color: var(--primary);
-        }
-
-        .section-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 6px;
-        }
-
-        .section-btn {
-            padding: 12px 8px;
-            background: var(--bg-light);
-            border: 2px solid var(--bg-lighter);
-            border-radius: 8px;
-            color: var(--text-secondary);
-            font-size: 10px;
-            font-weight: 700;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            transition: all 0.15s;
-        }
-
-        .section-btn:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        .section-btn.active {
-            background: var(--accent);
-            color: var(--bg-dark);
-            border-color: var(--accent);
-        }
-
-        .variation-row {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-        }
-
-        .var-btn {
-            aspect-ratio: 1;
-            background: var(--bg-light);
-            border: 2px solid var(--bg-lighter);
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-
-        .var-btn:hover {
-            border-color: var(--secondary);
-            color: var(--secondary);
-        }
-
-        .var-btn.active {
-            background: var(--secondary);
-            color: var(--bg-dark);
-            border-color: var(--secondary);
-        }
-
-        /* Center Panel */
-        .center-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        /* Current Chord Display */
-        .chord-display {
-            height: 120px;
-            background: linear-gradient(135deg, var(--bg-medium) 0%, var(--bg-light) 50%);
-            border-radius: 16px;
-            border: 2px solid var(--bg-lighter);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .chord-display::before {
-            content: '';
-            position: absolute;
-            top: -100%;
-            left: -100%;
-            width: 300%;
-            height: 300%;
-            background: radial-gradient(circle, rgba(0, 255, 136, 0.1) 0%, transparent 70%);
-            animation: chordGlow 4s ease-in-out infinite;
-        }
-
-        @keyframes chordGlow {
-            0%, 100% { transform: rotate(0deg); }
-            50% { transform: rotate(180deg); }
-        }
-
-        .chord-text {
-            font-size: 56px;
-            font-weight: 900;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            z-index: 1;
-        }
-
-        /* Chord Pads */
-        .chord-grid-container {
-            flex: 1;
-            background: var(--bg-medium);
-            border-radius: 16px;
-            border: 1px solid var(--bg-lighter);
-            padding: 15px;
-        }
-
-        .chord-grid {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 8px;
-            height: 100%;
-        }
-
-        .chord-pad {
-            background: var(--bg-light);
-            border: 2px solid var(--bg-lighter);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.15s;
-            color: var(--text-secondary);
-            aspect-ratio: 1.5 / 1;
-        }
-
-        .chord-pad:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-
-        .chord-pad.active {
-            background: var(--primary);
-            color: var(--bg-dark);
-            border-color: var(--primary);
-            transform: scale(0.95);
-        }
-
-        /* Pattern Sequencer */
-        .pattern-section {
-            background: var(--bg-medium);
-            border-radius: 12px;
-            padding: 15px;
-            border: 1px solid var(--bg-lighter);
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .pattern-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .pattern-controls {
-            display: flex;
-            gap: 10px;
-        }
-
-        .control-btn {
-            padding: 6px 12px;
-            background: var(--bg-light);
-            border-radius: 20px;
-            color: var(--text-secondary);
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s;
-            border: 1px solid var(--bg-lighter);
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .control-btn:hover {
-            border-color: var(--warning);
-            color: var(--warning);
-        }
-
-        .control-btn.active {
-            background: var(--warning);
-            color: var(--bg-dark);
-            border-color: var(--warning);
-        }
-
-        .control-led {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #444;
-        }
-
-        .control-led.active {
-            background: var(--danger);
-        }
-
-        .pattern-tracks {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            flex: 1;
-        }
-
-        .pattern-track {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .track-label {
-            width: 60px;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-dim);
-            text-align: right;
-            text-transform: uppercase;
-        }
-
-        .track-grid {
-            display: grid;
-            grid-template-columns: repeat(16, 1fr);
-            gap: 4px;
-            flex: 1;
-        }
-
-        .pattern-cell {
-            background: var(--bg-light);
-            border: 1px solid var(--bg-lighter);
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.1s;
-            position: relative;
-        }
-
-        .pattern-cell.active {
-            background: var(--primary);
-            border-color: var(--primary);
-        }
-
-        .pattern-cell.playing {
-            background: var(--accent);
-            box-shadow: 0 0 12px var(--accent);
-        }
-
-        .effect-sliders {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        .slider-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .slider-label {
-            font-size: 10px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .slider {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 4px;
-            background: var(--bg-light);
-            border-radius: 2px;
-            outline: none;
-            transition: all 0.2s;
-        }
-
-        .slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            background: var(--primary);
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
-        }
-
-        .slider-value {
-            font-size: 12px;
-            color: var(--primary);
-            text-align: center;
-            margin-top: 2px;
-        }
-
-        /* Right Panel - Launchpad View */
-        .right-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .launchpad-view {
-            background: var(--bg-medium);
-            border-radius: 12px;
-            border: 1px solid var(--bg-lighter);
-            padding: 15px;
-            position: relative;
-            height: 360px;
-        }
-
-        .lp-grid {
-            display: grid;
-            grid-template-columns: repeat(9, 1fr);
-            grid-template-rows: repeat(9, 1fr);
-            gap: 4px;
-            height: 100%;
-        }
-
-        .lp-pad {
-            background: var(--lp-off);
-            border-radius: 4px;
-            transition: all 0.05s;
-        }
-
-        .lp-pad.active {
-            box-shadow: 0 0 8px currentColor;
-        }
-
-        .lp-top-btn {
-            border-radius: 4px;
-        }
-
-        .lp-right-btn {
-            border-radius: 50%;
-        }
-
-        .lp-mode {
-            background: var(--bg-light);
-            border-radius: 12px;
-            border: 1px solid var(--bg-lighter);
-            padding: 15px;
-        }
-
-        .mode-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-        }
-
-        .mode-btn {
-            padding: 10px;
-            background: var(--bg-light);
-            border: 2px solid var(--bg-lighter);
-            border-radius: 8px;
-            color: var(--text-secondary);
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-
-        .mode-btn.active {
-            background: var(--accent);
-            color: var(--bg-dark);
-            border-color: var(--accent);
-        }
-
-        /* Toast Messages */
-        .toast {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 12px 24px;
-            background: rgba(31,31,40,0.95);
-            border-radius: 25px;
-            color: var(--text-primary);
-            font-size: 14px;
-            font-weight: 600;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-            animation: slideUp 0.3s;
-            z-index: 1000;
-        }
-
-        @keyframes slideUp {
-            from { transform: translate(-50%, 20px); opacity: 0; }
-            to { transform: translate(-50%, 0); opacity: 1; }
-        }
-
-        @keyframes slideDown {
-            from { transform: translate(-50%, 0); opacity: 1; }
-            to { transform: translate(-50%, 20px); opacity: 0; }
-        }
-    </style>
+<meta charset="UTF-8">
+<title>CTK-3200 V8 FINAL - Launchpad MK2 Full Control</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;user-select:none;font-family:system-ui,sans-serif}
+:root{
+    --p:#00ff88;--a:#00aaff;--s:#ff00aa;--w:#ff8800;--d:#ff3333;--g:#00ff00;
+    --bg:#0a0a0f;--bg2:#14141a;--bg3:#1f1f28;--t:#fff;--t2:#aaa;
+}
+body{background:var(--bg);color:var(--t);overflow:hidden;height:100vh;width:100vw;display:flex;flex-direction:column}
+header{background:#header{background:var(--bg2);padding:15px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--p)}
+.logo{font-size:28px;font-weight:900;background:linear-gradient(90deg,var(--p),var(--a));-webkit-background-clip:text;color:transparent}
+.tempo{display:flex;align-items:center;gap:12px;background:var(--bg3);padding:8px 20px;border-radius:30px}
+.tempo span{font-size:28px;font-weight:800;color:var(--a)}
+.tempo button{width:30px;height:30px;background:var(--bg2);border:1px solid var(--a);border-radius:6px;color:var(--a)}
+.tap{padding:12px 28px;background:var(--bg2);border:2px solid var(--w);border-radius:30px;color:var(--w);font-weight:bold}
+.fs{position:absolute;right:20px;top:15px;font-size:24px;cursor:pointer}
+.main{display:grid;grid-template-columns:280px 1fr 380px;gap:20px;padding:20px;height:calc(100vh-70px)}
+.panel{background:var(--bg2);border-radius:16px;padding:16px;border:1px solid #333;overflow:hidden}
+.title{font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;border-left:3px solid var(--p);padding-left:8px}
+.grid{display:grid;gap:8px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.btn{padding:12px;border-radius:10px;background:var(--bg3);border:2px solid #444;color:var(--t2);text-align:center;cursor:pointer;transition:.15s}
+.btn:hover{border-color:var(--p);color:var(--p)}
+.btn.active{background:var(--p);color:#000;border-color:var(--p)}
+.var-btn.active{background:var(--s);border-color:var(--s)}
+.section-btn.active{background:var(--a);border-color:var(--a)}
+.chord-disp{height:130px;border-radius:16px;background:linear-gradient(135deg,var(--bg2),var(--bg3));display:flex;align-items:center;justify-content:center}
+.chord-text{font-size:60px;font-weight:900;background:linear-gradient(135deg,var(--p),var(--a));-webkit-background-clip:text;color:transparent}
+.chord-grid{grid-template-columns:repeat(6,1fr);gap:10px;height:100%}
+.chord-pad{background:var(--bg3);border:2px solid #444;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s}
+.chord-pad:hover{border-color:var(--p)}
+.chord-pad.active{background:var(--p);color:#000;transform:scale(0.94)}
+.pattern-grid{display:grid;grid-template-rows:repeat(4,45px);gap:8px}
+.pattern-row{display:grid;grid-template-columns:repeat(16,1fr);gap:4px}
+.cell{background:#222;border:1px solid #444;border-radius:4px;cursor:pointer;transition:.1s}
+.cell.active{background:var(--p)}
+.cell.playing{background:var(--a)!important;box-shadow:0 0 0 12px var(--a)}
+.sliders{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:15px}
+.slider{-webkit-appearance:none;height:6px;background:#333;border-radius:3px}
+.slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;background:var(--p);border-radius:50%;cursor:pointer}
+.lp-view{width:360px;height:360px;background:#000;border-radius:16px;position:relative;overflow:hidden}
+.lp-grid{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);gap:3px;padding:15px;height:100%}
+.lp-pad{background:#1e1e1e;border-radius:6px;transition:.1s}
+.lp-pad.on{box-shadow:0 0 15px currentColor}
+.lp-top{display:flex;gap:3px;margin:10px 15px}
+.lp-right{position:absolute;right:15px;top:15px;display:flex;flex-direction:column;gap:3px}
+.lp-btn{width:38px;height:38px;border-radius:50%;background:#333}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:12px 30px;background:#222;border-radius:30px;color:var(--t);box-shadow:0 5px 20px #000;z-index:9999;animation:toast 2.5s forwards}
+@keyframes toast{0%,100%{opacity:0;transform:translate(-50%,-20px)} 10%,90%{opacity:1;transform:translate(-50%,0)}}
+</style>
 </head>
 <body>
-    <div class="app-container">
-        <header class="header">
-            <div class="logo">CTK3200 V8</div>
-            <div class="status-group">
-                <div class="status-item">
-                    <span class="status-label">Style</span>
-                    <span class="status-value" id="styleDisplay">Pop</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Section</span>
-                    <span class="status-value" id="sectionDisplay">MAIN</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Var</span>
-                    <span class="status-value" id="varDisplay">A</span>
-                </div>
-            </div>
-            <div class="tempo-controls">
-                <button class="tempo-btn" onclick="changeTempo(-1)">-</button>
-                <span class="tempo-display" id="tempoDisplay">120</span>
-                <button class="tempo-btn" onclick="changeTempo(1)">+</button>
-            </div>
-            <button class="tap-btn" onclick="tapTempo()">TAP</button>
-            <div class="midi-status">
-                <div class="midi-device">
-                    <div class="midi-led" id="ctkLed"></div>
-                    CTK-3200
-                </div>
-                <div class="midi-device">
-                    <div class="midi-led" id="lpLed"></div>
-                    Launchpad MK2
-                </div>
-            </div>
-            <button class="connect-btn" onclick="connectMIDI()">Connect</button>
-            <button id="fsBtn" class="fullscreen-btn" onclick="toggleFullscreen()">⛶</button>
-        </header>
+<div id="header">
+    <div class="logo">CTK3200 V8</div>
+    <div class="tempo">
+        <button onclick="tempo(-1)">-</button>
+        <span id="tempo">120</span>
+        <button onclick="tempo(1)">+</button>
+        <button class="tap" onclick="tap()">TAP</button>
+    </div>
+    <div id="fs" onclick="full()">Full Screen</div>
+</div>
 
-        <div class="main-content">
-            <div class="left-panel">
-                <div class="panel-section">
-                    <div class="section-title">Style</div>
-                    <div class="style-grid">
-                        <button class="style-btn active" onclick="selectStyle('Pop')">Pop</button>
-                        <button class="style-btn" onclick="selectStyle('Rock')">Rock</button>
-                        <button class="style-btn" onclick="selectStyle('Jazz')">Jazz</button>
-                        <button class="style-btn" onclick="selectStyle('Dance')">Dance</button>
-                        <button class="style-btn" onclick="selectStyle('Latin')">Latin</button>
-                        <button class="style-btn" onclick="selectStyle('World')">World</button>
-                    </div>
-                </div>
-                <div class="panel-section">
-                    <div class="section-title">Section</div>
-                    <div class="section-grid">
-                        <button class="section-btn" onclick="selectSection('intro')">Intro</button>
-                        <button class="section-btn active" onclick="selectSection('main')">Main</button>
-                        <button class="section-btn" onclick="selectSection('chorus')">Chorus</button>
-                        <button class="section-btn" onclick="selectSection('fill')">Fill</button>
-                        <button class="section-btn" onclick="selectSection('break')">Break</button>
-                        <button class="section-btn" onclick="selectSection('ending')">Ending</button>
-                    </div>
-                </div>
-                <div class="panel-section">
-                    <div class="section-title">Variation</div>
-                    <div class="variation-row">
-                        <button class="var-btn active" onclick="selectVariation('A')">A</button>
-                        <button class="var-btn" onclick="selectVariation('B')">B</button>
-                        <button class="var-btn" onclick="selectVariation('C')">C</button>
-                        <button class="var-btn" onclick="selectVariation('D')">D</button>
-                    </div>
-                </div>
-            </div>
+<div class="main">
+    <div class="panel">
+        <div class="title">STYLE</div>
+        <div class="grid g2" id="styles"></div>
+        <div class="title">SECTION</div>
+        <div class="grid g3" id="sections"></div>
+        <div class="title">VARIATION</div>
+        <div class="grid g4" id="variations"></div>
+    </div>
 
-            <div class="center-panel">
-                <div class="chord-display">
-                    <span class="chord-text" id="currentChord">C</span>
-                </div>
-                <div class="chord-grid-container">
-                    <div class="chord-grid">
-                        <!-- Chords will be generated here -->
-                    </div>
-                </div>
-                <div class="pattern-section">
-                    <div class="section-title">Pattern Sequencer</div>
-                    <div class="pattern-header">
-                        <div class="pattern-controls">
-                            <button class="control-btn" id="playBtn" onclick="togglePlayback()">▶</button>
-                            <button class="control-btn" id="recBtn" onclick="toggleRecord()">
-                                <div class="control-led"></div>
-                                REC
-                            </button>
-                        </div>
-                    </div>
-                    <div class="pattern-tracks">
-                        <div class="pattern-track">
-                            <span class="track-label">Kick</span>
-                            <div class="track-grid" data-track="kick"></div>
-                        </div>
-                        <div class="pattern-track">
-                            <span class="track-label">Snare</span>
-                            <div class="track-grid" data-track="snare"></div>
-                        </div>
-                        <div class="pattern-track">
-                            <span class="track-label">Hi-Hat</span>
-                            <div class="track-grid" data-track="hihat"></div>
-                        </div>
-                        <div class="pattern-track">
-                            <span class="track-label">Open</span>
-                            <div class="track-grid" data-track="open"></div>
-                        </div>
-                    </div>
-                    <div class="effect-sliders">
-                        <div class="slider-group">
-                            <span class="slider-label">Velocity</span>
-                            <input type="range" min="1" max="127" value="100" class="slider" id="velocitySlider">
-                            <span class="slider-value" id="velocityValue">100</span>
-                        </div>
-                        <div class="slider-group">
-                            <span class="slider-label">Swing</span>
-                            <input type="range" min="50" max="80" value="50" class="slider" id="swingSlider">
-                            <span class="slider-value" id="swingValue">50</span>
-                        </div>
-                        <div class="slider-group">
-                            <span class="slider-label">Humanize</span>
-                            <input type="range" min="0" max="100" value="0" class="slider" id="humanizeSlider">
-                            <span class="slider-value" id="humanizeValue">0</span>
-                        </div>
-                    </div>
-                </div>
+    <div style="display:flex;flex-direction:column;gap:15px">
+        <div class="chord-disp"><div class="chord-text" id="chord">C</div></div>
+        <div class="panel chord-grid-container"><div class="chord-grid" id="chords"></div></div>
+        <div class="panel pattern-section">
+            <div class="title">PATTERN SEQUENCER (drag = draw/erase)</div>
+            <div style="display:flex;gap:12px;margin:10px 0">
+                <button class="btn" id="play" onclick="play()">Play</button>
+                <button class="btn" id="stop" onclick="stop()">Stop</button>
             </div>
-
-            <div class="right-panel">
-                <div class="panel-section launchpad-view">
-                    <div class="section-title">Launchpad View</div>
-                    <div class="lp-grid">
-                        <!-- Launchpad pads, top and right buttons generated here -->
-                    </div>
-                </div>
-                <div class="lp-mode">
-                    <div class="section-title">Mode</div>
-                    <div class="mode-grid">
-                        <button class="mode-btn active" onclick="setLPMode('session')">Session</button>
-                        <button class="mode-btn" onclick="setLPMode('user1')">User1</button>
-                        <button class="mode-btn" onclick="setLPMode('user2')">User2</button>
-                        <button class="mode-btn" onclick="setLPMode('mixer')">Mixer</button>
-                    </div>
-                </div>
+            <div class="pattern-grid" id="pattern"></div>
+            <div class="sliders">
+                <input type="range" min="20" max="127" value="100" id="vel">
+                <input type="range" min="50" max="80" value="50" value="50" id="swing">
+                <input type="range" min="0" max="100" value="0" id="human">
             </div>
         </div>
     </div>
 
-    <script>
-        // State
-        const state = {
-            tempo: 120,
-            velocity: 100,
-            swing: 50,
-            humanize: 0,
-            isPlaying: false,
-            isRecording: false,
-            currentBeat: 0,
-            launchpadMode: 'session',
-            drumKit: 395, // Standard Set
-            bassTone: 83, // Acoustic Bass
-            currentStyle: 'Pop',
-            currentSection: 'main',
-            currentVariation: 'A',
-            currentChord: 'C',
-            drumPattern: Array.from({length: 16}, () => ({kick: false, snare: false, hihat: false, open: false})),
-            bassPattern: Array.from({length: 16}, () => Array(8).fill(false)),
-            chordProgression: [],
-            midiAccess: null,
-            midiOutCTK: null,
-            midiOutLP: null,
-            tapTimes: [],
-            fullscreen: false
-        };
+    <div class="panel lp-view">
+        <div class="title">LAUNCHPAD MK2 LIVE</div>
+        <div style="display:flex;flex-direction:column;height:100%;justify-content:space-between">
+            <div class="lp-top" id="lptop"></div>
+            <div class="lp-grid" id="lppads"></div>
+            <div class="lp-right" id="lpright"></div>
+        </div>
+    </div>
+</div>
 
-        // Chords
-        const chords = [
-            { name: 'C', notes: [60, 64, 67] },
-            { name: 'Cm', notes: [60, 63, 67] },
-            { name: 'C7', notes: [60, 64, 67, 70] },
-            { name: 'Cm7', notes: [60, 63, 67, 70] },
-            { name: 'D', notes: [62, 66, 69] },
-            { name: 'Dm', notes: [62, 65, 69] },
-            { name: 'D7', notes: [62, 66, 69, 72] },
-            { name: 'Dm7', notes: [62, 65, 69, 72] },
-            { name: 'E', notes: [64, 68, 71] },
-            { name: 'Em', notes: [64, 67, 71] },
-            { name: 'E7', notes: [64, 68, 71, 74] },
-            { name: 'Em7', notes: [64, 67, 71, 74] },
-            { name: 'F', notes: [65, 69, 72] },
-            { name: 'Fm', notes: [65, 68, 72] },
-            { name: 'F7', notes: [65, 69, 72, 75] },
-            { name: 'Fm7', notes: [65, 68, 72, 75] },
-            { name: 'G', notes: [67, 71, 74] },
-            { name: 'Gm', notes: [67, 70, 74] },
-            { name: 'G7', notes: [67, 71, 74, 77] },
-            { name: 'Gm7', notes: [67, 70, 74, 77] },
-            { name: 'A', notes: [69, 73, 76] },
-            { name: 'Am', notes: [69, 72, 76] },
-            { name: 'A7', notes: [69, 73, 76, 79] },
-            { name: 'Am7', notes: [69, 72, 76, 79] },
-            { name: 'B', notes: [71, 75, 78] },
-            { name: 'Bm', notes: [71, 74, 78] },
-            { name: 'B7', notes: [71, 75, 78, 81] },
-            { name: 'Bm7', notes: [71, 74, 78, 81] },
-            { name: 'Bb', notes: [70, 74, 77] },
-            { name: 'Bbm', notes: [70, 73, 77] },
-            { name: 'Bb7', notes: [70, 74, 77, 80] },
-            { name: 'Bbm7', notes: [70, 73, 77, 80] },
-            { name: 'Eb', notes: [63, 67, 70] },
-            { name: 'Ebm', notes: [63, 66, 70] },
-            { name: 'Eb7', notes: [63, 67, 70, 73] },
-            { name: 'Ebm7', notes: [63, 66, 70, 73] },
-            { name: 'Ab', notes: [68, 72, 75] },
-            { name: 'Abm', notes: [68, 71, 75] },
-            { name: 'Ab7', notes: [68, 72, 75, 78] },
-            { name: 'Abm7', notes: [68, 71, 75, 78] },
-            { name: 'Db', notes: [61, 65, 68] },
-            { name: 'Dbm', notes: [61, 64, 68] },
-            { name: 'Db7', notes: [61, 65, 68, 71] },
-            { name: 'Dbm7', notes: [61, 64, 68, 71] },
-            { name: 'Gb', notes: [66, 70, 73] },
-            { name: 'Gbm', notes: [66, 69, 73] },
-            { name: 'Gb7', notes: [66, 70, 73, 76] },
-            { name: 'Gbm7', notes: [66, 69, 73, 76] },
-            { name: 'Cb', notes: [59, 63, 66] },
-            { name: 'Cbm', notes: [59, 62, 66] },
-            { name: 'Cb7', notes: [59, 63, 66, 69] },
-            { name: 'Cbm7', notes: [59, 62, 66, 69] },
-            { name: 'Fs', notes: [66, 70, 73] },
-            { name: 'Fsm', notes: [66, 69, 73] },
-            { name: 'Fs7', notes: [66, 70, 73, 76] },
-            { name: 'Fsm7', notes: [66, 69, 73, 76] },
-            { name: 'Cs', notes: [61, 65, 68] },
-            { name: 'Csm', notes: [61, 64, 68] },
-            { name: 'Cs7', notes: [61, 65, 68, 71] },
-            { name: 'Csm7', notes: [61, 64, 68, 71] },
-            { name: 'Gs', notes: [68, 72, 75] },
-            { name: 'Gsm', notes: [68, 71, 75] },
-            { name: 'Gs7', notes: [68, 72, 75, 78] },
-            { name: 'Gsm7', notes: [68, 71, 75, 78] },
-            { name: 'Ds', notes: [63, 67, 70] },
-            { name: 'Dsm', notes: [63, 66, 70] },
-            { name: 'Ds7', notes: [63, 67, 70, 73] },
-            { name: 'Dsm7', notes: [63, 66, 70, 73] },
-            { name: 'As', notes: [70, 74, 77] },
-            { name: 'Asm', notes: [70, 73, 77] },
-            { name: 'As7', notes: [70, 74, 77, 80] },
-            { name: 'Asm7', notes: [70, 73, 77, 80] },
-            { name: 'Es', notes: [65, 69, 72] },
-            { name: 'Esm', notes: [65, 68, 72] },
-            { name: 'Es7', notes: [65, 69, 72, 75] },
-            { name: 'Esm7', notes: [65, 68, 72, 75] },
-            { name: 'Bs', notes: [71, 75, 78] },
-            { name: 'Bsm', notes: [71, 74, 78] },
-            { name: 'Bs7', notes: [71, 75, 78, 81] },
-            { name: 'Bsm7', notes: [71, 74, 78, 81] },
-        ];
+<script>
+// État global
+const S = {
+    tempo:120, playing:false, beat:0, swing:50, vel:100, human:0,
+    mode:'session', drumKit:0, bassBank:0,
+    pattern:Array(16).fill().map(()=> ({k:0,s:0,h:0,o:0})),
+    bassPat:Array(16).fill().map(()=>Array(8).fill(0)),
+    midiCTK:null, midiLP:null, tap:[], fs:false
+};
 
-        // Drum kits from annexe
-        const drumKits = [
-            { name: 'Standard', tone: 395 },
-            { name: 'Room', tone: 396 },
-            { name: 'Power', tone: 397 },
-            { name: 'Synth', tone: 398 },
-            { name: 'Brush', tone: 399 },
-            { name: 'Orchestra', tone: 400 }
-        ];
+// Mapping Launchpad MK2 (bottom row = notes 11-18)
+const LP = { pads:[], top:[104,105,106,107,108,109,110,111], right:[89,79,69,59,49,39,29,19] };
+for(let r=0;r<8;r++) { LP.pads[r]=[]; for(let c=0;c<8;c++) LP.pads[r].push(11+c+r*10); }
 
-        // Bass tones from annexe
-        const bassTones = BASS_TONES; // as per your previous
+// Couleurs Novation
+const COL = {off:0,red:5,orange:9,amber:13,yellow:17,lime:21,green:25,turq:29,cyan:33,sky:37,blue:41,purple:49,pink:53,magenta:57,white:3};
 
-        // Launchpad colors (Novation palette)
-        const lpColors = {
-            off: 0,
-            red: 5,
-            orange: 9,
-            amber: 13,
-            yellow: 17,
-            lime: 21,
-            green: 25,
-            turquoise: 29,
-            cyan: 33,
-            sky: 37,
-            blue: 41,
-            orchid: 45,
-            purple: 49,
-            pink: 53,
-            magenta: 57,
-            white: 3
-        };
+// Drum kits (Program Change)
+const DRUMKIT = [0,8,16,25,40,48]; // Standard, Room, Power, Synth, Brush, Orchestra
 
-        // MIDI initialization
-        async function connectMIDI() {
-            try {
-                state.midiAccess = await navigator.requestMIDIAccess();
-                const outputs = Array.from(state.midiAccess.outputs.values());
-                state.midiOutCTK = outputs.find(out => out.name.includes('CTK'));
-                state.midiOutLP = outputs.find(out => out.name.includes('Launchpad MK2'));
-                updateMidiStatus();
-                if (state.midiOutLP) {
-                    // Initialize Launchpad
-                    state.midiOutLP.send([240, 0, 32, 41, 2, 24, 14, 1, 247]); // Programmer mode
-                    clearLaunchpad();
-                }
-                showMessage('MIDI connected');
-            } catch (err) {
-                showMessage('MIDI access denied');
+// Accords (6×8 = 48)
+const CHORDS = [
+    "C","Cm","C7","Cm7","Cmaj7","Cdim","Caug","Csus4",
+    "D","Dm","D7","Dm7","Dmaj7","Ddim","Daug","Dsus4",
+    "E","Em","E7","Em7","Emaj7","Edim","Eaug","Esus4",
+    "F","Fm","F7","Fm7","Fmaj7","Fdim","Faug","Fsus4",
+    "G","Gm","G7","Gm7","Gmaj7","Gdim","Gaug","Gsus4",
+    "A","Am","A7","Am7","Amaj7","Adim","Aaug","Asus4",
+];
+
+// Notes basse pour User2
+const BASSNOTES = [24,28,26,31,33,36,40,38]; // C0 E0 D0 G0 A0 C1 E1 D1
+
+// === MIDI ===
+async function connect(){
+    try{
+        const access = await navigator.requestMIDIAccess({sysex:true});
+        for(let o of access.outputs.values()){
+            if(o.name.includes('CASIO') || o.name.includes('CTK')) S.midiCTK = o;
+            if(o.name.includes('Launchpad MK2')) S.midiLP = o;
+        }
+        if(S.midiLP){
+            S.midiLP.send([240,0,32,41,2,24,14,1,247]); // Programmer mode
+            clearLP();
+        }
+        toast(S.midiCTK?"CTK OK":"CTK not found" + " | " + S.midiLP?"LP OK":"LP not found");
+        updateLP();
+    }catch(e){toast("MIDI error");}
+}
+
+// Envoi couleur Launchpad
+function lp(r,c,color){
+    if(!S.midiLP) return;
+    const note = LP.pads[r][c];
+    S.midiLP.send([144,note,color]);
+}
+function clearLP(){
+    if(!S.midiLP) return;
+    S.midiLP.send([176,0,0]); // All off
+}
+
+// === UI ===
+function build(){
+    // Styles
+    ["Pop","Rock","Jazz","Dance","Latin","World","8Beat","Ballad"].forEach(s=>{
+        const b = document.createElement('div'); b.className='btn'; b.textContent=s;
+        b.onclick=()=>selectStyle(s); document.getElementById('styles').appendChild(b);
+    });
+    // Sections
+    ["intro","main","chorus","fill","break","ending"].forEach(s=>{
+        const b = document.createElement('div'); b.className='btn section-btn';
+        b.textContent=s.toUpperCase(); b.onclick=()=>selectSection(s);
+        document.getElementById('sections').appendChild(b);
+    });
+    // Variations
+    ["A","B","C","D"].forEach(v=>{
+        const b = document.createElement('div'); b.className='btn var-btn';
+        b.textContent=v; b.onclick=()=>selectVariation(v);
+        document.getElementById('variations').appendChild(b);
+    });
+    // Chords
+    const cg = document.getElementById('chords');
+    CHORDS.forEach(c=>{
+        const p = document.createElement('div'); p.className='chord-pad'; p.textContent=c;
+        p.onpointerdown = () => playChord(c);
+        p.onpointerup = stopChord;
+        cg.appendChild(p);
+    });
+    // Pattern grid
+    const pg = document.getElementById('pattern');
+    ["kick","snare","hihat","open"].forEach(t=>{
+        const row = document.createElement('div'); row.className='pattern-row';
+        for(let i=0;i<16;i++){
+            const cell = document.createElement('div'); cell.className='cell';
+            cell.dataset.step=i; cell.dataset.track=t;
+            cell.onclick = e => toggleCell(e);
+            row.appendChild(cell);
+        }
+        pg.appendChild(row);
+    });
+    updatePattern();
+    // Launchpad view
+    const top = document.getElementById('lptop');
+    LP.top.forEach(()=>{const b=document.createElement('div');b.className='lp-btn';top.appendChild(b);});
+    const grid = document.getElementById('lppads');
+    const right = document.getElementById('lpright');
+    for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=document.createElement('div');p.className='lp-pad';grid.appendChild(p);}
+    for(let i=0;i<8;i++){const b=document.createElement('div');b.className='lp-btn lp-right-btn';right.appendChild(b);}
+}
+build();
+
+// === Functions ===
+function tempo(d){
+    S.tempo = Math.max(40,Math.min(240,S.tempo+d));
+    document.getElementById('tempo').textContent = S.tempo;
+}
+function tap(){
+    const n = Date.now();
+    S.tap.push(n); if(S.tap.length>4) S.tap.shift();
+    if(S.tap.length>1){
+        const avg = S.tap.slice(1).reduce((a,b,i)=>a+(b-S.tap[i]),0)/(S.tap.length-1);
+        S.tempo = Math.round(60000/avg);
+        document.getElementById('tempo').textContent = S.tempo;
+    }
+}
+function full(){
+    document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();
+}
+
+function selectStyle(s){ /* TODO: load real patterns */){}
+function selectSection(s){}
+function selectVariation(v){}
+
+function playChord(name){
+    document.getElementById('chord').textContent = name;
+    // Send chord notes to CTK (example C major)
+    const root = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"].indexOf(name.replace(/m|7|maj7|dim|aug|sus4/g,''));
+    const notes = [60+root,64+root,67+root];
+    if(S.midiCTK) notes.forEach(n=>S.midiCTK.send([144,n,S.vel])));
+}
+function stopChord(){
+    if(S.midiCTK) for(let n=36;n<96;n++) S.midiCTK.send([128,n,0]));
+}
+
+function toggleCell(e){
+    const cell = e.target;
+    const step = +cell.dataset.step;
+    const track = cell.dataset.track;
+    S.pattern[step][track[0]] = S.pattern[step][track[0]]?0:1;
+    updatePattern();
+    updateLP();
+}
+
+function updatePattern(){
+    document.querySelectorAll('.cell').forEach(c=>{
+        const s = +c.dataset.step;
+        const t = c.dataset.track[0];
+        c.classList.toggle('active', S.pattern[s][t]);
+    });
+}
+
+// === PLAYBACK ===
+let timer;
+function play(){
+    if(S.playing) return;
+    S.playing=true;
+    document.getElementById('play').textContent='Stop';
+    const step = ()=>{
+        beat();
+        updateBeat();
+        updateLP();
+        S.beat = (S.beat+1)%16;
+        let delay = 60000/S.tempo/4;
+        if(S.beat%2&&S.swing>50)&&(delay+=(S.swing-50)/50*delay);
+        timer=setTimeout(step,delay);
+    };
+    step();
+}
+function stop(){
+    clearTimeout(timer);
+    S.playing=false;
+    S.beat=0;
+    document.getElementById('play').textContent='Play';
+    if(S.midiCTK){
+        // Fade reverb 2s
+        S.midiCTK.send([176,91,80]);
+        let v=S.vel;
+        const fade=setInterval(()=>{v-=10;if(v<=0){clearInterval(fade);S.midiCTK.send([176,123,0]);}},100);
+    }
+    updateBeat();
+    updateLP();
+}
+function togglePlayback(){ S.playing?stop():play(); }
+
+function beat(){
+    const p = S.pattern[S.beat];
+    const v = Math.max(20,S.vel + (Math.random()-0.5)*S.human);
+    if(S.midiCTK){
+        p.k&&S.midiCTK.send([153,36,v]);
+        p.s&&S.midiCTK.send([153,38,v]);
+        p.h&&S.midiCTK.send([153,42,v]);
+        p.o&&S.midiCTK.send([153,46,v]);
+    }
+    // Bass in user2
+    if(S.mode==='user2'){
+        S.bassPat[S.beat].forEach((on,i)=>{
+            if(on){
+                const note = BASSNOTES[i];
+                S.midiCTK.send([144,note,v]);
+                setTimeout(()=>S.midiCTK.send([128,note,0]),120);
             }
-        }
-
-        function updateMidiStatus() {
-            document.getElementById('ctkLed').classList.toggle('active', !!state.midiOutCTK);
-            document.getElementById('lpLed').classList.toggle('active', !!state.midiOutLP);
-        }
-
-        // Launchpad control
-        function sendToLP(status, data1, data2) {
-            if (state.midiOutLP) state.midiOutLP.send([status, data1, data2]);
-        }
-
-        function clearLaunchpad() {
-            sendToLP(176, 0, 0); // All off
-        }
-
-        function updateLaunchpad() {
-            clearLaunchpad();
-            if (state.launchpadMode === 'session') {
-                // Drum pattern on grid (bottom row = line 1, notes 11-18)
-                for (let step = 0; step < 16; step++) {
-                    const row = Math.floor(step / 8); // 0 for 0-7, 1 for 8-15
-                    const col = step % 8;
-                    const pattern = state.drumPattern[step];
-                    const color = (pattern.kick || pattern.snare || pattern.hihat || pattern.open) ? lpColors.green : lpColors.off;
-                    sendToLP(144, 11 + col + row * 10, color);
-                    if (state.isPlaying && step === state.currentBeat) sendToLP(144, 11 + col + row * 10, lpColors.amber);
-                }
-                // Drum kits on bottom 6 right buttons (row 0 to 5, note 89,79,69,59,49,39)
-                for (let i = 0; i < 6; i++) {
-                    sendToLP(144, LP.right[i], i === (state.drumKit - 395) ? lpColors.green : lpColors.off);
-                }
-                // Play/stop on top 2 right (29 green play, 19 red stop)
-                sendToLP(144, 29, state.isPlaying ? lpColors.green : lpColors.off);
-                sendToLP(144, 19, state.isPlaying ? lpColors.off : lpColors.red);
-            } else if (state.launchpadMode === 'user1') {
-                // Drum kit playing
-                // Map pads to GM drums, colors by type
-                const drumMap = [
-                    [36, lpColors.red], // Kick
-                    [38, lpColors.orange], // Snare
-                    [42, lpColors.amber], // Closed HH
-                    [46, lpColors.yellow], // Open HH
-                    // Add more for full grid
-                ];
-                for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
-                    const note = 11 + c + r * 10;
-                    const drumNote = drumMap[r * 8 + c] || [0, lpColors.off];
-                    sendToLP(144, note, drumNote[1]);
-                }
-            } else if (state.launchpadMode === 'user2') {
-                // Bass sequencer
-                const page = state.currentBeat < 8 ? 0 : 1;
-                sendToLP(176, 104, page === 0 ? lpColors.green : lpColors.off); // Up
-                sendToLP(176, 105, page === 1 ? lpColors.green : lpColors.off); // Down
-                for (let step = 0; step < 8; step++) {
-                    for (let note = 0; note < 8; note++) {
-                        const globalStep = page * 8 + step;
-                        const color = state.bassPattern[globalStep][note] ? lpColors.blue : lpColors.off;
-                        sendToLP(144, 11 + step + note * 10, color);
-                    }
-                }
-                // Bass tones on right buttons
-                for (let i = 0; i < 6; i++) {
-                    sendToLP(144, LP.right[i], i === (state.bassTone - 83) ? lpColors.cyan : lpColors.off);
-                }
-            }
-            if (state.launchpadMode === 'mixer') {
-                clearLaunchpad(); // Clear all active in session/user2
-            }
-        }
-
-        // Playback
-        function togglePlayback() {
-            if (state.isPlaying) {
-                stopPlayback();
-            } else {
-                startPlayback();
-            }
-            document.getElementById('playBtn').classList.toggle('playing', state.isPlaying);
-            document.getElementById('playBtn').textContent = state.isPlaying ? '■' : '▶';
-        }
-
-        function startPlayback() {
-            state.isPlaying = true;
-            const beatDuration = 60000 / state.tempo;
-            const playBeat = () => {
-                playCurrentBeat();
-                updateBeatDisplay();
-                updateLaunchpad();
-                state.currentBeat = (state.currentBeat + 1) % 16;
-                let nextDelay = beatDuration / 4; // Assuming 4/4
-                if (state.swing > 50 && state.currentBeat % 2 === 1) {
-                    nextDelay += (state.swing - 50) * (beatDuration / 4) / 50;
-                }
-                setTimeout(playBeat, nextDelay);
-            };
-            playBeat();
-        }
-
-        function stopPlayback() {
-            state.isPlaying = false;
-            state.currentBeat = 0;
-            if (state.midiOutCTK) {
-                state.midiOutCTK.send([0xB0, 91, 64]); // Reverb
-                let volume = state.velocity;
-                const fadeInterval = setInterval(() => {
-                    volume -= 10;
-                    if (volume <= 0) {
-                        clearInterval(fadeInterval);
-                        state.midiOutCTK.send([0xB0, 123, 0]); // All notes off
-                        state.midiOutCTK.send([0xB0, 91, 0]); // Reset reverb
-                    } else {
-                        state.midiOutCTK.send([0xB0, 7, volume]);
-                    }
-                }, 100);
-                setTimeout(() => {
-                    state.midiOutCTK.send([0xB0, 7, state.velocity]);
-                }, 2000);
-            }
-            updateBeatDisplay();
-            updateLaunchpad();
-        }
-
-        function playCurrentBeat() {
-            const pattern = state.drumPattern[state.currentBeat];
-            const velocityVariation = Math.round((Math.random() - 0.5) * state.humanize / 100 * 40);
-            const finalVelocity = Math.max(1, Math.min(127, state.velocity + velocityVariation));
-            if (state.midiOutCTK) {
-                if (pattern.kick) state.midiOutCTK.send([0x99, 36, finalVelocity]);
-                if (pattern.snare) state.midiOutCTK.send([0x99, 38, finalVelocity]);
-                if (pattern.hihat) state.midiOutCTK.send([0x99, 42, finalVelocity]);
-                if (pattern.open) state.midiOutCTK.send([0x99, 46, finalVelocity]);
-            }
-            if (state.launchpadMode === 'user2') {
-                const bassNotes = state.bassPattern[state.currentBeat];
-                const noteOffsets = [24, 28, 26, 31, 33, 36, 40, 38];
-                bassNotes.forEach((active, index) => {
-                    if (active) {
-                        const note = noteOffsets[index] + 12 * (state.bassTone - 83); // Adjust for tone
-                        state.midiOutCTK.send([0x90, note, finalVelocity]);
-                        setTimeout(() => {
-                            state.midiOutCTK.send([0x80, note, 0]);
-                        }, 100);
-                    }
-                });
-            }
-        }
-
-        function updateBeatDisplay() {
-            document.querySelectorAll('.pattern-cell').forEach(cell => cell.classList.remove('playing'));
-            document.querySelectorAll(`.pattern-cell[data-step="${state.currentBeat}"]`).forEach(cell => cell.classList.add('playing'));
-        }
-
-        function toggleRecord() {
-            state.isRecording = !state.isRecording;
-            document.getElementById('recBtn').classList.toggle('recording', state.isRecording);
-            if (state.isRecording) {
-                state.chordProgression = [];
-                showMessage('Recording chord progression...');
-            } else {
-                showMessage(`Recorded ${state.chordProgression.length} chords`);
-            }
-        }
-
-        // Chord handling
-        function playChord(chord) {
-            state.currentChord = chord.name;
-            document.getElementById('currentChord').textContent = chord.name;
-            if (state.midiOutCTK) {
-                chord.notes.forEach(note => state.midiOutCTK.send([0x90, note, state.velocity]));
-            }
-            if (state.isRecording) {
-                state.chordProgression.push({ chord: chord.name, beat: state.currentBeat });
-            }
-            // Active class on pad
-            document.querySelectorAll('.chord-pad').forEach(pad => pad.classList.remove('active'));
-            event.target.classList.add('active');
-        }
-
-        function stopChord() {
-            if (state.midiOutCTK) {
-                for (let note = 36; note < 96; note++) {
-                    state.midiOutCTK.send([0x80, note, 0]);
-                }
-            }
-            document.querySelectorAll('.chord-pad').forEach(pad => pad.classList.remove('active'));
-        }
-
-        // Style/Section/Variation
-        function selectStyle(style) {
-            state.currentStyle = style;
-            document.getElementById('styleDisplay').textContent = style.toUpperCase();
-            document.querySelectorAll('.style-btn').forEach(btn => btn.classList.toggle('active', btn.textContent === style));
-            loadPattern();
-        }
-
-        function selectSection(section) {
-            state.currentSection = section;
-            document.getElementById('sectionDisplay').textContent = section.toUpperCase();
-            document.querySelectorAll('.section-btn').forEach(btn => btn.classList.toggle('active', btn.textContent.toLowerCase() === section));
-            loadPattern();
-            // Handle special logic
-            if (section === 'intro') {
-                setTimeout(() => selectSection('main'), 4000);
-            } else if (section === 'fill') {
-                setTimeout(() => selectSection(state.previousSection || 'main'), 1000);
-            } else if (section === 'ending') {
-                setTimeout(stopPlayback, 4000);
-            }
-        }
-
-        function selectVariation(variation) {
-            state.currentVariation = variation;
-            document.getElementById('varDisplay').textContent = variation;
-            document.querySelectorAll('.var-btn').forEach(btn => btn.classList.toggle('active', btn.textContent === variation));
-            loadPattern();
-        }
-
-        function loadPattern() {
-            // Placeholder for loading patterns based on style/section/variation
-            // Use annexe and manual to define patterns
-            // For example:
-            state.drumPattern = Array(16).fill({kick: false, snare: false, hihat: false, open: false});
-            // Fill based on selection
-            if (state.currentStyle === 'Pop' && state.currentSection === 'main' && state.currentVariation === 'A') {
-                state.drumPattern[0].kick = true;
-                state.drumPattern[4].snare = true;
-                // etc.
-            }
-            // Update UI
-            updatePatternUI();
-        }
-
-        // Tempo
-        function changeTempo(delta) {
-            state.tempo = Math.max(40, Math.min(240, state.tempo + delta));
-            document.getElementById('tempoDisplay').textContent = state.tempo;
-        }
-
-        function tapTempo() {
-            const now = Date.now();
-            state.tapTimes.push(now);
-            if (state.tapTimes.length > 4) state.tapTimes.shift();
-            if (state.tapTimes.length >= 2) {
-                const intervals = state.tapTimes.slice(1).map((t, i) => t - state.tapTimes[i]);
-                const avg = intervals.reduce((a, b) => a + b) / intervals.length;
-                state.tempo = Math.round(60000 / avg);
-                document.getElementById('tempoDisplay').textContent = state.tempo;
-            }
-        }
-
-        // Fullscreen
-        function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
-            } else if (document.exitFullscreen) {
-                document.exitFullscreen();
-            }
-        }
-
-        // Pattern UI and drag
-        function updatePatternUI() {
-            ['kick', 'snare', 'hihat', 'open'].forEach(track => {
-                const grid = document.querySelector(`.track-grid[data-track="${track}"]`);
-                grid.innerHTML = '';
-                for (let step = 0; step < 16; step++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'pattern-cell';
-                    cell.dataset.step = step;
-                    cell.classList.toggle('active', state.drumPattern[step][track]);
-                    cell.addEventListener('pointerdown', startDrag);
-                    cell.addEventListener('pointerover', continueDrag);
-                    cell.addEventListener('pointerup', endDrag);
-                    grid.appendChild(cell);
-                }
-            });
-        }
-
-        let dragging = false;
-        let dragState = false;
-
-        function startDrag(e) {
-            dragging = true;
-            dragState = !e.target.classList.contains('active');
-            togglePatternCell(e.target.closest('.track-grid').dataset.track, e.target.dataset.step, dragState);
-        }
-
-        function continueDrag(e) {
-            if (dragging) {
-                togglePatternCell(e.target.closest('.track-grid').dataset.track, e.target.dataset.step, dragState);
-            }
-        }
-
-        function endDrag() {
-            dragging = false;
-        }
-
-        function togglePatternCell(track, step, forceState = null) {
-            const active = forceState !== null ? forceState : !state.drumPattern[step][track];
-            state.drumPattern[step][track] = active;
-            updatePatternUI();
-            updateLaunchpad();
-        }
-
-        // Sliders
-        document.getElementById('velocitySlider').addEventListener('input', e => {
-            state.velocity = parseInt(e.target.value);
-            document.getElementById('velocityValue').textContent = state.velocity;
         });
-        document.getElementById('swingSlider').addEventListener('input', e => {
-            state.swing = parseInt(e.target.value);
-            document.getElementById('swingValue').textContent = state.swing;
-        });
-        document.getElementById('humanizeSlider').addEventListener('input', e => {
-            state.humanize = parseInt(e.target.value);
-            document.getElementById('humanizeValue').textContent = state.humanize;
-        });
+    }
+}
 
-        // Mode
-        function setLPMode(mode) {
-            state.launchpadMode = mode;
-            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.toggle('active', btn.textContent.toLowerCase() === mode));
-            updateLaunchpad();
+function updateBeat(){
+    document.querySelectorAll('.playing').forEach(e=>e.classList.remove('playing'));
+    document.querySelectorAll(`.cell[data-step="${S.beat}"]`).forEach(c=>c.classList.add('playing'));
+}
+
+// === LAUNCHPAD LIVE UPDATE ===
+function updateLP(){
+    if(!S.midiLP) return;
+    clearLP();
+    if(S.mode==='session'){
+        // 16 steps on 64 pads
+        for(let s=0;s<16;s++){
+            const r = s<8 ? 7-s : 15-s;
+            const c = s<8 ? s : s-8;
+            const on = S.pattern[s].k||S.pattern[s].s||S.pattern[s].h||S.pattern[s].o;
+            lp(r,c, on?COL.green:COL.off);
+            if(S.playing && s===S.beat) lp(r,c,COL.amber);
         }
-
-        // Message
-        function showMessage(text) {
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.textContent = text;
-            document.body.appendChild(toast);
-            setTimeout(() => {
-                toast.style.animation = 'slideDown 0.3s';
-                setTimeout(() => toast.remove(), 300);
-            }, 2000);
+        // Drum kits on right
+        for(let i=0;i<6;i++) lp(i,0, i===S.drumKit?COL.cyan:COL.off);
+        // Play/Stop
+        lp(6,0, S.playing?COL.green:COL.off);
+        lp(7,0, S.playing?COL.off:COL.red);
+    }
+    else if(S.mode==='user1'){
+        // Full GM drum kit
+        for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+            const idx = r*8+c;
+            lp(r,c, drumColors[idx%drumColors.length]);
         }
-
-        // Init
-        function init() {
-            // Generate chord pads
-            const chordGrid = document.querySelector('.chord-grid');
-            chords.forEach(chord => {
-                const pad = document.createElement('div');
-                pad.className = 'chord-pad';
-                pad.textContent = chord.name;
-                pad.addEventListener('pointerdown', () => playChord(chord));
-                pad.addEventListener('pointerup', stopChord);
-                chordGrid.appendChild(pad);
-            });
-
-            // Generate pattern UI
-            updatePatternUI();
-
-            // Generate launchpad view
-            const lpGrid = document.querySelector('.lp-grid');
-            // Top buttons
-            for (let i = 0; i < 8; i++) {
-                const btn = document.createElement('div');
-                btn.className = 'lp-pad lp-top-btn';
-                lpGrid.appendChild(btn);
-            }
-            // Main grid and right
-            for (let r = 0; r < 8; r++) {
-                for (let c = 0; c < 8; c++) {
-                    const pad = document.createElement('div');
-                    pad.className = 'lp-pad';
-                    lpGrid.appendChild(pad);
-                }
-                const rightBtn = document.createElement('div');
-                rightBtn.className = 'lp-pad lp-right-btn';
-                lpGrid.appendChild(rightBtn);
-            }
-
-            connectMIDI();
-            setInterval(updateLaunchpad, 50);
+    }
+    else if(S.mode==='user2'){
+        // Bass sequencer
+        const page = S.beat<8?0:1;
+        lp(0,0, page===0?COL.green:COL.off); // Up
+        lp(1,0, page===1?COL.green:COL.off); // Down
+        for(let s=0;s<8;s++)for(let n=0;n<8;n++){
+            const on = S.bassPat[page*8+s][7-n];
+            lp(n,s, on?COL.blue:COL.off);
         }
+    }
+}
 
-        init();
-    </script>
+// === Misc ===
+function toast(t){ const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2500); }
+
+// Auto connect
+connect();
+setInterval(updateLP,80);
+</script>
 </body>
 </html>
