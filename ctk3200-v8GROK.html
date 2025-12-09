@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>CTK-3200 V8 REVISED — Launchpad MK2 Edition</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+    :root{
+        --primary:#00ff88;--accent:#00aaff;--secondary:#ff00aa;--warning:#ff8800;
+        --bg:#0a0a0f;--bg2:#14141a;--bg3:#1f1f28;--text:#fff;--text2:#aaa;
+        --lp-red:#ff3333;--lp-amber:#ffbb00;--lp-green:#00ff00;--lp-cyan:#00ffff;
+        --lp-blue:#0088ff;--lp-purple:#aa00ff;--lp-pink:#ff00aa;--lp-orange:#ff8800;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none;}
+    body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;overflow:hidden;height:100vh;width:100vw;display:flex;flex-direction:column;}
+    .header{background:linear-gradient(180deg,#1f1f28ee,#14141aee);padding:15px 20px;display:flex;align-items:center;gap:20px;border-bottom:2px solid var(--primary);position:relative;z-index:10;}
+    .logo{font-size:28px;font-weight:900;background:linear-gradient(90deg,var(--primary),var(--accent));-webkit-background-clip:text;color:transparent;}
+    .tempo-box{background:var(--bg3);padding:8px 20px;border-radius:30px;display:flex;align-items:center;gap:15px;}
+    .tempo{display: inline-block;min-width:70px;font-size:28px;font-weight:800;color:var(--accent);}
+    .tap-btn{background:var(--warning);color:#000;padding:12px 25px;border-radius:30px;font-weight:bold;}
+    .fullscreen-btn{position:absolute;right:20px;top:18px;background:#333;padding:10px 15px;border-radius:50%;cursor:pointer;}
+    .main{display:grid;grid-template-columns:280px 1fr 380px;height:calc(100vh - 70px);gap:15px;padding:15px;background:radial-gradient(circle at center,#14141a,#0a0a0f);}
+    .panel{background:var(--bg2);border-radius:16px;padding:15px;border:1px solid #2a2a35;}
+    .title{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--text2);margin-bottom:12px;padding-left:8px;border-left:3px solid var(--primary);}
+    .grid{display:grid;gap:8px;}
+    .grid-2{grid-template-columns:repeat(2,1fr);}
+    .grid-3{grid-template-columns:repeat(3,1fr);}
+    .grid-4{grid-template-columns:repeat(4,1fr);}
+    .btn{padding:12px;font-size:12px;border-radius:10px;background:var(--bg3);border:2px solid #333;color:var(--text2);transition:.15s;cursor:pointer;text-align:center;}
+    .btn.active{background:var(--primary);color:#000;border-color:var(--primary);}
+    .chord-display{background:linear-gradient(135deg,var(--bg2),var(--bg3));height:130px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:60px;font-weight:900;background-clip:text;color:transparent;background:linear-gradient(135deg,var(--primary),var(--accent));-webkit-background-clip:text;}
+    .chord-grid{grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(4,1fr);gap:10px;height:100%;}
+    .chord-pad{background:var(--bg3);border:2px solid #333;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:.2s;}
+    .chord-pad.active{transform:scale(0.94);background:var(--primary);color:#000;}
+    .pattern-grid{display:grid;grid-template-rows:repeat(4,40px);gap:6px;}
+    .pattern-row{display:grid;grid-template-columns:repeat(16,1fr);gap:3px;}
+    .cell{background:#222;border:1px solid #333;border-radius:4px;cursor:pointer;transition:.1s;}
+    .cell.active{background:var(--primary);}
+    .cell.playing{background:var(--accent)!important;animation:pulse .4s;}
+    @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+    .lp-view{width:380px;height:380px;background:#000;border-radius:16px;position:relative;overflow:hidden;}
+    .lp-grid{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);gap:2px;padding:10px;height:100%;}
+    .lp-pad{background:#1e1e1e;width:100%;height:100%;border-radius:6px;transition:.1s;}
+    .lp-pad.active{box-shadow:0 0 20px currentColor;}
+    .lp-top,.lp-right{display:flex;}
+    .lp-top{gap:2px;margin-bottom:4px;}
+    .lp-right{flex-direction:column;gap:2px;position:absolute;right:10px;top:10px;}
+    .lp-btn{width:40px;height:40px;border-radius:50%;background:#333;}
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div class="logo">CTK3200 V8</div>
+    <div class="tempo-box">
+        <button onclick="changeTempo(-1)">−</button>
+        <span class="tempo" id="tempoDisplay">120</span>
+        <button onclick="changeTempo(1)">+</button>
+        <button class="tap-btn" id="tapBtn" onclick="tapTempo()">TAP</button>
+    </div>
+    <div class="fullscreen-btn" id="fsBtn" onclick="toggleFullscreen()">⛶</div>
+</div>
+
+<div class="main">
+    <!-- LEFT – Styles / Sections / Variations -->
+    <div class="panel">
+        <div class="title">Style</div>
+        <div class="grid grid-2" id="styleGrid"></div>
+        <div class="title">Section</div>
+        <div class="grid grid-3" id="sectionGrid"></div>
+        <div class="title">Variation</div>
+        <div class="grid grid-4" id="varGrid"></div>
+    </div>
+
+    <!-- CENTER -->
+    <div style="display:flex;flex-direction:column;gap:15px;">
+        <div class="chord-display" id="currentChord">C</div>
+        <div class="panel chord-grid" id="chordGrid"></div>
+        <div class="panel">
+            <div class="title">Pattern Sequencer (drag = draw/erase)</div>
+            <div class="pattern-grid" id="patternGrid"></div>
+            <div style="display:flex;gap:10px;margin-top:10px;">
+                <label>Velocity <input type="range" min="20" max="127" value="100" id="vel" style="flex:1"></label>
+                <label>Swing <input type="range" min="50" max="80" value="50" id="swing" style="flex:1"></label>
+                <label>Humanize <input type="range" min="0" max="100" value="20" id="human" style="flex:1"></label>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT – Launchpad Live View -->
+    <div class="panel" style="padding:0;">
+        <div class="title" style="padding:15px 15px 10px">Launchpad MK2 Live</div>
+        <div class="lp-view">
+            <div class="lp-top" id="lpTop"></div>
+            <div class="lp-grid" id="lpGrid"></div>
+            <div class="lp-right" id="lpRight"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ====================== CONFIGURATION & STATE ======================
+const state = {
+    tempo: 120,
+    isPlaying: false,
+    currentBeat: 0,
+    swing: 50,
+    velocity: 100,
+    humanize: 20,
+    launchpadMode: 'session', // 'session' | 'user1' | 'user2'
+    drumKit: 0, // 0-5 → Standard, Room, Power, Synth, Brush, Orchestra
+    bassBank: 0,
+    bassTone: 83, // current bass tone number (083-094)
+    drumPattern: Array(16).fill().map(()=> ({kick:false,snare:false,hihat:false,open:false})),
+    bassPattern: Array(16).fill().map(()=> Array(8).fill(false)), // 16 steps × 8 notes
+    currentStyle: "Pop 1",
+    currentSection: "main",
+    currentVariation: "A",
+    midiOutCTK: null,
+    midiOutLP: null,
+    tapTimes: [],
+};
+
+const DRUM_KITS = [395,396,397,398,399,400]; // Standard → Orchestra (tone numbers)
+const BASS_TONES = [83,84,85,86,87,88,89,90,91,92,93,94]; // Acoustic Bass → Sine Bass
+
+// Launchpad MK2 mapping (bottom = row 0 in array (note 11-18)
+const LP = {
+    pads: [], // will be 8×8 array, index 0 = bottom row
+    top: [104,105,106,107,108,109,110,111], // Up Down Left Right Session User1 User2 Mixer
+    right: [89,79,69,59,49,39,29,19] // Vol Pan SendA SendB Stop Mute Solo RecArm (bottom→top)
+};
+for(let r=0;r<8;r++) { LP.pads[r]=[]; for(let c=0;c<8;c++) LP.pads[r].push(11 + c + r*10); }
+
+// Chord definitions (6×4 grid)
+const CHORDS = [
+    {name:"C",  notes:[48,52,55,60]},
+    {name:"Cm", notes:[48,51,55,60]},
+    {name:"C7", notes:[48,52,55,58]},
+    {name:"Cm7",notes:[48,51,55,58]},
+    {name:"G",  notes:[43,47,50,55]},
+    {name:"G7", notes:[43,47,50,53]},
+    {name:"Am", notes:[45,48,52,57]},
+    {name:"F",  notes:[41,45,48,53]},
+    {name:"Fm", notes:[41,44,48,53]},
+    {name:"F7", notes:[41,45,48,51]},
+    {name:"Dm", notes:[50,53,57,62]},
+    {name:"Dm7",notes:[50,53,57,60]},
+    ... // add more if you want
+];
+
+// ====================== MIDI SETUP ======================
+async function initMIDI() {
+    if (!navigator.requestMIDIAccess) return alert("WebMIDI not supported");
+    const access = await navigator.requestMIDIAccess();
+    const outputs = access.outputs.values();
+    for (let out of outputs) {
+        if (out.name.includes("CTK")) state.midiOutCTK = out;
+        if (out.name.includes("Launchpad MK2")) state.midiOutLP = out;
+    }
+    updateMidiStatus();
+}
+function sendLP(row,col,color){ // row/col 0-indexed, row 0 = bottom
+    if(!state.midiOutLP) return;
+    const note = LP.pads[row][col];
+    state.midiOutLP.send([0x90, note, color]); // 0=off, 3=full brightness
+}
+function allLPoff(){
+    if(!state.midiOutLP) return;
+    for(let r=0;r<8;r++) for(let c=0;c<8;c++) sendLP(r,c,0);
+}
+
+// ====================== UI BUILD ======================
+function buildUI(){
+    // styles (just a few examples)
+    const styles = ["Pop 1","Pop 2","Rock 1","Dance 1","Latin 1","Jazz 1"];
+    const styleGrid = document.getElementById("styleGrid");
+    styles.forEach(s=>{ const b=document.createElement("div");b.className="btn";b.textContent=s;
+        b.onclick=()=>selectStyle(s); styleGrid.appendChild(b); });
+
+    const sections = ["intro","main","chorus","fill","break","ending"];
+    const sectionGrid = document.getElementById("sectionGrid");
+    sections.forEach(s=>{ const b=document.createElement("div");b.className="btn";b.textContent=s.toUpperCase();
+        b.onclick=()=>selectSection(s); sectionGrid.appendChild(b); });
+
+    const vars = ["A","B","C","D"];
+    const varGrid = document.getElementById("varGrid");
+    vars.forEach(v=>{ const b=document.createElement("div");b.className="btn";b.textContent=v;
+        b.onclick=()=>selectVariation(v); varGrid.appendChild(b); });
+
+    // chord grid
+    const chordGrid = document.getElementById("chordGrid");
+    CHORDS.forEach(c=>{
+        const p=document.createElement("div");p.className="chord-pad";
+        p.innerHTML=`<div class="chord-name">${c.name}</div>`;
+        p.onclick=()=>{ playChord(c); p.classList.add("active"); setTimeout(()=>p.classList.remove("active"),300); };
+        chordGrid.appendChild(p);
+    });
+
+    // pattern sequencer
+    const pg = document.getElementById("patternGrid");
+    for(let track=0;track<4;track++){
+        const row=document.createElement("div");row.className="pattern-row";
+        for(let step=0;step<16;step++){
+            const cell=document.createElement("div");cell.className="cell";
+            cell.dataset.track=track; cell.dataset.step=step;
+            cell.onclick=()=>togglePatternCell(track,step);
+            row.appendChild(cell);
+        }
+        pg.appendChild(row);
+    }
+
+    // Launchpad view
+    const lpGrid = document.getElementById("lpGrid");
+    for(let r=7;r>=0;r--){ // reverse so top row = last in DOM
+        for(let c=0;c<8;c++){
+            const p=document.createElement("div");p.className="lp-pad";p.dataset.r=r;p.dataset.c=c;
+            lpGrid.appendChild(p);
+        }
+    }
+    const lpTop = document.getElementById("lpTop");
+    LP.top.forEach(()=>{const b=document.createElement("div");b.className="lp-btn";lpTop.appendChild(b);});
+    const lpRight = document.getElementById("lpRight");
+    LP.right.forEach(()=>{const b=document.createElement("div");b.className="lp-btn";lpRight.appendChild(b);});
+}
+buildUI();
+
+// ====================== LAUNCHPAD MODE MANAGEMENT ======================
+function updateLaunchpadDisplay(){
+    allLPoff();
+    if(state.launchpadMode==="session"){
+        // 4 bottom rows = steps 0-7, 4 top rows = steps 8-15
+        for(let step=0;step<16;step++){
+            let row = step<8 ? 7-(step%8) : 7-(step-8); // bottom-up
+            let col = Math.floor(step/8)*4 + (step%4);
+            const active = state.drumPattern[step].kick || state.drumPattern[step].snare ||
+                          state.drumPattern[step].hihat || state.drumPattern[step].open;
+            sendLP(row, col, active ? 5 : 0); // 5=green
+            if(state.isPlaying && step===state.currentBeat) sendLP(row,col,63); // bright amber when playing
+        }
+        // right buttons : 6 drum kits + play/stop
+        LP.right.slice(0,6).forEach((n,i)=>sendLP(0,0,0)); // clear
+        sendLP(0,0, state.drumKit===0 ? 60 : 5); // example colors
+        // play = green, stop = red
+        sendLP(6,0, state.isPlaying? 5 : 0); // play button (row 6)
+        sendLP(7,0, state.isPlaying? 0 : 3); // stop button (row 7)
+    }
+    if(state.launchpadMode==="user1"){
+        // full drum kit mapping – GM drums on channel 10
+        const gmDrums = [35,38,42,46,39,54,49,57]; // example classic kit
+        // fill all pads with colors and play on press
+    }
+    if(state.launchpadMode==="user2"){
+        // bass sequencer – columns = steps, rows = notes C0-E1
+        // Up/Down button indicates page 1 or 2
+        sendLP(0,0, state.currentBeat<8 ? 5 : 0); // Up LED
+        sendLP(1,0, state.currentBeat>=8 ? 5 : 0); // Down LED
+    }
+}
+
+// ====================== PLAYBACK ENGINE ======================
+let timer;
+function startPlayback(){
+    if(state.isPlaying) return;
+    state.isPlaying=true;
+    const beatMs = 60000/state.tempo/4;
+    const play = ()=>{
+        playCurrentBeat();
+        updateLaunchpadDisplay();
+        state.currentBeat = (state.currentBeat+1)%16;
+        let delay = beatMs;
+        if(state.swing>50 && state.currentBeat%2===1) delay += (state.swing-50)/50*(beatMs);
+        timer=setTimeout(play, delay);
+    };
+    play();
+}
+function stopPlayback(){
+    clearTimeout(timer);
+    state.isPlaying=false;
+    state.currentBeat=0;
+    if(state.midiOutCTK){
+        // reverb + fade out
+        state.midiOutCTK.send([0xB0,91,80]);
+        let vol=state.velocity;
+        const fade=setInterval(()=>{
+            vol-=8?vol-=8:clearInterval(fade);
+            state.midiOutCTK.send([0xB0,7,vol]);
+        },80);
+        setTimeout(()=>{ state.midiOutCTK.send([0xB0,123,0]); },800);
+    }
+    updateLaunchpadDisplay();
+}
+function playCurrentBeat(){
+    const p = state.drumPattern[state.currentBeat];
+    const v = Math.max(20, state.velocity + Math.round((Math.random()-0.5)*state.humanize*0.8));
+    if(p.kick) state.midiOutCTK?.send([0x99,36,v]);
+    if(p.snare) state.midiOutCTK?.send([0x99,38,v]);
+    if(p.hihat) state.midiOutCTK?.send([0x99,42,v]);
+    if(p.open) state.midiOutCTK?.send([0x99,46,v]);
+
+    // bass in user2 mode
+    if(state.launchpadMode==="user2"){
+        const page = state.currentBeat<8?0:8;
+        state.bassPattern[state.currentBeat].forEach((on,i)=>{
+            if(on){
+                const note = [24,28,26,31,33,36,40,38][i] + 12*state.bassToneOffset; // C0 etc.
+                state.midiOutCTK?.send([0x90, note, v]);
+                setTimeout(()=>state.midiOutCTK?.send([0x80,note,0]),150);
+            }
+        });
+    }
+}
+
+// ====================== TAP TEMPO & FULLSCREEN ======================
+function tapTempo(){
+    const now=performance.now();
+    state.tapTimes = state.tapTimes.filter(t=>now-t<2000);
+    state.tapTimes.push(now);
+    if(state.tapTimes.length>2){
+        const avg = state.tapTimes.slice(1).reduce((a,b,i)=>a+(b-state.tapTimes[i]),0)/(state.tapTimes.length-1);
+        state.tempo = Math.round(60000/avg);
+        document.getElementById("tempoDisplay").textContent=state.tempo;
+    }
+}
+function toggleFullscreen(){
+    if(!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+}
+
+// ====================== INITIALISATION ======================
+initMIDI();
+setInterval(updateLaunchpadDisplay,100); // keep LP in sync
+
+</script>
+body>
+html>
