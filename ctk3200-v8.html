@@ -735,8 +735,21 @@
             color: var(--bg-dark);
         }
 
-        .lp-right-btn[data-function="play"] { background: var(--success); border-color: var(--success); }
-        .lp-right-btn[data-function="stop"] { background: var(--danger); border-color: var(--danger); }
+        .lp-right-btn[data-function="play"] { 
+            background: var(--success) !important; 
+            border-color: var(--success) !important; 
+            color: white !important;
+        }
+        .lp-right-btn[data-function="play"].active { 
+            background: var(--warning) !important; 
+            border-color: var(--warning) !important; 
+            animation: playingPulse 1s infinite;
+        }
+        .lp-right-btn[data-function="stop"] { 
+            background: var(--danger) !important; 
+            border-color: var(--danger) !important; 
+            color: white !important;
+        }
 
         /* Controls */
         .controls-container {
@@ -1119,7 +1132,7 @@
             // User2 Mode - Bass Sequencer
             currentBassProgram: 83, // Acoustic Bass
             bassPattern: Array(16).fill(null).map(() => Array(8).fill(false)),
-            bassUpActive: true, // UP button state for beats 1-8
+            bassUpActive: true, // UP button state for beats 1-8 (default true)
             
             // Sequencer
             sequencerInterval: null,
@@ -1151,7 +1164,8 @@
                 [11, 12, 13, 14, 15, 16, 17, 18]  // Row 1 (bottom)
             ],
             
-            // Right button notes (bottom to top)
+            // Right button notes (index 0-7 = bottom to top physically)
+            // Index 0 = Bottom button (note 89), Index 7 = Top button (note 19)
             rightButtons: [89, 79, 69, 59, 49, 39, 29, 19],
             
             // Top button CCs
@@ -1354,6 +1368,9 @@
             setupEventListeners();
             initializePatterns();
             
+            // Set initial states
+            document.getElementById('lpTopSESSION').classList.add('active');
+            
             // Hide loading
             setTimeout(() => {
                 document.getElementById('loading').classList.add('hidden');
@@ -1523,7 +1540,8 @@
             
             // Initialize Launchpad Right Buttons
             const rightBtnContainer = document.getElementById('lpRightButtons');
-            const rightLabels = ['REC', 'SOLO', 'MUTE', 'STOP', 'B', 'A', 'PAN', 'VOL'];
+            // Bottom to top (index 0-7): First 6 for selections, then Stop, then Play
+            const rightLabels = ['DS1', 'DS2', 'DS3', 'DS4', 'DS5', 'DS6', 'STOP', 'PLAY'];
             
             for (let i = 0; i < 8; i++) {
                 const btn = document.createElement('button');
@@ -1714,13 +1732,13 @@
             const instruments = ['kick', 'snare', 'hihat', 'open'];
             const instrument = instruments[row];
             
-            // Toggle cell
+            // Toggle cell state
             state.drumPattern[step][instrument] = !state.drumPattern[step][instrument];
             e.target.classList.toggle('active');
             
-            // Start drag mode
+            // Start drag mode - set dragMode to the NEW state we just set
             state.isDragging = true;
-            state.dragMode = state.drumPattern[step][instrument]; // Set or unset mode
+            state.dragMode = state.drumPattern[step][instrument];
             state.lastTouchedCell = e.target;
             
             // Update Launchpad display
@@ -1785,19 +1803,27 @@
         function setLaunchpadMode(mode) {
             state.launchpadMode = mode;
             
-            // Update UI buttons
-            document.querySelectorAll('.lp-top-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
+            // Clear ALL mode buttons first
+            document.getElementById('lpTopSESSION').classList.remove('active');
+            document.getElementById('lpTopUSER1').classList.remove('active');
+            document.getElementById('lpTopUSER2').classList.remove('active');
             
-            const btnMap = {
-                'session': 'SESSION',
-                'user1': 'USER1',
-                'user2': 'USER2'
-            };
-            
-            const activeBtn = document.getElementById(`lpTop${btnMap[mode]}`);
-            if (activeBtn) activeBtn.classList.add('active');
+            // Set only the active mode button
+            switch(mode) {
+                case 'session':
+                    document.getElementById('lpTopSESSION').classList.add('active');
+                    break;
+                case 'user1':
+                    document.getElementById('lpTopUSER1').classList.add('active');
+                    break;
+                case 'user2':
+                    document.getElementById('lpTopUSER2').classList.add('active');
+                    // Ensure UP or DOWN is active
+                    if (!state.bassUpActive && !document.getElementById('lpTopDOWN').classList.contains('active')) {
+                        state.bassUpActive = true;
+                    }
+                    break;
+            }
             
             // Update Launchpad display
             updateLaunchpadDisplay();
@@ -1824,6 +1850,35 @@
                         pad.classList.remove('active', 'playing');
                     }
                 }
+            }
+            
+            // Update right button labels based on mode
+            const rightButtons = document.querySelectorAll('.lp-right-btn');
+            if (state.launchpadMode === 'session') {
+                const labels = ['DS1', 'DS2', 'DS3', 'DS4', 'DS5', 'DS6', 'STOP', 'PLAY'];
+                rightButtons.forEach((btn, i) => {
+                    btn.textContent = labels[i];
+                });
+            } else if (state.launchpadMode === 'user1') {
+                const labels = ['', '', '', '', '', '', 'STOP', 'PLAY'];
+                rightButtons.forEach((btn, i) => {
+                    btn.textContent = labels[i];
+                    btn.classList.remove('active');
+                    btn.dataset.function = '';
+                    
+                    // Only set function for Play/Stop
+                    if (i === 7) {
+                        btn.dataset.function = 'play';
+                        btn.classList.toggle('active', state.isPlaying);
+                    } else if (i === 6) {
+                        btn.dataset.function = 'stop';
+                    }
+                });
+            } else if (state.launchpadMode === 'user2') {
+                const labels = ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'STOP', 'PLAY'];
+                rightButtons.forEach((btn, i) => {
+                    btn.textContent = labels[i];
+                });
             }
             
             // Update based on mode
@@ -1905,15 +1960,15 @@
             
             // Update right buttons for drum set selection
             for (let i = 0; i < 6; i++) {
-                const btn = document.getElementById(`lpRight${7 - i}`);
+                const btn = document.getElementById(`lpRight${i}`); // Buttons 0-5 for drum sets
                 if (btn) {
                     btn.classList.toggle('active', i === state.currentDrumSet);
                 }
             }
             
             // Play/Stop buttons
-            const playBtn = document.getElementById('lpRight1');
-            const stopBtn = document.getElementById('lpRight0');
+            const playBtn = document.getElementById('lpRight7'); // Top button for Play
+            const stopBtn = document.getElementById('lpRight6'); // Second button for Stop
             
             if (playBtn) {
                 playBtn.dataset.function = 'play';
@@ -1972,7 +2027,21 @@
                 }
             }
             
-            // Update UP/DOWN buttons
+            // Highlight current beat column if playing
+            if (state.isPlaying) {
+                const displayBeat = state.bassUpActive ? 
+                    (state.currentBeat < 8 ? state.currentBeat : -1) :
+                    (state.currentBeat >= 8 ? state.currentBeat - 8 : -1);
+                
+                if (displayBeat >= 0) {
+                    for (let row = 0; row < 8; row++) {
+                        const pad = document.getElementById(`lp-${row}-${displayBeat}`);
+                        if (pad) pad.classList.add('playing');
+                    }
+                }
+            }
+            
+            // ALWAYS show one of UP/DOWN as active
             document.getElementById('lpTopUP').classList.toggle('active', state.bassUpActive);
             document.getElementById('lpTopDOWN').classList.toggle('active', !state.bassUpActive);
             
@@ -1981,15 +2050,28 @@
             document.getElementById('lpTopLEFT').classList.toggle('active', isLeftActive);
             document.getElementById('lpTopRIGHT').classList.toggle('active', !isLeftActive);
             
-            // Update right buttons for bass tone selection
+            // Update right buttons for bass tone selection (buttons 0-5)
             const baseIndex = isLeftActive ? 83 : 89;
             const selectedIndex = state.currentBassProgram - baseIndex;
             
             for (let i = 0; i < 6; i++) {
-                const btn = document.getElementById(`lpRight${7 - i}`);
+                const btn = document.getElementById(`lpRight${i}`); // Buttons 0-5
                 if (btn) {
                     btn.classList.toggle('active', i === selectedIndex);
                 }
+            }
+            
+            // Play/Stop buttons
+            const playBtn = document.getElementById('lpRight7');
+            const stopBtn = document.getElementById('lpRight6');
+            
+            if (playBtn) {
+                playBtn.dataset.function = 'play';
+                playBtn.classList.toggle('active', state.isPlaying);
+            }
+            
+            if (stopBtn) {
+                stopBtn.dataset.function = 'stop';
             }
         }
 
@@ -2009,13 +2091,13 @@
 
         function handleLPPadRelease(row, col) {
             if (state.launchpadMode === 'user1') {
-                // Stop drum sound
+                // Stop drum sound but keep visual state
                 const pad = document.getElementById(`lp-${row}-${col}`);
                 if (pad && pad.dataset.drumNote) {
                     if (state.midiOutCTK) {
                         state.midiOutCTK.send([0x89, parseInt(pad.dataset.drumNote), 0]);
                     }
-                    pad.classList.remove('active');
+                    // Do NOT remove active class - it toggles on press, not release
                 }
             }
         }
@@ -2038,6 +2120,7 @@
             const inst = instruments[instrument];
             
             if (inst && beat >= 0 && beat < 16) {
+                // Toggle the pattern - this is the key change
                 state.drumPattern[beat][inst] = !state.drumPattern[beat][inst];
                 updatePatternDisplay();
                 updateLaunchpadDisplay();
@@ -2045,7 +2128,7 @@
         }
 
         function handleUser1PadPress(row, col) {
-            // Play drum sound
+            // Play drum sound and toggle visual
             const pad = document.getElementById(`lp-${row}-${col}`);
             if (pad && pad.dataset.drumNote) {
                 const note = parseInt(pad.dataset.drumNote);
@@ -2054,20 +2137,17 @@
                     state.midiOutCTK.send([0x99, note, state.velocity]);
                 }
                 
-                pad.classList.add('active');
-                
-                // Visual feedback
-                setTimeout(() => {
-                    pad.classList.remove('active');
-                }, 100);
+                // Toggle visual state - pad stays lit after release
+                pad.classList.toggle('active');
             }
         }
 
         function handleUser2PadPress(row, col) {
-            // Toggle bass note
+            // Toggle bass note - stays toggled after release
             const noteIndex = row; // Row 0 = top note, Row 7 = bottom note
             const beat = state.bassUpActive ? col : col + 8;
             
+            // Toggle the note
             state.bassPattern[beat][noteIndex] = !state.bassPattern[beat][noteIndex];
             updateLaunchpadDisplay();
         }
@@ -2075,25 +2155,35 @@
         function handleLPRightButton(index) {
             switch(state.launchpadMode) {
                 case 'session':
-                    if (index >= 2 && index <= 7) {
-                        // Drum set selection (buttons 2-7)
-                        state.currentDrumSet = 7 - index;
+                    if (index >= 0 && index <= 5) {
+                        // Drum set selection (buttons 0-5)
+                        state.currentDrumSet = index;
                         updateLaunchpadDisplay();
-                    } else if (index === 1) {
+                    } else if (index === 7) {
+                        // Play button (top)
+                        togglePlay();
+                    } else if (index === 6) {
+                        // Stop button (second from top)
+                        stopPlayback();
+                    }
+                    break;
+                    
+                case 'user1':
+                    if (index === 7) {
                         // Play button
                         togglePlay();
-                    } else if (index === 0) {
+                    } else if (index === 6) {
                         // Stop button
                         stopPlayback();
                     }
                     break;
                     
                 case 'user2':
-                    if (index >= 2 && index <= 7) {
-                        // Bass tone selection
+                    if (index >= 0 && index <= 5) {
+                        // Bass tone selection (buttons 0-5)
                         const isLeftActive = document.getElementById('lpTopLEFT').classList.contains('active');
                         const baseIndex = isLeftActive ? 83 : 89;
-                        state.currentBassProgram = baseIndex + (7 - index);
+                        state.currentBassProgram = baseIndex + index;
                         
                         // Send program change
                         if (state.midiOutCTK) {
@@ -2101,9 +2191,9 @@
                         }
                         
                         updateLaunchpadDisplay();
-                    } else if (index === 1) {
+                    } else if (index === 7) {
                         togglePlay();
-                    } else if (index === 0) {
+                    } else if (index === 6) {
                         stopPlayback();
                     }
                     break;
@@ -2129,8 +2219,9 @@
                 case 'left':
                     if (state.launchpadMode === 'user2') {
                         // Select bass tones 83-88
-                        document.getElementById('lpTopLEFT').classList.add('active');
-                        document.getElementById('lpTopRIGHT').classList.remove('active');
+                        if (state.currentBassProgram > 88) {
+                            state.currentBassProgram = 83; // Reset to first of left group
+                        }
                         updateLaunchpadDisplay();
                     }
                     break;
@@ -2138,8 +2229,9 @@
                 case 'right':
                     if (state.launchpadMode === 'user2') {
                         // Select bass tones 89-94
-                        document.getElementById('lpTopRIGHT').classList.add('active');
-                        document.getElementById('lpTopLEFT').classList.remove('active');
+                        if (state.currentBassProgram < 89) {
+                            state.currentBassProgram = 89; // Reset to first of right group
+                        }
                         updateLaunchpadDisplay();
                     }
                     break;
@@ -2418,15 +2510,12 @@
                         state.midiOutCTK.send([0xB0, 123, 0]);
                         // Reset reverb
                         state.midiOutCTK.send([0xB0, 91, 0]);
+                        // Reset volume
+                        state.midiOutCTK.send([0xB0, 7, state.velocity]);
                     } else {
                         state.midiOutCTK.send([0xB0, 7, volume]);
                     }
                 }, 100);
-                
-                // Reset volume after fade
-                setTimeout(() => {
-                    state.midiOutCTK.send([0xB0, 7, state.velocity]);
-                }, 2000);
             }
             
             // Clear beat display
@@ -2434,6 +2523,7 @@
                 cell.classList.remove('playing');
             });
             
+            // Update Launchpad display to clear playing indicators
             updateLaunchpadDisplay();
         }
 
@@ -2460,23 +2550,21 @@
                     state.midiOutCTK.send([0x99, 46, finalVelocity]);
                 }
                 
-                // Play bass if in User2 mode
-                if (state.launchpadMode === 'user2') {
-                    const bassNotes = state.bassPattern[state.currentBeat];
-                    const noteOffsets = [24, 28, 26, 31, 33, 36, 40, 38]; // C0, E0, D0, G0, A0, C1, E1, D1
-                    
-                    bassNotes.forEach((active, index) => {
-                        if (active) {
-                            const note = noteOffsets[index];
-                            state.midiOutCTK.send([0x90, note, finalVelocity]);
-                            
-                            // Note off after duration
-                            setTimeout(() => {
-                                state.midiOutCTK.send([0x80, note, 0]);
-                            }, 100);
-                        }
-                    });
-                }
+                // ALWAYS play bass if there are notes programmed (regardless of current mode)
+                const bassNotes = state.bassPattern[state.currentBeat];
+                const noteOffsets = [24, 28, 26, 31, 33, 36, 40, 38]; // C0, E0, D0, G0, A0, C1, E1, D1
+                
+                bassNotes.forEach((active, index) => {
+                    if (active) {
+                        const note = noteOffsets[index];
+                        state.midiOutCTK.send([0x90, note, finalVelocity]);
+                        
+                        // Note off after duration
+                        setTimeout(() => {
+                            state.midiOutCTK.send([0x80, note, 0]);
+                        }, 100);
+                    }
+                });
             }
         }
 
@@ -2490,10 +2578,8 @@
                 cell.classList.add('playing');
             });
             
-            // Update Launchpad
-            if (state.launchpadMode === 'session') {
-                updateLaunchpadDisplay();
-            }
+            // Always update Launchpad display to show beat movement
+            updateLaunchpadDisplay();
         }
 
         function toggleRecord() {
