@@ -954,6 +954,10 @@
                     <span class="status-label">Variation</span>
                     <span class="status-value" id="varDisplay">A</span>
                 </div>
+                <div class="status-item" id="bassStatus" style="display: none;">
+                    <span class="status-label">Bass</span>
+                    <span class="status-value" id="bassDisplay">ACOUSTIC</span>
+                </div>
             </div>
             
             <div class="tempo-controls">
@@ -1203,18 +1207,18 @@
 
         // CTK-3200 Program Numbers for Bass (83-94)
         const BASS_PROGRAMS = [
-            83, // Acoustic Bass
-            84, // Ride Bass
-            85, // Electric Bass  
-            86, // Bass & Cymbal
-            87, // Slap Bass 1
-            88, // Slap Bass 2
-            89, // Synth Bass 1
-            90, // Synth Bass 2
-            91, // Synth Bass 3
-            92, // Synth Bass 4
-            93, // Sine Bass
-            94  // Saw Bass
+            'Acoustic Bass',   // 83
+            'Ride Bass',       // 84
+            'Electric Bass',   // 85
+            'Bass & Cymbal',   // 86
+            'Slap Bass 1',     // 87
+            'Slap Bass 2',     // 88
+            'Synth Bass 1',    // 89
+            'Synth Bass 2',    // 90
+            'Synth Bass 3',    // 91
+            'Synth Bass 4',    // 92
+            'Sine Bass',       // 93
+            'Saw Bass'         // 94
         ];
 
         // CTK-3200 Drum Mapping (Channel 10)
@@ -1808,6 +1812,16 @@
             document.getElementById('lpTopUSER1').classList.remove('active');
             document.getElementById('lpTopUSER2').classList.remove('active');
             
+            // Update bass status visibility
+            const bassStatus = document.getElementById('bassStatus');
+            if (mode === 'user2') {
+                bassStatus.style.display = 'flex';
+                const bassName = BASS_PROGRAMS[state.currentBassProgram - 83];
+                document.getElementById('bassDisplay').textContent = bassName.toUpperCase().substring(0, 10);
+            } else {
+                bassStatus.style.display = 'none';
+            }
+            
             // Set only the active mode button
             switch(mode) {
                 case 'session':
@@ -1822,6 +1836,8 @@
                     if (!state.bassUpActive && !document.getElementById('lpTopDOWN').classList.contains('active')) {
                         state.bassUpActive = true;
                     }
+                    // Show current bass tone
+                    showMessage(`Bass: ${BASS_PROGRAMS[state.currentBassProgram - 83]}`);
                     break;
             }
             
@@ -1875,7 +1891,14 @@
                     }
                 });
             } else if (state.launchpadMode === 'user2') {
-                const labels = ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'STOP', 'PLAY'];
+                const isLeftActive = state.currentBassProgram < 89;
+                const baseIndex = isLeftActive ? 0 : 6;
+                // Show abbreviated bass names
+                const bassLabels = [
+                    'ACO', 'RID', 'ELE', 'B&C', 'SL1', 'SL2',  // 83-88
+                    'SY1', 'SY2', 'SY3', 'SY4', 'SIN', 'SAW'   // 89-94
+                ];
+                const labels = bassLabels.slice(baseIndex, baseIndex + 6).concat(['STOP', 'PLAY']);
                 rightButtons.forEach((btn, i) => {
                     btn.textContent = labels[i];
                 });
@@ -2004,6 +2027,7 @@
 
         function updateLaunchpadUser2() {
             // User2 mode - Bass sequencer
+            // Note layout (top to bottom pads): D2, E2, C2, A1, G1, D1, E1, C1
             // Show current half (UP = beats 1-8, DOWN = beats 9-16)
             const startBeat = state.bassUpActive ? 0 : 8;
             
@@ -2012,7 +2036,7 @@
                 const pattern = state.bassPattern[actualBeat];
                 
                 for (let note = 0; note < 8; note++) {
-                    const row = note; // Row 0 = top note, Row 7 = bottom note
+                    const row = note; // Row 0 = D1 (top), Row 7 = C0 (bottom)
                     const pad = document.getElementById(`lp-${row}-${beat}`);
                     
                     if (pad) {
@@ -2144,12 +2168,24 @@
 
         function handleUser2PadPress(row, col) {
             // Toggle bass note - stays toggled after release
-            const noteIndex = row; // Row 0 = top note, Row 7 = bottom note
+            // Note layout (top to bottom pads): D2, E2, C2, A1, G1, D1, E1, C1
+            const noteIndex = row; // Row 0 = D2 (highest), Row 7 = C1 (lowest)
             const beat = state.bassUpActive ? col : col + 8;
             
             // Toggle the note
             state.bassPattern[beat][noteIndex] = !state.bassPattern[beat][noteIndex];
-            updateLaunchpadDisplay();
+            
+            // Visual feedback - flash the pad
+            const pad = document.getElementById(`lp-${row}-${col}`);
+            if (pad) {
+                pad.classList.add('playing');
+                setTimeout(() => {
+                    pad.classList.remove('playing');
+                    updateLaunchpadDisplay();
+                }, 100);
+            } else {
+                updateLaunchpadDisplay();
+            }
         }
 
         function handleLPRightButton(index) {
@@ -2181,13 +2217,19 @@
                 case 'user2':
                     if (index >= 0 && index <= 5) {
                         // Bass tone selection (buttons 0-5)
-                        const isLeftActive = document.getElementById('lpTopLEFT').classList.contains('active');
+                        const isLeftActive = state.currentBassProgram < 89;
                         const baseIndex = isLeftActive ? 83 : 89;
                         state.currentBassProgram = baseIndex + index;
                         
-                        // Send program change
+                        // Update bass display
+                        const bassName = BASS_PROGRAMS[state.currentBassProgram - 83];
+                        document.getElementById('bassDisplay').textContent = bassName.toUpperCase().substring(0, 10);
+                        
+                        // Send program change IMMEDIATELY
                         if (state.midiOutCTK) {
-                            state.midiOutCTK.send([0xC0, state.currentBassProgram, 0]);
+                            // Program change on channel 1 (0x00)
+                            state.midiOutCTK.send([0xC0, state.currentBassProgram - 1, 0]); // CTK-3200 uses 0-based program numbers
+                            showMessage(`Bass: ${bassName}`);
                         }
                         
                         updateLaunchpadDisplay();
@@ -2220,8 +2262,20 @@
                     if (state.launchpadMode === 'user2') {
                         // Select bass tones 83-88
                         if (state.currentBassProgram > 88) {
-                            state.currentBassProgram = 83; // Reset to first of left group
+                            const offset = state.currentBassProgram - 89; // Keep same relative position
+                            state.currentBassProgram = 83 + Math.min(offset, 5);
                         }
+                        
+                        // Update display
+                        const bassName = BASS_PROGRAMS[state.currentBassProgram - 83];
+                        document.getElementById('bassDisplay').textContent = bassName.toUpperCase().substring(0, 10);
+                        
+                        // Send program change
+                        if (state.midiOutCTK) {
+                            state.midiOutCTK.send([0xC0, state.currentBassProgram - 1, 0]);
+                            showMessage(`Bass: ${bassName}`);
+                        }
+                        
                         updateLaunchpadDisplay();
                     }
                     break;
@@ -2230,8 +2284,20 @@
                     if (state.launchpadMode === 'user2') {
                         // Select bass tones 89-94
                         if (state.currentBassProgram < 89) {
-                            state.currentBassProgram = 89; // Reset to first of right group
+                            const offset = state.currentBassProgram - 83; // Keep same relative position
+                            state.currentBassProgram = 89 + Math.min(offset, 5);
                         }
+                        
+                        // Update display
+                        const bassName = BASS_PROGRAMS[state.currentBassProgram - 83];
+                        document.getElementById('bassDisplay').textContent = bassName.toUpperCase().substring(0, 10);
+                        
+                        // Send program change
+                        if (state.midiOutCTK) {
+                            state.midiOutCTK.send([0xC0, state.currentBassProgram - 1, 0]);
+                            showMessage(`Bass: ${bassName}`);
+                        }
+                        
                         updateLaunchpadDisplay();
                     }
                     break;
@@ -2552,7 +2618,12 @@
                 
                 // ALWAYS play bass if there are notes programmed (regardless of current mode)
                 const bassNotes = state.bassPattern[state.currentBeat];
-                const noteOffsets = [24, 28, 26, 31, 33, 36, 40, 38]; // C0, E0, D0, G0, A0, C1, E1, D1
+                // Inverted order (top to bottom pads): D2, E2, C2, A1, G1, D1, E1, C1
+                // Using bass octave (24-52 range for proper bass sound)
+                const noteOffsets = [50, 52, 48, 45, 43, 38, 40, 36];
+                
+                // Ensure correct bass program is set
+                state.midiOutCTK.send([0xC0, state.currentBassProgram - 1, 0]); // Program change
                 
                 bassNotes.forEach((active, index) => {
                     if (active) {
