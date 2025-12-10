@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="CTK-3200 V8 REVISED - Full Launchpad MK2 Integration">
     <meta name="theme-color" content="#0a0a0f">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CTK V8">
+    <meta name="format-detection" content="telephone=no">
     <title>CTK-3200 V8 REVISED - LAUNCHPAD MK2</title>
     <style>
         * {
@@ -215,6 +220,28 @@
         .connect-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+        }
+
+        .fullscreen-btn {
+            width: 44px;
+            height: 44px;
+            background: var(--bg-light);
+            border: 2px solid var(--accent);
+            border-radius: 50%;
+            color: var(--accent);
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fullscreen-btn:hover {
+            background: var(--accent);
+            color: var(--bg-dark);
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(0, 170, 255, 0.4);
         }
 
         /* Main Content */
@@ -824,6 +851,71 @@
             from { transform: translate(-50%, 100px); opacity: 0; }
             to { transform: translate(-50%, 0); opacity: 1; }
         }
+
+        /* Fullscreen adjustments */
+        :fullscreen .app-container,
+        :-webkit-full-screen .app-container,
+        :-moz-full-screen .app-container,
+        :-ms-fullscreen .app-container {
+            height: 100vh;
+            width: 100vw;
+        }
+
+        :fullscreen .header,
+        :-webkit-full-screen .header,
+        :-moz-full-screen .header,
+        :-ms-fullscreen .header {
+            padding: 0 20px;
+            height: 60px;
+        }
+
+        :fullscreen .main-content,
+        :-webkit-full-screen .main-content,
+        :-moz-full-screen .main-content,
+        :-ms-fullscreen .main-content {
+            padding: 15px;
+            height: calc(100vh - 60px);
+        }
+
+        /* Landscape optimization for tablets */
+        @media (orientation: landscape) and (max-width: 1366px) {
+            .app-container {
+                grid-template-rows: 60px 1fr;
+            }
+            
+            .header {
+                padding: 0 15px;
+            }
+            
+            .main-content {
+                grid-template-columns: 220px 1fr 320px;
+                gap: 15px;
+                padding: 15px;
+            }
+            
+            .chord-display {
+                height: 100px;
+            }
+            
+            .chord-text {
+                font-size: 48px;
+            }
+        }
+
+        /* Hide scrollbars in fullscreen */
+        :fullscreen *::-webkit-scrollbar,
+        :-webkit-full-screen *::-webkit-scrollbar,
+        :-moz-full-screen *::-webkit-scrollbar,
+        :-ms-fullscreen *::-webkit-scrollbar {
+            display: none;
+        }
+
+        :fullscreen *,
+        :-webkit-full-screen *,
+        :-moz-full-screen *,
+        :-ms-fullscreen * {
+            scrollbar-width: none;
+        }
     </style>
 </head>
 <body>
@@ -871,6 +963,7 @@
             </div>
             
             <button class="connect-btn" onclick="connectMIDI()">CONNECT</button>
+            <button class="fullscreen-btn" onclick="toggleFullscreen()" title="Fullscreen (F)">⤢</button>
         </header>
 
         <!-- Main Content -->
@@ -1498,6 +1591,15 @@
                         break;
                     case '3':
                         setLaunchpadMode('user2');
+                        break;
+                    case 'f':
+                    case 'F':
+                        e.preventDefault();
+                        toggleFullscreen();
+                        break;
+                    case 'F11':
+                        e.preventDefault();
+                        toggleFullscreen();
                         break;
                 }
             });
@@ -2564,6 +2666,90 @@
         // ==========================================
         // UTILITY FUNCTIONS
         // ==========================================
+        
+        function toggleFullscreen() {
+            if (!document.fullscreenElement && 
+                !document.mozFullScreenElement && 
+                !document.webkitFullscreenElement && 
+                !document.msFullscreenElement) {
+                
+                // Enter fullscreen
+                const elem = document.documentElement;
+                
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) {
+                    elem.webkitRequestFullscreen();
+                } else if (elem.mozRequestFullScreen) {
+                    elem.mozRequestFullScreen();
+                } else if (elem.msRequestFullscreen) {
+                    elem.msRequestFullscreen();
+                }
+                
+                // Update button
+                const btn = document.querySelector('.fullscreen-btn');
+                if (btn) {
+                    btn.innerHTML = '⤓'; // Exit fullscreen symbol
+                    btn.style.background = 'var(--accent)';
+                    btn.style.color = 'var(--bg-dark)';
+                }
+                
+                // Force landscape on mobile
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(() => {});
+                }
+                
+                showMessage('Fullscreen mode activated');
+                
+            } else {
+                // Exit fullscreen
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+                
+                // Update button
+                const btn = document.querySelector('.fullscreen-btn');
+                if (btn) {
+                    btn.innerHTML = '⤢'; // Enter fullscreen symbol
+                    btn.style.background = '';
+                    btn.style.color = '';
+                }
+                
+                showMessage('Exited fullscreen mode');
+            }
+        }
+        
+        // Listen for fullscreen changes
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+        
+        function handleFullscreenChange() {
+            const isFullscreen = !!(document.fullscreenElement || 
+                                   document.webkitFullscreenElement || 
+                                   document.mozFullScreenElement ||
+                                   document.msFullscreenElement);
+            
+            const btn = document.querySelector('.fullscreen-btn');
+            if (btn) {
+                if (isFullscreen) {
+                    btn.innerHTML = '⤓'; // Exit fullscreen symbol
+                    btn.style.background = 'var(--accent)';
+                    btn.style.color = 'var(--bg-dark)';
+                } else {
+                    btn.innerHTML = '⤢'; // Enter fullscreen symbol
+                    btn.style.background = '';
+                    btn.style.color = '';
+                }
+            }
+        }
         
         function showMessage(text) {
             const existing = document.querySelector('.toast');
