@@ -1404,7 +1404,7 @@
             
             // Initialize Launchpad Grid
             const lpGrid = document.getElementById('lpGrid');
-            for (let row = 7; row >= 0; row--) {
+            for (let row = 0; row < 8; row++) { // Row 0 = top (Row 8 physique), Row 7 = bottom (Row 1 physique)
                 for (let col = 0; col < 8; col++) {
                     const pad = document.createElement('div');
                     pad.className = 'lp-pad';
@@ -1745,8 +1745,8 @@
 
         function updateLaunchpadSession() {
             // Session mode - Show drum pattern with rhythm advancing
-            // Top 4 rows (4-7) = beats 1-8
-            // Bottom 4 rows (0-3) = beats 9-16
+            // Top 4 rows (0-3) = beats 1-8 (rows physiques 8-5)
+            // Bottom 4 rows (4-7) = beats 9-16 (rows physiques 4-1)
             
             const colors = {
                 kick: 'red',
@@ -1758,34 +1758,33 @@
             // Display pattern on grid
             for (let beat = 0; beat < 16; beat++) {
                 const col = beat < 8 ? beat : beat - 8;
-                const rowOffset = beat < 8 ? 4 : 0;
                 
                 const pattern = state.drumPattern[beat];
                 
-                // Kick on row 7/3
+                // Kick on row 0/4 (top row of each half)
                 if (pattern.kick) {
-                    const row = beat < 8 ? 7 : 3;
+                    const row = beat < 8 ? 0 : 4;
                     const pad = document.getElementById(`lp-${row}-${col}`);
                     if (pad) pad.dataset.color = colors.kick;
                 }
                 
-                // Snare on row 6/2
+                // Snare on row 1/5
                 if (pattern.snare) {
-                    const row = beat < 8 ? 6 : 2;
+                    const row = beat < 8 ? 1 : 5;
                     const pad = document.getElementById(`lp-${row}-${col}`);
                     if (pad) pad.dataset.color = colors.snare;
                 }
                 
-                // HiHat on row 5/1
+                // HiHat on row 2/6
                 if (pattern.hihat) {
-                    const row = beat < 8 ? 5 : 1;
+                    const row = beat < 8 ? 2 : 6;
                     const pad = document.getElementById(`lp-${row}-${col}`);
                     if (pad) pad.dataset.color = colors.hihat;
                 }
                 
-                // Open HH on row 4/0
+                // Open HH on row 3/7
                 if (pattern.open) {
-                    const row = beat < 8 ? 4 : 0;
+                    const row = beat < 8 ? 3 : 7;
                     const pad = document.getElementById(`lp-${row}-${col}`);
                     if (pad) pad.dataset.color = colors.open;
                 }
@@ -1794,7 +1793,7 @@
             // Highlight current beat if playing
             if (state.isPlaying) {
                 const col = state.currentBeat < 8 ? state.currentBeat : state.currentBeat - 8;
-                const rowStart = state.currentBeat < 8 ? 4 : 0;
+                const rowStart = state.currentBeat < 8 ? 0 : 4;
                 
                 for (let i = 0; i < 4; i++) {
                     const pad = document.getElementById(`lp-${rowStart + i}-${col}`);
@@ -1833,7 +1832,7 @@
                     if (padIndex < 64) {
                         const row = Math.floor(padIndex / 8);
                         const col = padIndex % 8;
-                        const pad = document.getElementById(`lp-${7 - row}-${col}`);
+                        const pad = document.getElementById(`lp-${row}-${col}`);
                         
                         if (pad) {
                             pad.dataset.color = group.color;
@@ -1856,7 +1855,7 @@
                 const pattern = state.bassPattern[actualBeat];
                 
                 for (let note = 0; note < 8; note++) {
-                    const row = 7 - note;
+                    const row = note; // Row 0 = top note, Row 7 = bottom note
                     const pad = document.getElementById(`lp-${row}-${beat}`);
                     
                     if (pad) {
@@ -1923,14 +1922,14 @@
             // Determine beat and instrument
             let beat, instrument;
             
-            if (row >= 4) {
-                // Top half - beats 1-8
+            if (row < 4) {
+                // Top half (rows 0-3) - beats 1-8
                 beat = col;
-                instrument = 7 - row; // 0=kick, 1=snare, 2=hihat, 3=open
+                instrument = row; // 0=kick, 1=snare, 2=hihat, 3=open
             } else {
-                // Bottom half - beats 9-16
+                // Bottom half (rows 4-7) - beats 9-16
                 beat = col + 8;
-                instrument = 3 - row;
+                instrument = row - 4;
             }
             
             const instruments = ['kick', 'snare', 'hihat', 'open'];
@@ -1964,7 +1963,7 @@
 
         function handleUser2PadPress(row, col) {
             // Toggle bass note
-            const noteIndex = 7 - row;
+            const noteIndex = row; // Row 0 = top note, Row 7 = bottom note
             const beat = state.bassUpActive ? col : col + 8;
             
             state.bassPattern[beat][noteIndex] = !state.bassPattern[beat][noteIndex];
