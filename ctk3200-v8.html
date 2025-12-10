@@ -2536,19 +2536,22 @@
                 // Update displays
                 updateBeatDisplay();
                 
+                // Calculate next delay BEFORE advancing beat
+                let nextDelay = beatDuration;
+                if (state.swing > 50 && (state.currentBeat + 1) % 2 === 1) {
+                    nextDelay += (state.swing - 50) * beatDuration / 50;
+                }
+                
                 // Advance beat
                 state.currentBeat++;
                 if (state.currentBeat >= 16) {
                     state.currentBeat = 0;
                 }
                 
-                // Schedule next beat with swing
-                let nextDelay = beatDuration;
-                if (state.swing > 50 && state.currentBeat % 2 === 1) {
-                    nextDelay += (state.swing - 50) * beatDuration / 50;
+                // Schedule next beat
+                if (state.isPlaying) {
+                    setTimeout(playBeat, nextDelay);
                 }
-                
-                setTimeout(playBeat, nextDelay);
             };
             
             playBeat();
