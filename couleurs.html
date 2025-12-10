@@ -1,468 +1,482 @@
-
 <!doctype html>
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Launchpad MK2 — Paint</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Launchpad MK2 — Paint (Simple & Fun)</title>
 <style>
-  body { font-family: Inter, system-ui, sans-serif; margin:20px; background:#0b0b0c; color:#eee; }
-  h1 { margin:0 0 10px; font-size:20px;}
-  .top { display:flex; gap:20px; align-items:flex-start; }
-  .leftUI { width:420px; }
-  .controls { display:flex; gap:8px; margin:8px 0; flex-wrap:wrap; }
-  button, select { background:#151516; color:#eee; border:1px solid #333; padding:8px 10px; border-radius:6px; cursor:pointer; }
-  button:disabled{ opacity:0.45; cursor:default; }
-  .grid { display:grid; grid-template-columns: repeat(8, 40px); grid-gap:6px; padding:10px; background:#111; border-radius:8px; }
-  .pad { width:40px; height:40px; border-radius:6px; background:#020202; display:flex; align-items:center; justify-content:center; font-size:11px; color:transparent; box-shadow: inset 0 -3px 6px rgba(0,0,0,0.6); }
-  .palette { display:flex; flex-direction:column; gap:8px; margin-left:16px; }
-  .rightButtons { display:flex; flex-direction:column; gap:8px; }
-  .colorBtn { width:50px; height:32px; border-radius:6px; border:2px solid rgba(255,255,255,0.06); cursor:pointer; display:flex; align-items:center; justify-content:center; color:#000; font-weight:600; }
-  .paletteRow{ display:flex; gap:8px; align-items:center; }
-  .status { margin-top:10px; color:#cfcfcf; font-size:13px; }
-  .small { font-size:13px; color:#bbb; }
-  .option { margin-top:12px; display:flex; gap:8px; align-items:center; }
-  input[type="checkbox"]{ width:16px; height:16px; }
-  .toolbar { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
-  .footer { margin-top:16px; color:#9aa; font-size:13px; }
+  :root{
+    --bg:#071017; --panel:#07141a; --muted:#9fb3bf; --accent:#44f0a8;
+  }
+  body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;background:linear-gradient(180deg,#031018 0%, #071017 100%);color:#e7f6f2;padding:20px;}
+  h1{margin:0 0 8px;font-size:20px}
+  .wrap{display:flex;gap:20px;align-items:flex-start}
+  .left{width:560px}
+  .right{width:200px}
+  .controls{display:flex;gap:8px;align-items:center;margin:8px 0 12px}
+  button, select{background:var(--panel);border:1px solid rgba(255,255,255,0.05);color:var(--muted);padding:8px 10px;border-radius:8px;cursor:pointer}
+  button:hover{filter:brightness(1.05)}
+  #grid{display:grid;grid-template-columns:repeat(8,48px);grid-gap:8px;padding:12px;background:rgba(255,255,255,0.02);border-radius:10px}
+  .pad{width:48px;height:48px;border-radius:8px;background:#000;box-shadow:inset 0 -4px 8px rgba(0,0,0,0.6);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:box-shadow 160ms, transform 120ms}
+  .pad:active{transform:translateY(1px)}
+  .small{font-size:13px;color:var(--muted)}
+  .palette{display:flex;flex-direction:column;gap:8px;align-items:center;padding:6px;background:rgba(255,255,255,0.02);border-radius:10px}
+  .colorBtn{width:68px;height:36px;border-radius:10px;border:2px solid rgba(255,255,255,0.06);cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700}
+  .sel{outline:3px solid rgba(255,255,255,0.12);transform:scale(1.03)}
+  .meta{margin-top:10px;font-size:13px;color:var(--muted)}
+  .row{display:flex;gap:8px;align-items:center}
+  .toggle{padding:6px 8px;border-radius:8px;background:#0b1b2a;border:1px solid rgba(255,255,255,0.03);color:#bfe6cf}
+  .status{margin-top:12px;color:#9db1b6}
+  .flash{animation:flash 700ms ease-in-out;}
+  @keyframes flash{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
+  footer{margin-top:14px;color:#9db1b6;font-size:13px}
 </style>
 </head>
 <body>
-  <h1>Launchpad MK2 — Paint 🎨</h1>
-  <div class="top">
-    <div class="leftUI">
-      <div style="display:flex;gap:8px;align-items:center">
-        <button id="connectBtn">🔌 Connecter le contrôleur MIDI</button>
-        <select id="midiInSelect"></select>
-        <select id="midiOutSelect"></select>
-      </div>
+  <h1>Launchpad MK2 — Paint (Simple • Ludique • Impréssif)</h1>
 
-      <div class="controls">
+  <div class="controls">
+    <button id="connectBtn">🔌 Connecter</button>
+    <select id="inSelect"></select>
+    <select id="outSelect"></select>
+
+    <div style="margin-left:12px" class="small">Mode:</div>
+    <select id="modeSel" style="width:120px">
+      <option value="press">Press (peindre)</option>
+      <option value="toggle">Toggle (basculer)</option>
+    </select>
+
+    <button id="pipetteBtn" class="toggle">Pipette: OFF</button>
+    <button id="mirrorH">Mirror H</button>
+    <button id="mirrorV">Mirror V</button>
+  </div>
+
+  <div class="wrap">
+    <div class="left">
+      <div id="grid"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
         <button id="clearBtn">Effacer</button>
         <button id="fillBtn">Remplir</button>
         <button id="rainbowBtn">Rainbow</button>
         <button id="undoBtn" disabled>Annuler</button>
-        <label class="small" style="align-self:center">Mode:</label>
-        <select id="modeSelect">
-          <option value="press">Press (peindre quand pressé)</option>
-          <option value="toggle">Toggle (appui = basculer couleur)</option>
-        </select>
       </div>
-
-      <div style="margin-top:12px;">
-        <div class="grid" id="grid"></div>
-      </div>
-
-      <div class="option">
-        <label class="small">Sauvegarder palette: </label>
-        <input id="paletteName" placeholder="nom" style="padding:6px;border-radius:6px;background:#111;color:#fff;border:1px solid #333" />
-        <button id="savePaletteBtn">Enregistrer</button>
-        <select id="loadPaletteSelect">
-          <option value="">-- Charger --</option>
-        </select>
-        <button id="loadPaletteBtn">Charger</button>
-      </div>
-
-      <div class="status" id="status">État: Déconnecté</div>
-      <div class="footer">
-        Info: J'utilise les numéros de notes et contrôles du Launchpad MK2 (pads = Note On, boutons droits = Note On, top left/right = Control Change). Source: mapping utilisateur. :contentReference[oaicite:1]{index=1}
-      </div>
+      <div class="meta">Astuce: appuie sur un bouton rond en haut du Launchpad pour changer la couleur. Utilise Left/Right (top) pour changer la palette.</div>
     </div>
 
-    <div class="palette">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div style="font-weight:600">Palette</div>
-        <div>
-          <button id="palLeft">◀ Left</button>
-          <button id="palRight">Right ▶</button>
-        </div>
-      </div>
+    <div class="right">
+      <div class="small" style="margin-bottom:6px">Palette (haut → bas comme sur ton Launchpad)</div>
+      <div class="palette" id="paletteUI"></div>
 
-      <div id="paletteContainer"></div>
+      <div class="meta" style="margin-top:10px">Couleur sélectionnée:</div>
+      <div id="selected" style="height:36px;border-radius:8px;margin-top:8px;border:2px solid rgba(255,255,255,0.04)"></div>
 
-      <div style="margin-top:8px;">
-        <div style="font-size:13px;color:#bbb">Couleur sélectionnée:</div>
-        <div id="selectedColorDisplay" style="width:120px;height:40px;border-radius:8px;border:1px solid #333;margin-top:6px"></div>
-      </div>
-
-      <div style="margin-top:10px;">
-        <div class="small">Options avancées</div>
-        <div style="display:flex;gap:8px;margin-top:6px">
-          <button id="saveStateBtn">Sauvegarder état</button>
-          <button id="loadStateBtn">Restaurer état</button>
-        </div>
-      </div>
+      <div class="status" id="status">État: Déconnecté</div>
     </div>
   </div>
 
+  <footer>Mapping exact utilisé — pads: 11..88, boutons droite: ordre physique haut→bas.</footer>
+
 <script>
-// ---------- CONFIG (mapping basé sur ton fichier) ----------
-// Pads: note numbers (données extraites de ton mapping). :contentReference[oaicite:2]{index=2}
-const padNoteNumbers = [
-  11,12,13,14,15,16,17,18,
-  21,22,23,24,25,26,27,28,
-  31,32,33,34,35,36,37,38,
-  41,42,43,44,45,46,47,48,
-  51,52,53,54,55,56,57,58,
-  61,62,63,64,65,66,67,68,
-  71,72,73,74,75,76,77,78,
-  81,82,83,84,85,86,87,88
+/* --------------------
+   MAPPING (exact, validated)
+   Pads: notes 11..88 (rows bottom->top)
+   Right buttons: physical top→bottom: 19,29,39,49,59,69,79,89
+   Top bar CC: left=106 right=107
+   -------------------- */
+const PAD_NOTES = [
+ 11,12,13,14,15,16,17,18,
+ 21,22,23,24,25,26,27,28,
+ 31,32,33,34,35,36,37,38,
+ 41,42,43,44,45,46,47,48,
+ 51,52,53,54,55,56,57,58,
+ 61,62,63,64,65,66,67,68,
+ 71,72,73,74,75,76,77,78,
+ 81,82,83,84,85,86,87,88
 ];
 
-// Boutons ronds de droite (de bas en haut, 7 couleurs + dernier bouton est "display" de sélection).
-// D'après ton mapping: 89,79,69,59,49,39,29,19 (le dernier est 19 — Record Arm — utilisé comme "afficheur"). :contentReference[oaicite:3]{index=3}
-const rightButtonNotes = [89,79,69,59,49,39,29,19];
+const RIGHT_BUTTONS = [19,29,39,49,59,69,79,89]; // physical top->bottom
+const CC_LEFT = 106, CC_RIGHT = 107;
 
-// Boutons top Left/Right: Control Change 106 = Left, 107 = Right (map fourni). :contentReference[oaicite:4]{index=4}
-const topLeftCC = 106;
-const topRightCC = 107;
+/* --------------------
+   UI + State
+   -------------------- */
+const gridEl = document.getElementById('grid');
+const paletteUI = document.getElementById('paletteUI');
+const selectedEl = document.getElementById('selected');
+const statusEl = document.getElementById('status');
+const inSelect = document.getElementById('inSelect');
+const outSelect = document.getElementById('outSelect');
 
-// MIDI variables
-let midiAccess = null;
-let midiIn = null;
-let midiOut = null;
-
-// Visual state
-const gridState = new Map(); // key = noteNumber, value = {vel, hex}
+let midiAccess = null, midiIn = null, midiOut = null;
+let pipette = false;
+let mode = 'press';
+let mirrorH = false, mirrorV = false;
 let undoStack = [];
 
-// Default palettes (chaque item: {hex, vel}) — vel = valeur de velocity qui représente la couleur pour Launchpad.
-// Les valeurs de velocity sont approximatives et fonctionnent sur beaucoup de Launchpads MK2.
-// Tu peux les ajuster si tu veux plus de teintes (0 = off).
-const palettes = [
-  [ {hex:'#000000', vel:0},{hex:'#ff0000', vel:5},{hex:'#ffa500', vel:13},{hex:'#ffff00', vel:21},{hex:'#00ff00', vel:29},{hex:'#00ffff', vel:37},{hex:'#0000ff', vel:45} ],
-  [ {hex:'#000000', vel:0},{hex:'#8b0000', vel:9},{hex:'#ff4500', vel:17},{hex:'#ffd700', vel:25},{hex:'#32cd32', vel:33},{hex:'#1e90ff', vel:41},{hex:'#8a2be2', vel:49} ],
-  [ {hex:'#000000', vel:0},{hex:'#550000', vel:7},{hex:'#ff7f50', vel:15},{hex:'#ffd1dc', vel:23},{hex:'#00b894', vel:31},{hex:'#74b9ff', vel:39},{hex:'#6c5ce7', vel:47} ],
+/* default palettes — 7 colors mapped to velocities, plus the display color at index 7 (record arm) */
+let palettes = [
+  [
+    {hex:'#ff5b5b', vel:5}, {hex:'#ffb86b', vel:13}, {hex:'#fff56b', vel:21},
+    {hex:'#78ff78', vel:29}, {hex:'#79ffd6', vel:37}, {hex:'#6fa8ff', vel:45},
+    {hex:'#c97bff', vel:53}
+  ],
+  [
+    {hex:'#001f3f', vel:7},{hex:'#0d6efd', vel:15},{hex:'#00b5d8', vel:23},
+    {hex:'#00d184', vel:31},{hex:'#ffd43b', vel:39},{hex:'#ff6bcb', vel:47},
+    {hex:'#ffffff', vel:3}
+  ]
 ];
-let currentPaletteIndex = 0;
-let selectedColorIndex = 0; // 0..6 (7 boutons utilisables)
-let mode = 'press'; // or 'toggle'
+let paletteIndex = 0;
+let selectedIdx = 0;
 
-// ---------- UI build ----------
-const gridEl = document.getElementById('grid');
-const paletteContainer = document.getElementById('paletteContainer');
-const selectedColorDisplay = document.getElementById('selectedColorDisplay');
-const statusEl = document.getElementById('status');
-
-// build grid UI
-padNoteNumbers.forEach((note, idx) => {
-  const div = document.createElement('div');
-  div.className = 'pad';
-  div.dataset.note = note;
-  div.title = `Pad ${idx+1} (note ${note})`;
-  div.addEventListener('mousedown', () => onPadPress(note));
-  div.addEventListener('touchstart', (e)=>{ e.preventDefault(); onPadPress(note); });
-  gridEl.appendChild(div);
-  // default off
-  gridState.set(note, {vel:0, hex:'#000000'});
+/* build grid UI */
+PAD_NOTES.forEach(note=>{
+  const el = document.createElement('div');
+  el.className = 'pad';
+  el.dataset.note = note;
+  el.style.background = '#000';
+  el.addEventListener('mousedown', ()=>onPadUI(note));
+  el.addEventListener('touchstart', (e)=>{ e.preventDefault(); onPadUI(note); });
+  gridEl.appendChild(el);
 });
 
-// build palette UI
+/* palette UI (vertical, top->bottom) */
 function renderPalette(){
-  paletteContainer.innerHTML = '';
-  const pal = palettes[currentPaletteIndex];
-  pal.forEach((c,i) => {
-    const row = document.createElement('div');
-    row.className = 'paletteRow';
-    const btn = document.createElement('div');
-    btn.className = 'colorBtn';
-    btn.style.background = c.hex;
-    btn.textContent = (i===selectedColorIndex)?'✓':'';
-    btn.addEventListener('click', ()=>selectColor(i, true));
-    row.appendChild(btn);
-    const info = document.createElement('div');
-    info.className = 'small';
-    info.textContent = `${c.hex} (vel ${c.vel})`;
-    row.appendChild(info);
-    paletteContainer.appendChild(row);
-  });
-  // show selected color
-  const sel = pal[selectedColorIndex];
-  selectedColorDisplay.style.background = sel.hex;
-  selectedColorDisplay.textContent = sel.hex;
-  // update right-most "display" button light (we'll send midi)
-  sendRightDisplayColor(sel.vel);
+  paletteUI.innerHTML = '';
+  const p = palettes[paletteIndex];
+  // ensure we have exactly 8 visual slots (7 selectable + 1 display)
+  for(let i=0;i<8;i++){
+    const slot = document.createElement('div');
+    slot.className = 'colorBtn';
+    // If i < 7 -> color, else display slot uses selected color
+    if(i < 7){
+      const c = p[i % p.length];
+      slot.style.background = c.hex;
+      if(i === selectedIdx) slot.classList.add('sel');
+      slot.onclick = ()=>{ selectColor(i, true); flashRecordArm(); };
+    } else {
+      // display bottom (record arm) reflect selected color
+      const disp = p[selectedIdx % p.length];
+      slot.style.background = disp.hex;
+      slot.style.border = '2px dashed rgba(255,255,255,0.06)';
+      slot.onclick = ()=>{ /* nothing */ };
+    }
+    paletteUI.appendChild(slot);
+  }
+  const disp = palettes[paletteIndex][selectedIdx];
+  selectedEl.style.background = disp.hex;
 }
 renderPalette();
 
-// ---------- Helpers MIDI send ----------
+/* helpers to send note on/off */
 function sendNoteOn(note, vel){
   if(!midiOut) return;
-  // channel 0 (0x90)
   midiOut.send([0x90, note, vel]);
 }
 function sendNoteOff(note){
   if(!midiOut) return;
   midiOut.send([0x80, note, 0]);
 }
-function sendCC(cc, val){
-  if(!midiOut) return;
-  midiOut.send([0xB0, cc, val]);
-}
-function sendRightDisplayColor(vel){
-  // rightButtonNotes[7] is the topmost "Record Arm" (data1=19) mapped as display
-  const note = rightButtonNotes[7];
-  sendNoteOn(note, vel);
-}
 
-// update a pad visual + send midi to light it
-function setPadColor(note, vel, hex){
-  // push to UI
-  const el = document.querySelector(`.pad[data-note='${note}']`);
-  if(el){
-    el.style.background = hex || '#000';
-    el.textContent = '';
+/* flash record arm visually and hardware */
+function flashRecordArm(){
+  const recordNote = RIGHT_BUTTONS[RIGHT_BUTTONS.length - 1]; // bottom physical
+  const disp = palettes[paletteIndex][selectedIdx];
+  // quick hardware flash
+  if(midiOut){
+    sendNoteOn(recordNote, disp.vel || 127);
+    setTimeout(()=> sendNoteOn(recordNote, 0), 140);
   }
-  // track state
-  gridState.set(note, {vel, hex});
-  // send midi to set hardware LED
-  sendNoteOn(note, vel);
+  // UI flash on the display slot
+  const slots = paletteUI.children;
+  if(slots && slots.length === 8){
+    const displaySlot = slots[7];
+    displaySlot.classList.add('flash');
+    setTimeout(()=>displaySlot.classList.remove('flash'), 600);
+  }
 }
 
-// fill / clear / rainbow
-function clearGrid(pushUndo=true){
-  if(pushUndo) pushUndoState();
-  padNoteNumbers.forEach(n => {
-    setPadColor(n, 0, '#000000');
-  });
-}
-function fillGrid(vel, hex, pushUndo=true){
-  if(pushUndo) pushUndoState();
-  padNoteNumbers.forEach(n => setPadColor(n, vel, hex));
-}
-function rainbowFill(pushUndo=true){
-  if(pushUndo) pushUndoState();
-  const pal = palettes[currentPaletteIndex];
-  padNoteNumbers.forEach((n, idx) => {
-    const c = pal[idx % pal.length];
-    setPadColor(n, c.vel, c.hex);
-  });
+/* select color */
+function selectColor(i, fromUI=false){
+  if(i < 0) i = palettes[paletteIndex].length - 1;
+  selectedIdx = i;
+  renderPalette();
+  flashRecordArm();
 }
 
-// store undo
-function pushUndoState(){
-  const snapshot = Array.from(gridState.entries()).map(([k,v])=>({k,v}));
+/* handle click on UI pad */
+function onPadUI(note){
+  if(pipette){
+    // read pad color from state (we track color on UI only)
+    const el = document.querySelector(`.pad[data-note="${note}"]`);
+    const bg = el.style.background || '#000';
+    // find best matching color in palette and set selected
+    const p = palettes[paletteIndex];
+    let idx = p.findIndex(c=>c.hex.toLowerCase() === bg.toLowerCase());
+    if(idx === -1) {
+      // if not found, add as temporary slot (replace current)
+      p[selectedIdx] = {hex:bg, vel: p[selectedIdx].vel};
+      idx = selectedIdx;
+    }
+    selectColor(idx, true);
+    pipette = false;
+    document.getElementById('pipetteBtn').textContent = 'Pipette: OFF';
+    return;
+  }
+
+  applyPaint(note);
+}
+
+/* paint logic with mirror and mode */
+function applyPaint(note){
+  pushUndo();
+  const col = palettes[paletteIndex][selectedIdx];
+  // paint main
+  lightPad(note, col);
+  // mirror H/V if enabled
+  const idx = PAD_NOTES.indexOf(note);
+  if(idx === -1) return;
+  const row = Math.floor(idx / 8); // 0..7 (bottom->top)
+  const colIdx = idx % 8;
+  if(mirrorH){
+    const mirrorCol = 7 - colIdx;
+    const mirrorIdx = row*8 + mirrorCol;
+    const mirrorNote = PAD_NOTES[mirrorIdx];
+    lightPad(mirrorNote, col);
+  }
+  if(mirrorV){
+    const mirrorRow = 7 - row;
+    const mirrorIdx = mirrorRow*8 + colIdx;
+    const mirrorNote = PAD_NOTES[mirrorIdx];
+    lightPad(mirrorNote, col);
+  }
+}
+
+/* low-level: set pad on UI + hardware */
+function lightPad(note, color){
+  // UI
+  const el = document.querySelector(`.pad[data-note="${note}"]`);
+  if(el) el.style.background = color.hex;
+  // hardware: Note On with velocity mapping
+  if(midiOut) sendNoteOn(note, color.vel);
+  // if mode toggle, implement toggling: we check current background (approx)
+  // BUT for simplicity we always set color in both modes here; toggle implemented when note received from hardware
+}
+
+/* UNDO */
+function pushUndo(){
+  const snapshot = PAD_NOTES.map(n=>{
+    const el = document.querySelector(`.pad[data-note="${n}"]`);
+    return el ? el.style.background : '#000';
+  });
   undoStack.push(snapshot);
   document.getElementById('undoBtn').disabled = false;
 }
 function undo(){
+  if(undoStack.length === 0) return;
   const snap = undoStack.pop();
-  if(!snap) return;
-  snap.forEach(item => {
-    gridState.set(item.k, item.v);
-    const el = document.querySelector(`.pad[data-note='${item.k}']`);
-    if(el) el.style.background = item.v.hex;
-    sendNoteOn(item.k, item.v.vel);
+  PAD_NOTES.forEach((n,i)=>{
+    const el = document.querySelector(`.pad[data-note="${n}"]`);
+    if(el){ el.style.background = snap[i]; }
+    // send hardware updates for consistency
+    const pcol = palettes[paletteIndex].find(c => c.hex.toLowerCase() === (snap[i]||'#000').toLowerCase());
+    if(pcol && midiOut) sendNoteOn(n, pcol.vel);
+    if(!pcol && midiOut) sendNoteOn(n, 0);
   });
-  if(undoStack.length===0) document.getElementById('undoBtn').disabled = true;
+  if(undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
 }
 
-// pad press behavior
-function onPadPress(note){
-  const palette = palettes[currentPaletteIndex];
-  const col = palette[selectedColorIndex];
-  if(mode === 'press'){
-    pushUndoState();
-    setPadColor(note, col.vel, col.hex);
-  } else { // toggle
-    pushUndoState();
-    const current = gridState.get(note);
-    if(current && current.vel === col.vel){
-      setPadColor(note, 0, '#000000');
-    } else {
-      setPadColor(note, col.vel, col.hex);
+/* clear / fill / rainbow */
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  pushUndo();
+  PAD_NOTES.forEach(n=>{
+    const el = document.querySelector(`.pad[data-note="${n}"]`);
+    if(el) el.style.background = '#000';
+    if(midiOut) sendNoteOn(n, 0);
+  });
+});
+document.getElementById('fillBtn').addEventListener('click', ()=>{
+  pushUndo();
+  const c = palettes[paletteIndex][selectedIdx];
+  PAD_NOTES.forEach(n=>{
+    const el = document.querySelector(`.pad[data-note="${n}"]`);
+    if(el) el.style.background = c.hex;
+    if(midiOut) sendNoteOn(n, c.vel);
+  });
+});
+document.getElementById('rainbowBtn').addEventListener('click', ()=>{
+  pushUndo();
+  const p = palettes[paletteIndex];
+  PAD_NOTES.forEach((n,i)=>{
+    const c = p[i % p.length];
+    const el = document.querySelector(`.pad[data-note="${n}"]`);
+    if(el) el.style.background = c.hex;
+    if(midiOut) sendNoteOn(n, c.vel);
+  });
+});
+document.getElementById('undoBtn').addEventListener('click', undo);
+
+/* toggles */
+document.getElementById('pipetteBtn').addEventListener('click', ()=>{
+  pipette = !pipette;
+  document.getElementById('pipetteBtn').textContent = pipette ? 'Pipette: ON' : 'Pipette: OFF';
+});
+document.getElementById('modeSel').addEventListener('change', (e)=> { mode = e.target.value; });
+
+document.getElementById('mirrorH').addEventListener('click', ()=>{
+  mirrorH = !mirrorH; document.getElementById('mirrorH').style.opacity = mirrorH?1:0.6;
+});
+document.getElementById('mirrorV').addEventListener('click', ()=>{
+  mirrorV = !mirrorV; document.getElementById('mirrorV').style.opacity = mirrorV?1:0.6;
+});
+
+/* -----------------------------------
+   MIDI: connect, listen, react
+   ----------------------------------- */
+document.getElementById('connectBtn').addEventListener('click', async ()=>{
+  if(!navigator.requestMIDIAccess){ alert('WebMIDI non supporté'); return; }
+  try{
+    midiAccess = await navigator.requestMIDIAccess({sysex:false});
+    // populate selects
+    inSelect.innerHTML = ''; outSelect.innerHTML = '';
+    midiAccess.inputs.forEach(i=>{ const o = document.createElement('option'); o.value = i.id; o.textContent = i.name; inSelect.appendChild(o); });
+    midiAccess.outputs.forEach(o2=>{ const o = document.createElement('option'); o.value = o2.id; o.textContent = o2.name; outSelect.appendChild(o); });
+    // auto-select first Launchpad if present
+    for(const inp of midiAccess.inputs.values()){
+      if(inp.name.toLowerCase().includes('launchpad')){ inSelect.value = inp.id; break; }
     }
-  }
+    for(const out of midiAccess.outputs.values()){
+      if(out.name.toLowerCase().includes('launchpad')){ outSelect.value = out.id; break; }
+    }
+    // wire chosen ports
+    midiIn = midiAccess.inputs.get(inSelect.value);
+    midiOut = midiAccess.outputs.get(outSelect.value);
+    if(midiIn) midiIn.onmidimessage = onMIDIMessage;
+    statusEl.textContent = `État: connecté (${ (midiOut && midiOut.name) ? midiOut.name : 'pas de sortie' })`;
+    // initialize LEDs: clear all, then set record arm display to current color
+    initializeDevice();
+  }catch(err){ console.error(err); alert('Erreur MIDI: '+err.message); }
+});
+
+/* when user changes selects */
+inSelect.addEventListener('change', ()=>{ midiIn = midiAccess.inputs.get(inSelect.value); if(midiIn) midiIn.onmidimessage = onMIDIMessage; });
+outSelect.addEventListener('change', ()=>{ midiOut = midiAccess.outputs.get(outSelect.value); initializeDevice(); });
+
+function initializeDevice(){
+  // clear all hardware LEDs quickly
+  if(!midiOut) return;
+  PAD_NOTES.forEach(n=> sendNoteOn(n,0));
+  // set recorded selected color to bottom right button (record arm)
+  const dispNote = RIGHT_BUTTONS[RIGHT_BUTTONS.length-1];
+  const disp = palettes[paletteIndex][selectedIdx];
+  sendNoteOn(dispNote, disp.vel);
+  // set right buttons' LEDs to approximate palette colors so user sees which to press
+  RIGHT_BUTTONS.slice(0,7).forEach((btn,i)=>{
+    const c = palettes[paletteIndex][i % palettes[paletteIndex].length];
+    sendNoteOn(btn, c.vel);
+  });
 }
 
-// select color from palette (either UI or hardware right buttons)
-function selectColor(index, fromUI=false){
-  selectedColorIndex = index;
-  renderPalette();
-  // if from hardware we also flash the selected right button (send note on with vel)
-  const sel = palettes[currentPaletteIndex][index];
-  const rightNote = rightButtonNotes[index];
-  sendNoteOn(rightNote, sel.vel);
-  // set the "last" right button to display the selected color (rightButtonNotes[7])
-  sendRightDisplayColor(sel.vel);
-}
+/* handle incoming midi from Launchpad */
+let lastMsgTs = 0;
+function onMIDIMessage(e){
+  const now = Date.now();
+  if(now - lastMsgTs < 20) { /* simple debounce */ }
+  lastMsgTs = now;
+  const [status, d1, d2] = e.data;
+  const type = status & 0xF0;
 
-// handle MIDI messages received
-function handleMIDIMessage(e){
-  const [status, data1, data2] = e.data;
-  const mType = status & 0xF0;
-  // Note On messages from controller
-  if(mType === 0x90){
-    // check if note is one of the right buttons (color selectors)
-    const idxRight = rightButtonNotes.indexOf(data1);
-    if(idxRight !== -1){
-      // the last right button is index 7 — that one is display, ignore as selector
-      if(idxRight < 7){
-        // change selected color to this index
-        selectColor(idxRight, false);
+  // Note On messages: pads + right buttons
+  if(type === 0x90){
+    if(d2 === 0) return; // note-off as velocity 0
+    // right buttons?
+    const rbIndex = RIGHT_BUTTONS.indexOf(d1);
+    if(rbIndex !== -1){
+      // if user pressed a right button: select that color
+      if(rbIndex < 7){
+        selectColor(rbIndex, false);
+      }
+      return;
+    }
+    // pads?
+    const padIdx = PAD_NOTES.indexOf(d1);
+    if(padIdx !== -1){
+      if(pipette){
+        // read current UI color of pad (if any) and set selection
+        const el = document.querySelector(`.pad[data-note="${d1}"]`);
+        const bg = el ? el.style.background : '#000';
+        const p = palettes[paletteIndex];
+        let idx = p.findIndex(c=>c.hex.toLowerCase() === bg.toLowerCase());
+        if(idx === -1){
+          // if unknown color, overwrite selected slot with this color
+          p[selectedIdx] = {hex:bg, vel:p[selectedIdx].vel};
+          idx = selectedIdx;
+        }
+        selectColor(idx,false);
+        pipette = false; document.getElementById('pipetteBtn').textContent='Pipette: OFF';
         return;
       }
-    }
-    // check pads
-    const idxPad = padNoteNumbers.indexOf(data1);
-    if(idxPad !== -1){
-      // when a pad pressed on hardware: replicate behavior: paint it with current selected color
-      onPadPress(data1);
-      return;
-    }
-  } else if(mType === 0xB0){
-    // Control Change: Left / Right top buttons are CC 106 / 107 in mapping
-    if(data1 === topLeftCC && data2 > 0){
-      // shift palette left
-      currentPaletteIndex = (currentPaletteIndex - 1 + palettes.length) % palettes.length;
-      renderPalette();
-      return;
-    }
-    if(data1 === topRightCC && data2 > 0){
-      currentPaletteIndex = (currentPaletteIndex + 1) % palettes.length;
-      renderPalette();
+      // painting behavior depends on mode
+      if(mode === 'press'){
+        applyPaint(d1);
+      } else {
+        // toggle: check current UI color; if equal -> clear, else set
+        const el = document.querySelector(`.pad[data-note="${d1}"]`);
+        const cur = el ? (el.style.background || '#000') : '#000';
+        const target = palettes[paletteIndex][selectedIdx].hex;
+        if(cur.toLowerCase() === target.toLowerCase()){
+          // clear it
+          if(midiOut) sendNoteOn(d1, 0);
+          if(el) el.style.background = '#000';
+        } else {
+          applyPaint(d1);
+        }
+      }
       return;
     }
   }
-}
 
-// ---------- MIDI connection ----------
-async function initMIDI(){
-  try{
-    midiAccess = await navigator.requestMIDIAccess({ sysex: false });
-  }catch(err){
-    statusEl.textContent = 'État: Échec WebMIDI (joueur non supporté ou accès refusé).';
-    return;
-  }
-  // populate selects
-  populateMIDIPorts();
-  // listen for device connect/disconnect changes to refresh lists
-  midiAccess.onstatechange = populateMIDIPorts;
-  statusEl.textContent = 'État: MIDI prêt, sélectionne ton port et clique Connecter.';
-}
-
-function populateMIDIPorts(){
-  const inSelect = document.getElementById('midiInSelect');
-  const outSelect = document.getElementById('midiOutSelect');
-  inSelect.innerHTML = '';
-  outSelect.innerHTML = '';
-  for(const input of midiAccess.inputs.values()){
-    const opt = document.createElement('option');
-    opt.value = input.id;
-    opt.textContent = `IN — ${input.name}`;
-    inSelect.appendChild(opt);
-  }
-  for(const output of midiAccess.outputs.values()){
-    const opt = document.createElement('option');
-    opt.value = output.id;
-    opt.textContent = `OUT — ${output.name}`;
-    outSelect.appendChild(opt);
-  }
-  // if there is at least one, preselect first
-  if(inSelect.options.length > 0) inSelect.selectedIndex = 0;
-  if(outSelect.options.length > 0) outSelect.selectedIndex = 0;
-}
-
-function connectSelectedPorts(){
-  const inSelect = document.getElementById('midiInSelect');
-  const outSelect = document.getElementById('midiOutSelect');
-  if(!midiAccess) { statusEl.textContent = 'MIDI non initialisé'; return; }
-  // disconnect existing
-  if(midiIn) midiIn.onmidimessage = null;
-  midiIn = null; midiOut = null;
-  // set
-  midiIn = midiAccess.inputs.get(inSelect.value);
-  midiOut = midiAccess.outputs.get(outSelect.value);
-  if(midiIn) midiIn.onmidimessage = handleMIDIMessage;
-  if(midiOut){
-    statusEl.textContent = `État: Connecté à ${midiOut.name}`;
-    // initialize device: clear grid lights
-    clearGrid(false);
-  } else {
-    statusEl.textContent = 'État: Aucune sortie sélectionnée';
+  // Control Change (top buttons)
+  if(type === 0xB0){
+    if(d1 === CC_LEFT && d2 > 0){
+      paletteIndex = (paletteIndex - 1 + palettes.length) % palettes.length;
+      // keep selected idx within bounds
+      selectedIdx = Math.min(selectedIdx, palettes[paletteIndex].length - 1);
+      renderPalette(); initializeDevice();
+      return;
+    }
+    if(d1 === CC_RIGHT && d2 > 0){
+      paletteIndex = (paletteIndex + 1) % palettes.length;
+      selectedIdx = Math.min(selectedIdx, palettes[paletteIndex].length - 1);
+      renderPalette(); initializeDevice();
+      return;
+    }
   }
 }
 
-// ---------- UI wiring ----------
-document.getElementById('connectBtn').addEventListener('click', async ()=>{
-  if(!navigator.requestMIDIAccess){
-    statusEl.textContent = 'Ce navigateur ne supporte pas WebMIDI.';
-    return;
-  }
-  if(!midiAccess) await initMIDI();
-  connectSelectedPorts();
+/* keyboard shortcuts for quick demo (optional) */
+window.addEventListener('keydown',(e)=>{
+  if(e.key === 'z' && (e.ctrlKey || e.metaKey)){ undo(); e.preventDefault(); }
+  if(e.key === 'p'){ pipette = !pipette; document.getElementById('pipetteBtn').textContent = pipette?'Pipette: ON':'Pipette: OFF'; }
 });
 
-document.getElementById('midiInSelect').addEventListener('change', connectSelectedPorts);
-document.getElementById('midiOutSelect').addEventListener('change', connectSelectedPorts);
-
-document.getElementById('clearBtn').addEventListener('click', ()=>clearGrid(true));
-document.getElementById('fillBtn').addEventListener('click', ()=> {
-  const sel = palettes[currentPaletteIndex][selectedColorIndex];
-  fillGrid(sel.vel, sel.hex, true);
-});
-document.getElementById('rainbowBtn').addEventListener('click', ()=>rainbowFill(true));
-document.getElementById('undoBtn').addEventListener('click', undo);
-document.getElementById('modeSelect').addEventListener('change', (e)=>{ mode = e.target.value; });
-
-document.getElementById('palLeft').addEventListener('click', ()=>{ currentPaletteIndex=(currentPaletteIndex-1+palettes.length)%palettes.length; renderPalette(); });
-document.getElementById('palRight').addEventListener('click', ()=>{ currentPaletteIndex=(currentPaletteIndex+1)%palettes.length; renderPalette(); });
-
-// save/load palette
-function refreshSavedPalettes(){
-  const sel = document.getElementById('loadPaletteSelect');
-  sel.innerHTML = '<option value="">-- Charger --</option>';
-  for(const k of Object.keys(localStorage).filter(k=>k.startsWith('lp_pal_'))){
-    const opt = document.createElement('option');
-    opt.value = k;
-    opt.textContent = k.replace('lp_pal_','');
-    sel.appendChild(opt);
-  }
+/* small polish: ensure selected LED shown */
+function updateSelectedDisplay(){
+  const dispNote = RIGHT_BUTTONS[RIGHT_BUTTONS.length-1];
+  const disp = palettes[paletteIndex][selectedIdx];
+  selectedEl.style.background = disp.hex;
+  if(midiOut) sendNoteOn(dispNote, disp.vel);
 }
-document.getElementById('savePaletteBtn').addEventListener('click', ()=>{
-  const name = document.getElementById('paletteName').value.trim();
-  if(!name){ alert('Donne un nom à la palette'); return; }
-  const pal = palettes[currentPaletteIndex];
-  localStorage.setItem('lp_pal_'+name, JSON.stringify(pal));
-  refreshSavedPalettes();
-});
-document.getElementById('loadPaletteBtn').addEventListener('click', ()=>{
-  const sel = document.getElementById('loadPaletteSelect');
-  const key = sel.value;
-  if(!key) { alert('Choisis une palette à charger'); return; }
-  const raw = localStorage.getItem(key);
-  if(!raw) { alert('Palette introuvable'); return; }
-  try{
-    const p = JSON.parse(raw);
-    palettes.push(p);
-    currentPaletteIndex = palettes.length-1;
-    selectedColorIndex = 0;
-    renderPalette();
-  } catch(e){ alert('Erreur lecture palette'); }
-});
-refreshSavedPalettes();
 
-// save/load whole grid state
-document.getElementById('saveStateBtn').addEventListener('click', ()=>{
-  const save = {};
-  gridState.forEach((v,k)=> save[k]=v);
-  localStorage.setItem('lp_grid_state', JSON.stringify(save));
-  statusEl.textContent = 'État: Grille sauvegardée localement';
-});
-document.getElementById('loadStateBtn').addEventListener('click', ()=>{
-  const raw = localStorage.getItem('lp_grid_state');
-  if(!raw){ statusEl.textContent='Aucun état trouvé'; return; }
-  try{
-    const save = JSON.parse(raw);
-    padNoteNumbers.forEach(n=>{
-      const v = save[n] || {vel:0, hex:'#000000'};
-      setPadColor(n, v.vel, v.hex);
-    });
-    statusEl.textContent='État: Grille restaurée';
-  }catch(e){ statusEl.textContent='Erreur restauration'; }
-});
+/* when changing selection, update LED */
+function selectColor(i, fromUI=false){
+  selectedIdx = i;
+  renderPalette();
+  updateSelectedDisplay();
+  flashRecordArm();
+}
 
-// ---------- initial UI state ----------
+/* initial call to show UI */
 renderPalette();
 
 </script>
