@@ -2228,7 +2228,7 @@
                         // Send program change IMMEDIATELY
                         if (state.midiOutCTK) {
                             // Program change on channel 1 (0x00)
-                            state.midiOutCTK.send([0xC0, state.currentBassProgram - 1, 0]); // CTK-3200 uses 0-based program numbers
+                            state.midiOutCTK.send([0xC0, state.currentBassProgram - 1]); // CTK-3200 uses 0-based program numbers
                             showMessage(`Bass: ${bassName}`);
                         }
                         
@@ -2272,7 +2272,7 @@
                         
                         // Send program change
                         if (state.midiOutCTK) {
-                            state.midiOutCTK.send([0xC0, state.currentBassProgram - 1, 0]);
+                            state.midiOutCTK.send([0xC0, state.currentBassProgram - 1]);
                             showMessage(`Bass: ${bassName}`);
                         }
                         
@@ -2294,7 +2294,7 @@
                         
                         // Send program change
                         if (state.midiOutCTK) {
-                            state.midiOutCTK.send([0xC0, state.currentBassProgram - 1, 0]);
+                            state.midiOutCTK.send([0xC0, state.currentBassProgram - 1]);
                             showMessage(`Bass: ${bassName}`);
                         }
                         
@@ -2523,55 +2523,40 @@
         let sequencerTimeout = null;
         
         function startPlayback() {
-            console.log('Starting playback...');
-            
-            if (state.isPlaying) {
-                console.log('Already playing, returning');
-                return;
-            }
+            if (state.isPlaying) return;
             
             state.isPlaying = true;
             document.getElementById('playBtn').classList.add('playing');
             document.getElementById('playBtn').textContent = '❚❚';
-            
-            console.log('Initial state:', {
-                isPlaying: state.isPlaying,
-                currentBeat: state.currentBeat,
-                tempo: state.tempo
-            });
             
             // Start playing
             playNextBeat();
         }
         
         function playNextBeat() {
-            console.log('playNextBeat called, isPlaying:', state.isPlaying, 'beat:', state.currentBeat);
-            
-            if (!state.isPlaying) {
-                console.log('Stopping because isPlaying is false');
-                return;
-            }
+            if (!state.isPlaying) return;
             
             // Play current beat
-            try {
-                playCurrentBeat();
-                updateBeatDisplay();
-            } catch (error) {
-                console.error('Error in playback:', error);
-            }
+            playCurrentBeat();
+            updateBeatDisplay();
             
             // Move to next beat
             state.currentBeat = (state.currentBeat + 1) % 16;
             
-            // Calculate delay (simple, no swing for now)
+            // Calculate delay with swing
             const beatDuration = 60000 / state.tempo / 4;
+            let delay = beatDuration;
             
-            console.log('Scheduling next beat in', beatDuration, 'ms');
+            // Apply swing to odd beats
+            if (state.swing > 50 && (state.currentBeat % 2) === 1) {
+                const swingFactor = (state.swing - 50) / 50;
+                delay = beatDuration * (1 + swingFactor * 0.5);
+            }
             
             // Schedule next beat
             sequencerTimeout = setTimeout(() => {
                 playNextBeat();
-            }, beatDuration);
+            }, delay);
         }
 
         function stopPlayback() {
@@ -2620,11 +2605,7 @@
         }
 
         function playCurrentBeat() {
-            // Safety check but don't return, just log
-            if (!state.drumPattern || !state.drumPattern[state.currentBeat]) {
-                console.error('Invalid drum pattern at beat', state.currentBeat, state.drumPattern);
-            }
-            
+            // Get pattern with fallback
             const pattern = state.drumPattern[state.currentBeat] || {
                 kick: false,
                 snare: false, 
@@ -2661,7 +2642,7 @@
                     const noteOffsets = [50, 52, 48, 45, 43, 38, 40, 36];
                     
                     // Ensure correct bass program is set
-                    state.midiOutCTK.send([0xC0, state.currentBassProgram - 1, 0]); // Program change
+                    state.midiOutCTK.send([0xC0, state.currentBassProgram - 1]); // Program change
                     
                     bassNotes.forEach((active, index) => {
                         if (active) {
