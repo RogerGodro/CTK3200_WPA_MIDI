@@ -2520,46 +2520,69 @@
             }
         }
 
+        let sequencerTimeout = null;
+        
         function startPlayback() {
+            console.log('Starting playback...');
+            
+            if (state.isPlaying) {
+                console.log('Already playing, returning');
+                return;
+            }
+            
             state.isPlaying = true;
             document.getElementById('playBtn').classList.add('playing');
             document.getElementById('playBtn').textContent = '❚❚';
             
-            const beatDuration = 60000 / state.tempo / 4; // 16th notes
+            console.log('Initial state:', {
+                isPlaying: state.isPlaying,
+                currentBeat: state.currentBeat,
+                tempo: state.tempo
+            });
             
-            const playBeat = () => {
-                if (!state.isPlaying) return;
-                
-                // Play current beat
+            // Start playing
+            playNextBeat();
+        }
+        
+        function playNextBeat() {
+            console.log('playNextBeat called, isPlaying:', state.isPlaying, 'beat:', state.currentBeat);
+            
+            if (!state.isPlaying) {
+                console.log('Stopping because isPlaying is false');
+                return;
+            }
+            
+            // Play current beat
+            try {
                 playCurrentBeat();
-                
-                // Update displays
                 updateBeatDisplay();
-                
-                // Calculate next delay BEFORE advancing beat
-                let nextDelay = beatDuration;
-                if (state.swing > 50 && (state.currentBeat + 1) % 2 === 1) {
-                    nextDelay += (state.swing - 50) * beatDuration / 50;
-                }
-                
-                // Advance beat
-                state.currentBeat++;
-                if (state.currentBeat >= 16) {
-                    state.currentBeat = 0;
-                }
-                
-                // Schedule next beat
-                if (state.isPlaying) {
-                    setTimeout(playBeat, nextDelay);
-                }
-            };
+            } catch (error) {
+                console.error('Error in playback:', error);
+            }
             
-            playBeat();
+            // Move to next beat
+            state.currentBeat = (state.currentBeat + 1) % 16;
+            
+            // Calculate delay (simple, no swing for now)
+            const beatDuration = 60000 / state.tempo / 4;
+            
+            console.log('Scheduling next beat in', beatDuration, 'ms');
+            
+            // Schedule next beat
+            sequencerTimeout = setTimeout(() => {
+                playNextBeat();
+            }, beatDuration);
         }
 
         function stopPlayback() {
             state.isPlaying = false;
             state.currentBeat = 0;
+            
+            // Clear any scheduled beats
+            if (sequencerTimeout) {
+                clearTimeout(sequencerTimeout);
+                sequencerTimeout = null;
+            }
             
             document.getElementById('playBtn').classList.remove('playing');
             document.getElementById('playBtn').textContent = '▶';
@@ -2597,48 +2620,63 @@
         }
 
         function playCurrentBeat() {
-            const pattern = state.drumPattern[state.currentBeat];
+            // Safety check but don't return, just log
+            if (!state.drumPattern || !state.drumPattern[state.currentBeat]) {
+                console.error('Invalid drum pattern at beat', state.currentBeat, state.drumPattern);
+            }
+            
+            const pattern = state.drumPattern[state.currentBeat] || {
+                kick: false,
+                snare: false, 
+                hihat: false,
+                open: false
+            };
             
             // Apply humanize
             const humanizeAmount = state.humanize / 100;
             const velocityVariation = Math.round((Math.random() - 0.5) * humanizeAmount * 40);
             const finalVelocity = Math.max(1, Math.min(127, state.velocity + velocityVariation));
             
+            // Only send MIDI if connected
             if (state.midiOutCTK) {
                 // Play drums (channel 10)
-                if (pattern.kick) {
+                if (pattern && pattern.kick) {
                     state.midiOutCTK.send([0x99, 36, finalVelocity]);
                 }
-                if (pattern.snare) {
+                if (pattern && pattern.snare) {
                     state.midiOutCTK.send([0x99, 38, finalVelocity]);
                 }
-                if (pattern.hihat) {
+                if (pattern && pattern.hihat) {
                     state.midiOutCTK.send([0x99, 42, finalVelocity]);
                 }
-                if (pattern.open) {
+                if (pattern && pattern.open) {
                     state.midiOutCTK.send([0x99, 46, finalVelocity]);
                 }
                 
                 // ALWAYS play bass if there are notes programmed (regardless of current mode)
                 const bassNotes = state.bassPattern[state.currentBeat];
-                // Inverted order (top to bottom pads): D2, E2, C2, A1, G1, D1, E1, C1
-                // Using bass octave (24-52 range for proper bass sound)
-                const noteOffsets = [50, 52, 48, 45, 43, 38, 40, 36];
-                
-                // Ensure correct bass program is set
-                state.midiOutCTK.send([0xC0, state.currentBassProgram - 1, 0]); // Program change
-                
-                bassNotes.forEach((active, index) => {
-                    if (active) {
-                        const note = noteOffsets[index];
-                        state.midiOutCTK.send([0x90, note, finalVelocity]);
-                        
-                        // Note off after duration
-                        setTimeout(() => {
-                            state.midiOutCTK.send([0x80, note, 0]);
-                        }, 100);
-                    }
-                });
+                if (bassNotes) {
+                    // Inverted order (top to bottom pads): D2, E2, C2, A1, G1, D1, E1, C1
+                    // Using bass octave (24-52 range for proper bass sound)
+                    const noteOffsets = [50, 52, 48, 45, 43, 38, 40, 36];
+                    
+                    // Ensure correct bass program is set
+                    state.midiOutCTK.send([0xC0, state.currentBassProgram - 1, 0]); // Program change
+                    
+                    bassNotes.forEach((active, index) => {
+                        if (active) {
+                            const note = noteOffsets[index];
+                            state.midiOutCTK.send([0x90, note, finalVelocity]);
+                            
+                            // Note off after duration
+                            setTimeout(() => {
+                                if (state.midiOutCTK) {
+                                    state.midiOutCTK.send([0x80, note, 0]);
+                                }
+                            }, 100);
+                        }
+                    });
+                }
             }
         }
 
