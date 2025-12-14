@@ -2109,7 +2109,14 @@
             }
         }
 
+        // ==========================================
+        // LAUNCHPAD PAD AND BUTTON HANDLERS
+        // All actions occur on PRESS (mousedown/noteOn)
+        // Release (mouseup/noteOff) only stops drum sounds in User1
+        // ==========================================
+        
         function handleLPPadPress(row, col) {
+            // Called on pad PRESS (both web click and MIDI noteOn)
             switch(state.launchpadMode) {
                 case 'session':
                     handleSessionPadPress(row, col);
@@ -2125,7 +2132,7 @@
 
         function handleLPPadRelease(row, col) {
             if (state.launchpadMode === 'user1') {
-                // Stop drum sound but keep visual state
+                // Stop drum sound on release
                 const pad = document.getElementById(`lp-${row}-${col}`);
                 if (pad && pad.dataset.drumNote) {
                     if (state.midiOutCTK) {
@@ -2134,6 +2141,7 @@
                     // Do NOT remove active class - it toggles on press, not release
                 }
             }
+            // For Session and User2 modes, do nothing on release (toggle happens on press)
         }
 
         function handleSessionPadPress(row, col) {
@@ -2199,6 +2207,8 @@
         }
 
         function handleLPRightButton(index) {
+            // Called on button PRESS (both web click and MIDI noteOn)
+            // All buttons trigger their action immediately on press
             switch(state.launchpadMode) {
                 case 'session':
                     if (index >= 0 && index <= 5) {
@@ -2233,7 +2243,10 @@
                         
                         // Update bass display
                         const bassName = BASS_PROGRAMS[state.currentBassProgram - 83];
-                        document.getElementById('bassDisplay').textContent = bassName.toUpperCase().substring(0, 10);
+                        const bassStatusDisplay = document.getElementById('bassDisplay');
+                        if (bassStatusDisplay) {
+                            bassStatusDisplay.textContent = bassName.toUpperCase().substring(0, 10);
+                        }
                         
                         // Send program change IMMEDIATELY
                         if (state.midiOutCTK) {
