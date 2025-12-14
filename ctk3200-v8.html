@@ -1527,16 +1527,16 @@
                     pad.dataset.note = LP_MAPPING.pads[row][col];
                     pad.id = `lp-${row}-${col}`;
                     
-                    pad.addEventListener('mousedown', () => handleLPPadPress(row, col));
-                    pad.addEventListener('mouseup', () => handleLPPadRelease(row, col));
-                    pad.addEventListener('touchstart', (e) => {
-                        e.preventDefault();
-                        handleLPPadPress(row, col);
-                    }, { passive: false });
-                    pad.addEventListener('touchend', (e) => {
-                        e.preventDefault();
-                        handleLPPadRelease(row, col);
-                    }, { passive: false });
+              //     pad.addEventListener('mousedown', () => handleLPPadPress(row, col));
+              //      pad.addEventListener('mouseup', () => handleLPPadRelease(row, col));
+              //      pad.addEventListener('touchstart', (e) => {
+              //          e.preventDefault();
+              //          handleLPPadPress(row, col);
+              //      }, { passive: false });
+              //      pad.addEventListener('touchend', (e) => {
+              //         e.preventDefault();
+              //          handleLPPadRelease(row, col);
+              //      }, { passive: false });
                     
                     lpGrid.appendChild(pad);
                 }
@@ -2099,20 +2099,15 @@
             }
         }
 
-       function handleLPPadRelease(row, col) {
-    // 🔒 En User2, on IGNORE TOTALEMENT les relâchements
-    if (state.launchpadMode === 'user2') {
-        return;
-    }
+ function handleLPPadRelease(row, col) {
+    if (state.launchpadMode !== 'user1') return;
 
-    // User1 = drums live (momentané)
-    if (state.launchpadMode === 'user1') {
-        const note = LP_MAPPING.pads[row][col];
-        if (state.midiOutCTK) {
-            state.midiOutCTK.send([0x80, note, 0]);
-        }
+    const note = LP_MAPPING.pads[row][col];
+    if (state.midiOutCTK) {
+        state.midiOutCTK.send([0x80, note, 0]);
     }
 }
+
 
 
         function handleSessionPadPress(row, col) {
