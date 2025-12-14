@@ -1846,6 +1846,12 @@
             
             // Send mode change to physical Launchpad
             if (state.midiOutLP) {
+                // Clear all mode buttons first
+                state.midiOutLP.send([0xB0, LP_MAPPING.topButtons.session, 0]);
+                state.midiOutLP.send([0xB0, LP_MAPPING.topButtons.user1, 0]);
+                state.midiOutLP.send([0xB0, LP_MAPPING.topButtons.user2, 0]);
+                
+                // Set the active mode button
                 const ccMap = {
                     'session': LP_MAPPING.topButtons.session,
                     'user1': LP_MAPPING.topButtons.user1,
@@ -1853,6 +1859,9 @@
                 };
                 
                 state.midiOutLP.send([0xB0, ccMap[mode], 127]);
+                
+                // Update all pads and buttons
+                sendLaunchpadUpdate();
             }
         }
 
@@ -1995,6 +2004,7 @@
             
             if (playBtn) {
                 playBtn.dataset.function = 'play';
+                // Play button visual state changes but always shows green on physical pad
                 playBtn.classList.toggle('active', state.isPlaying);
             }
             
@@ -2350,6 +2360,45 @@
                     state.midiOutLP.send([0x90, note, velocity]);
                 }
             }
+            
+            // Update right buttons
+            for (let i = 0; i < 8; i++) {
+                const note = LP_MAPPING.rightButtons[i];
+                let velocity = 0;
+                
+                if (i === 7) {
+                    // Play button - ALWAYS GREEN
+                    velocity = state.isPlaying ? LP_MAPPING.colors.lime : LP_MAPPING.colors.green;
+                } else if (i === 6) {
+                    // Stop button - ALWAYS RED
+                    velocity = LP_MAPPING.colors.red;
+                } else {
+                    // Other buttons - check if active
+                    const btn = document.getElementById(`lpRight${i}`);
+                    if (btn && btn.classList.contains('active')) {
+                        velocity = LP_MAPPING.colors.white;
+                    }
+                }
+                
+                state.midiOutLP.send([0x90, note, velocity]);
+            }
+            
+            // Update top buttons - ensure only one mode button is active
+            const topButtonStates = {
+                up: state.launchpadMode === 'user2' && state.bassUpActive,
+                down: state.launchpadMode === 'user2' && !state.bassUpActive,
+                left: state.launchpadMode === 'user2' && state.currentBassProgram < 89,
+                right: state.launchpadMode === 'user2' && state.currentBassProgram >= 89,
+                session: state.launchpadMode === 'session',
+                user1: state.launchpadMode === 'user1',
+                user2: state.launchpadMode === 'user2',
+                mixer: false
+            };
+            
+            Object.entries(topButtonStates).forEach(([button, active]) => {
+                const cc = LP_MAPPING.topButtons[button];
+                state.midiOutLP.send([0xB0, cc, active ? 127 : 0]);
+            });
         }
 
         // ==========================================
@@ -2425,10 +2474,18 @@
             // Reset Launchpad
             state.midiOutLP.send([0xB0, 0, 0]);
             
-            // Set to Session mode
+            // Set initial mode after a short delay
             setTimeout(() => {
+                // Clear all mode buttons first
+                state.midiOutLP.send([0xB0, LP_MAPPING.topButtons.session, 0]);
+                state.midiOutLP.send([0xB0, LP_MAPPING.topButtons.user1, 0]);
+                state.midiOutLP.send([0xB0, LP_MAPPING.topButtons.user2, 0]);
+                
+                // Set Session mode active
                 state.midiOutLP.send([0xB0, LP_MAPPING.topButtons.session, 127]);
-                updateLaunchpadDisplay();
+                
+                // Update all pads and buttons
+                sendLaunchpadUpdate();
             }, 100);
         }
 
@@ -2466,7 +2523,8 @@
         }
 
         function handleLaunchpadNoteOff(note) {
-            // Find which pad
+            // Only handle pad releases for User1 mode (drum note off)
+            // Do NOT handle right button releases
             for (let row = 0; row < 8; row++) {
                 for (let col = 0; col < 8; col++) {
                     if (LP_MAPPING.pads[row][col] === note) {
@@ -2475,6 +2533,8 @@
                     }
                 }
             }
+            
+            // DO NOT handle right button releases - Play/Stop should only trigger on press
         }
 
         function handleLaunchpadCC(cc, value) {
