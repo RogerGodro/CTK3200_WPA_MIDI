@@ -2099,19 +2099,21 @@
             }
         }
 
-        function handleLPPadRelease(row, col) {
-            if (state.launchpadMode === 'user1') {
-                // Stop drum sound on release
-                const pad = document.getElementById(`lp-${row}-${col}`);
-                if (pad && pad.dataset.drumNote) {
-                    if (state.midiOutCTK) {
-                        state.midiOutCTK.send([0x89, parseInt(pad.dataset.drumNote), 0]);
-                    }
-                    // Do NOT remove active class - it toggles on press, not release
-                }
-            }
-            // For Session and User2 modes, do nothing on release (toggle happens on press)
+       function handleLPPadRelease(row, col) {
+    // 🔒 En User2, on IGNORE TOTALEMENT les relâchements
+    if (state.launchpadMode === 'user2') {
+        return;
+    }
+
+    // User1 = drums live (momentané)
+    if (state.launchpadMode === 'user1') {
+        const note = LP_MAPPING.pads[row][col];
+        if (state.midiOutCTK) {
+            state.midiOutCTK.send([0x80, note, 0]);
         }
+    }
+}
+
 
         function handleSessionPadPress(row, col) {
             // Determine beat and instrument
@@ -2157,12 +2159,12 @@
     const noteIndex = row;
     const beatIndex = state.bassUpActive ? col : col + 8;
 
-    // TOGGLE logique
     state.bassPattern[beatIndex][noteIndex] =
         !state.bassPattern[beatIndex][noteIndex];
 
     updateLaunchpadDisplay();
 }
+
 
         function handleLPRightButton(index) {
     // index 7 = PLAY
@@ -2472,18 +2474,22 @@
         }
 
        function handleLaunchpadNoteOff(note) {
-    // NOTE OFF ignoré pour tout sauf User1 (drums live)
-    if (state.launchpadMode !== 'user1') return;
+    // 🔒 USER2 : on ignore TOUS les note-off
+    if (state.launchpadMode === 'user2') return;
 
-    for (let row = 0; row < 8; row++) {
-        for (let col = 0; col < 8; col++) {
-            if (LP_MAPPING.pads[row][col] === note) {
-                handleLPPadRelease(row, col);
-                return;
+    // USER1 seulement
+    if (state.launchpadMode === 'user1') {
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                if (LP_MAPPING.pads[row][col] === note) {
+                    handleLPPadRelease(row, col);
+                    return;
+                }
             }
         }
     }
 }
+
 
 
         function handleLaunchpadCC(cc, value) {
