@@ -2185,85 +2185,52 @@
         }
 
         function handleUser2PadPress(row, col) {
-            // Toggle bass note - stays toggled after release
-            // Note layout (top to bottom pads): D2, E2, C2, A1, G1, D1, E1, C1
-            const noteIndex = row; // Row 0 = D2 (highest), Row 7 = C1 (lowest)
-            const beat = state.bassUpActive ? col : col + 8;
-            
-            // Toggle the note
-            state.bassPattern[beat][noteIndex] = !state.bassPattern[beat][noteIndex];
-            
-            // Visual feedback - flash the pad
-            const pad = document.getElementById(`lp-${row}-${col}`);
-            if (pad) {
-                pad.classList.add('playing');
-                setTimeout(() => {
-                    pad.classList.remove('playing');
-                    updateLaunchpadDisplay();
-                }, 100);
-            } else {
-                updateLaunchpadDisplay();
-            }
-        }
+    const noteIndex = row;
+    const beatIndex = state.bassUpActive ? col : col + 8;
+
+    // TOGGLE logique
+    state.bassPattern[beatIndex][noteIndex] =
+        !state.bassPattern[beatIndex][noteIndex];
+
+    updateLaunchpadDisplay();
+}
 
         function handleLPRightButton(index) {
-            // Called on button PRESS (both web click and MIDI noteOn)
-            // All buttons trigger their action immediately on press
-            switch(state.launchpadMode) {
-                case 'session':
-                    if (index >= 0 && index <= 5) {
-                        // Drum set selection (buttons 0-5)
-                        state.currentDrumSet = index;
-                        updateLaunchpadDisplay();
-                    } else if (index === 7) {
-                        // Play button (top)
-                        togglePlay();
-                    } else if (index === 6) {
-                        // Stop button (second from top)
-                        stopPlayback();
-                    }
-                    break;
-                    
-                case 'user1':
-                    if (index === 7) {
-                        // Play button
-                        togglePlay();
-                    } else if (index === 6) {
-                        // Stop button
-                        stopPlayback();
-                    }
-                    break;
-                    
-                case 'user2':
-                    if (index >= 0 && index <= 5) {
-                        // Bass tone selection (buttons 0-5)
-                        const isLeftActive = state.currentBassProgram < 89;
-                        const baseIndex = isLeftActive ? 83 : 89;
-                        state.currentBassProgram = baseIndex + index;
-                        
-                        // Update bass display
-                        const bassName = BASS_PROGRAMS[state.currentBassProgram - 83];
-                        const bassStatusDisplay = document.getElementById('bassDisplay');
-                        if (bassStatusDisplay) {
-                            bassStatusDisplay.textContent = bassName.toUpperCase().substring(0, 10);
-                        }
-                        
-                        // Send program change IMMEDIATELY
-                        if (state.midiOutCTK) {
-                            // Program change on channel 1 (0x00)
-                            state.midiOutCTK.send([0xC0, state.currentBassProgram - 1]); // CTK-3200 uses 0-based program numbers
-                            showMessage(`Bass: ${bassName}`);
-                        }
-                        
-                        updateLaunchpadDisplay();
-                    } else if (index === 7) {
-                        togglePlay();
-                    } else if (index === 6) {
-                        stopPlayback();
-                    }
-                    break;
+    // index 7 = PLAY
+    // index 6 = STOP
+
+    switch (index) {
+        case 7: // PLAY
+            if (!state.isPlaying) {
+                startPlayback();
             }
-        }
+            break;
+
+        case 6: // STOP
+            stopPlayback();
+            break;
+
+        default:
+            // autres boutons inchangés
+            if (state.launchpadMode === 'session' && index >= 0 && index <= 5) {
+                state.currentDrumSet = index;
+                updateLaunchpadDisplay();
+            }
+
+            if (state.launchpadMode === 'user2' && index >= 0 && index <= 5) {
+                const isLeftActive = state.currentBassProgram < 89;
+                const baseIndex = isLeftActive ? 83 : 89;
+                state.currentBassProgram = baseIndex + index;
+
+                if (state.midiOutCTK) {
+                    state.midiOutCTK.send([0xC0, state.currentBassProgram - 1]);
+                }
+
+                updateLaunchpadDisplay();
+            }
+            break;
+    }
+}
 
         function handleLPTopButton(button) {
             switch(button) {
@@ -2535,20 +2502,20 @@
             }
         }
 
-        function handleLaunchpadNoteOff(note) {
-            // Only handle pad releases for User1 mode (drum note off)
-            // Do NOT handle right button releases
-            for (let row = 0; row < 8; row++) {
-                for (let col = 0; col < 8; col++) {
-                    if (LP_MAPPING.pads[row][col] === note) {
-                        handleLPPadRelease(row, col);
-                        return;
-                    }
-                }
+       function handleLaunchpadNoteOff(note) {
+    // NOTE OFF ignoré pour tout sauf User1 (drums live)
+    if (state.launchpadMode !== 'user1') return;
+
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            if (LP_MAPPING.pads[row][col] === note) {
+                handleLPPadRelease(row, col);
+                return;
             }
-            
-            // DO NOT handle right button releases - Play/Stop should only trigger on press
         }
+    }
+}
+
 
         function handleLaunchpadCC(cc, value) {
             if (value === 0) return; // Ignore button release
