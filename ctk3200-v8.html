@@ -2035,79 +2035,48 @@
             });
         }
 
-        function updateLaunchpadUser2() {
-            // User2 mode - Bass sequencer
-            // Note layout (top to bottom pads): D2, E2, C2, A1, G1, D1, E1, C1
-            // Show current half (UP = beats 1-8, DOWN = beats 9-16)
-            const startBeat = state.bassUpActive ? 0 : 8;
-            
-            for (let beat = 0; beat < 8; beat++) {
-                const actualBeat = startBeat + beat;
-                const pattern = state.bassPattern[actualBeat];
-                
-                for (let note = 0; note < 8; note++) {
-                    const row = note; // Row 0 = D1 (top), Row 7 = C0 (bottom)
-                    const pad = document.getElementById(`lp-${row}-${beat}`);
-                    
-                    if (pad) {
-                        if (pattern[note]) {
-                            pad.dataset.color = 'blue';
-                            pad.classList.add('active');
-                        } else {
-                            pad.dataset.color = '';
-                            pad.classList.remove('active');
-                        }
-                    }
-                }
-            }
-            
-            // Highlight current beat column if playing
-            if (state.isPlaying) {
-                const displayBeat = state.bassUpActive ? 
-                    (state.currentBeat < 8 ? state.currentBeat : -1) :
-                    (state.currentBeat >= 8 ? state.currentBeat - 8 : -1);
-                
-                if (displayBeat >= 0) {
-                    for (let row = 0; row < 8; row++) {
-                        const pad = document.getElementById(`lp-${row}-${displayBeat}`);
-                        if (pad) pad.classList.add('playing');
-                    }
-                }
-            }
-            
-            // ALWAYS show one of UP/DOWN as active
-            document.getElementById('lpTopUP').classList.toggle('active', state.bassUpActive);
-            document.getElementById('lpTopDOWN').classList.toggle('active', !state.bassUpActive);
-            
-            // Update LEFT/RIGHT for bass tone selection
-            const isLeftActive = state.currentBassProgram < 89;
-            document.getElementById('lpTopLEFT').classList.toggle('active', isLeftActive);
-            document.getElementById('lpTopRIGHT').classList.toggle('active', !isLeftActive);
-            
-            // Update right buttons for bass tone selection (buttons 0-5)
-            const baseIndex = isLeftActive ? 83 : 89;
-            const selectedIndex = state.currentBassProgram - baseIndex;
-            
-            for (let i = 0; i < 6; i++) {
-                const btn = document.getElementById(`lpRight${i}`); // Buttons 0-5
-                if (btn) {
-                    btn.classList.toggle('active', i === selectedIndex);
-                }
-            }
-            
-            // Play/Stop buttons
-            const playBtn = document.getElementById('lpRight7');
-            const stopBtn = document.getElementById('lpRight6');
-            
-            if (playBtn) {
-                playBtn.dataset.function = 'play';
-                playBtn.classList.toggle('active', state.isPlaying);
-            }
-            
-            if (stopBtn) {
-                stopBtn.dataset.function = 'stop';
+       function updateLaunchpadUser2() {
+    const startBeat = state.bassUpActive ? 0 : 8;
+
+    for (let beat = 0; beat < 8; beat++) {
+        const actualBeat = startBeat + beat;
+        const pattern = state.bassPattern[actualBeat];
+
+        for (let note = 0; note < 8; note++) {
+            // 🔥 CORRECTION IMPORTANTE
+            // Launchpad row 0 = pad du haut
+            // note 0 = note la plus haute → doit être row 0
+            const row = note;
+            const col = beat;
+
+            const pad = document.getElementById(`lp-${row}-${col}`);
+            if (!pad) continue;
+
+            if (pattern[note]) {
+                pad.dataset.color = 'blue';
+                pad.classList.add('active');
+            } else {
+                pad.dataset.color = '';
+                pad.classList.remove('active');
             }
         }
+    }
+
+    // Highlight colonne en lecture
+    if (state.isPlaying) {
+        const displayBeat = state.bassUpActive
+            ? (state.currentBeat < 8 ? state.currentBeat : -1)
+            : (state.currentBeat >= 8 ? state.currentBeat - 8 : -1);
+
+        if (displayBeat >= 0) {
+            for (let row = 0; row < 8; row++) {
+                const pad = document.getElementById(`lp-${row}-${displayBeat}`);
+                if (pad) pad.classList.add('playing');
+            }
+        }
+    }
+}
+
 
         // ==========================================
         // LAUNCHPAD PAD AND BUTTON HANDLERS
