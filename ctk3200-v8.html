@@ -1527,16 +1527,24 @@
                     pad.dataset.note = LP_MAPPING.pads[row][col];
                     pad.id = `lp-${row}-${col}`;
                     
-              //     pad.addEventListener('mousedown', () => handleLPPadPress(row, col));
-              //      pad.addEventListener('mouseup', () => handleLPPadRelease(row, col));
-              //      pad.addEventListener('touchstart', (e) => {
-              //          e.preventDefault();
-              //          handleLPPadPress(row, col);
-              //      }, { passive: false });
-              //      pad.addEventListener('touchend', (e) => {
-              //         e.preventDefault();
-              //          handleLPPadRelease(row, col);
-              //      }, { passive: false });
+                    pad.addEventListener('mousedown', () => handleLPPadPress(row, col));
+                    pad.addEventListener('mouseup', () => {
+                        // Only handle release in User1 mode
+                        if (state.launchpadMode === 'user1') {
+                            handleLPPadRelease(row, col);
+                        }
+                    });
+                    pad.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        handleLPPadPress(row, col);
+                    }, { passive: false });
+                    pad.addEventListener('touchend', (e) => {
+                        e.preventDefault();
+                        // Only handle release in User1 mode
+                        if (state.launchpadMode === 'user1') {
+                            handleLPPadRelease(row, col);
+                        }
+                    }, { passive: false });
                     
                     lpGrid.appendChild(pad);
                 }
@@ -1555,10 +1563,12 @@
                 btn.id = `lpRight${i}`;
                 
                 btn.addEventListener('mousedown', () => handleLPRightButton(i));
+                // NO mouseup listener - buttons act on press only
                 btn.addEventListener('touchstart', (e) => {
                     e.preventDefault();
                     handleLPRightButton(i);
                 }, { passive: false });
+                // NO touchend listener - buttons act on press only
                 
                 rightBtnContainer.appendChild(btn);
             }
@@ -2035,48 +2045,79 @@
             });
         }
 
-       function updateLaunchpadUser2() {
-    const startBeat = state.bassUpActive ? 0 : 8;
-
-    for (let beat = 0; beat < 8; beat++) {
-        const actualBeat = startBeat + beat;
-        const pattern = state.bassPattern[actualBeat];
-
-        for (let note = 0; note < 8; note++) {
-            // 🔥 CORRECTION IMPORTANTE
-            // Launchpad row 0 = pad du haut
-            // note 0 = note la plus haute → doit être row 0
-            const row = note;
-            const col = beat;
-
-            const pad = document.getElementById(`lp-${row}-${col}`);
-            if (!pad) continue;
-
-            if (pattern[note]) {
-                pad.dataset.color = 'blue';
-                pad.classList.add('active');
-            } else {
-                pad.dataset.color = '';
-                pad.classList.remove('active');
+        function updateLaunchpadUser2() {
+            // User2 mode - Bass sequencer
+            // Note layout (top to bottom pads): D2, E2, C2, A1, G1, D1, E1, C1
+            // Show current half (UP = beats 1-8, DOWN = beats 9-16)
+            const startBeat = state.bassUpActive ? 0 : 8;
+            
+            for (let beat = 0; beat < 8; beat++) {
+                const actualBeat = startBeat + beat;
+                const pattern = state.bassPattern[actualBeat];
+                
+                for (let note = 0; note < 8; note++) {
+                    const row = note; // Row 0 = D1 (top), Row 7 = C0 (bottom)
+                    const pad = document.getElementById(`lp-${row}-${beat}`);
+                    
+                    if (pad) {
+                        if (pattern[note]) {
+                            pad.dataset.color = 'blue';
+                            pad.classList.add('active');
+                        } else {
+                            pad.dataset.color = '';
+                            pad.classList.remove('active');
+                        }
+                    }
+                }
+            }
+            
+            // Highlight current beat column if playing
+            if (state.isPlaying) {
+                const displayBeat = state.bassUpActive ? 
+                    (state.currentBeat < 8 ? state.currentBeat : -1) :
+                    (state.currentBeat >= 8 ? state.currentBeat - 8 : -1);
+                
+                if (displayBeat >= 0) {
+                    for (let row = 0; row < 8; row++) {
+                        const pad = document.getElementById(`lp-${row}-${displayBeat}`);
+                        if (pad) pad.classList.add('playing');
+                    }
+                }
+            }
+            
+            // ALWAYS show one of UP/DOWN as active
+            document.getElementById('lpTopUP').classList.toggle('active', state.bassUpActive);
+            document.getElementById('lpTopDOWN').classList.toggle('active', !state.bassUpActive);
+            
+            // Update LEFT/RIGHT for bass tone selection
+            const isLeftActive = state.currentBassProgram < 89;
+            document.getElementById('lpTopLEFT').classList.toggle('active', isLeftActive);
+            document.getElementById('lpTopRIGHT').classList.toggle('active', !isLeftActive);
+            
+            // Update right buttons for bass tone selection (buttons 0-5)
+            const baseIndex = isLeftActive ? 83 : 89;
+            const selectedIndex = state.currentBassProgram - baseIndex;
+            
+            for (let i = 0; i < 6; i++) {
+                const btn = document.getElementById(`lpRight${i}`); // Buttons 0-5
+                if (btn) {
+                    btn.classList.toggle('active', i === selectedIndex);
+                }
+            }
+            
+            // Play/Stop buttons
+            const playBtn = document.getElementById('lpRight7');
+            const stopBtn = document.getElementById('lpRight6');
+            
+            if (playBtn) {
+                playBtn.dataset.function = 'play';
+                playBtn.classList.toggle('active', state.isPlaying);
+            }
+            
+            if (stopBtn) {
+                stopBtn.dataset.function = 'stop';
             }
         }
-    }
-
-    // Highlight colonne en lecture
-    if (state.isPlaying) {
-        const displayBeat = state.bassUpActive
-            ? (state.currentBeat < 8 ? state.currentBeat : -1)
-            : (state.currentBeat >= 8 ? state.currentBeat - 8 : -1);
-
-        if (displayBeat >= 0) {
-            for (let row = 0; row < 8; row++) {
-                const pad = document.getElementById(`lp-${row}-${displayBeat}`);
-                if (pad) pad.classList.add('playing');
-            }
-        }
-    }
-}
-
 
         // ==========================================
         // LAUNCHPAD PAD AND BUTTON HANDLERS
@@ -2099,16 +2140,20 @@
             }
         }
 
- function handleLPPadRelease(row, col) {
-    if (state.launchpadMode !== 'user1') return;
-
-    const note = LP_MAPPING.pads[row][col];
-    if (state.midiOutCTK) {
-        state.midiOutCTK.send([0x80, note, 0]);
-    }
-}
-
-
+        function handleLPPadRelease(row, col) {
+            // ONLY handle release in User1 mode for stopping drum sounds
+            if (state.launchpadMode === 'user1') {
+                // Stop drum sound on release
+                const pad = document.getElementById(`lp-${row}-${col}`);
+                if (pad && pad.dataset.drumNote) {
+                    if (state.midiOutCTK) {
+                        state.midiOutCTK.send([0x89, parseInt(pad.dataset.drumNote), 0]);
+                    }
+                    // Do NOT remove active class - it toggles on press, not release
+                }
+            }
+            // Session and User2: DO NOTHING on release - toggle already happened on press
+        }
 
         function handleSessionPadPress(row, col) {
             // Determine beat and instrument
@@ -2151,52 +2196,85 @@
         }
 
         function handleUser2PadPress(row, col) {
-    const noteIndex = row;
-    const beatIndex = state.bassUpActive ? col : col + 8;
-
-    state.bassPattern[beatIndex][noteIndex] =
-        !state.bassPattern[beatIndex][noteIndex];
-
-    updateLaunchpadDisplay();
-}
-
+            // Toggle bass note - stays toggled after release
+            // Note layout (top to bottom pads): D2, E2, C2, A1, G1, D1, E1, C1
+            const noteIndex = row; // Row 0 = D2 (highest), Row 7 = C1 (lowest)
+            const beat = state.bassUpActive ? col : col + 8;
+            
+            // Toggle the note
+            state.bassPattern[beat][noteIndex] = !state.bassPattern[beat][noteIndex];
+            
+            // Visual feedback - flash the pad
+            const pad = document.getElementById(`lp-${row}-${col}`);
+            if (pad) {
+                pad.classList.add('playing');
+                setTimeout(() => {
+                    pad.classList.remove('playing');
+                    updateLaunchpadDisplay();
+                }, 100);
+            } else {
+                updateLaunchpadDisplay();
+            }
+        }
 
         function handleLPRightButton(index) {
-    // index 7 = PLAY
-    // index 6 = STOP
-
-    switch (index) {
-        case 7: // PLAY
-            if (!state.isPlaying) {
-                startPlayback();
+            // Called on button PRESS (both web click and MIDI noteOn)
+            // All buttons trigger their action immediately on press
+            switch(state.launchpadMode) {
+                case 'session':
+                    if (index >= 0 && index <= 5) {
+                        // Drum set selection (buttons 0-5)
+                        state.currentDrumSet = index;
+                        updateLaunchpadDisplay();
+                    } else if (index === 7) {
+                        // Play button (top)
+                        togglePlay();
+                    } else if (index === 6) {
+                        // Stop button (second from top)
+                        stopPlayback();
+                    }
+                    break;
+                    
+                case 'user1':
+                    if (index === 7) {
+                        // Play button
+                        togglePlay();
+                    } else if (index === 6) {
+                        // Stop button
+                        stopPlayback();
+                    }
+                    break;
+                    
+                case 'user2':
+                    if (index >= 0 && index <= 5) {
+                        // Bass tone selection (buttons 0-5)
+                        const isLeftActive = state.currentBassProgram < 89;
+                        const baseIndex = isLeftActive ? 83 : 89;
+                        state.currentBassProgram = baseIndex + index;
+                        
+                        // Update bass display
+                        const bassName = BASS_PROGRAMS[state.currentBassProgram - 83];
+                        const bassStatusDisplay = document.getElementById('bassDisplay');
+                        if (bassStatusDisplay) {
+                            bassStatusDisplay.textContent = bassName.toUpperCase().substring(0, 10);
+                        }
+                        
+                        // Send program change IMMEDIATELY
+                        if (state.midiOutCTK) {
+                            // Program change on channel 1 (0x00)
+                            state.midiOutCTK.send([0xC0, state.currentBassProgram - 1]); // CTK-3200 uses 0-based program numbers
+                            showMessage(`Bass: ${bassName}`);
+                        }
+                        
+                        updateLaunchpadDisplay();
+                    } else if (index === 7) {
+                        togglePlay();
+                    } else if (index === 6) {
+                        stopPlayback();
+                    }
+                    break;
             }
-            break;
-
-        case 6: // STOP
-            stopPlayback();
-            break;
-
-        default:
-            // autres boutons inchangés
-            if (state.launchpadMode === 'session' && index >= 0 && index <= 5) {
-                state.currentDrumSet = index;
-                updateLaunchpadDisplay();
-            }
-
-            if (state.launchpadMode === 'user2' && index >= 0 && index <= 5) {
-                const isLeftActive = state.currentBassProgram < 89;
-                const baseIndex = isLeftActive ? 83 : 89;
-                state.currentBassProgram = baseIndex + index;
-
-                if (state.midiOutCTK) {
-                    state.midiOutCTK.send([0xC0, state.currentBassProgram - 1]);
-                }
-
-                updateLaunchpadDisplay();
-            }
-            break;
-    }
-}
+        }
 
         function handleLPTopButton(button) {
             switch(button) {
@@ -2439,10 +2517,16 @@
             const [status, data1, data2] = message.data;
             
             if (status === 0x90) {
-                // Note on
-                handleLaunchpadNoteOn(data1, data2);
+                // Note on - BUT if velocity is 0, treat as Note Off
+                if (data2 === 0) {
+                    // Velocity 0 = Note Off (common MIDI convention)
+                    handleLaunchpadNoteOff(data1);
+                } else {
+                    // Actual Note On with velocity > 0
+                    handleLaunchpadNoteOn(data1, data2);
+                }
             } else if (status === 0x80) {
-                // Note off
+                // Explicit Note off
                 handleLaunchpadNoteOff(data1);
             } else if (status === 0xB0) {
                 // Control change (top buttons)
@@ -2468,24 +2552,20 @@
             }
         }
 
-       function handleLaunchpadNoteOff(note) {
-    // 🔒 USER2 : on ignore TOUS les note-off
-    if (state.launchpadMode === 'user2') return;
-
-    // USER1 seulement
-    if (state.launchpadMode === 'user1') {
-        for (let row = 0; row < 8; row++) {
-            for (let col = 0; col < 8; col++) {
-                if (LP_MAPPING.pads[row][col] === note) {
-                    handleLPPadRelease(row, col);
-                    return;
+        function handleLaunchpadNoteOff(note) {
+            // Only handle pad releases for User1 mode (drum note off)
+            // Do NOT handle right button releases
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    if (LP_MAPPING.pads[row][col] === note) {
+                        handleLPPadRelease(row, col);
+                        return;
+                    }
                 }
             }
+            
+            // DO NOT handle right button releases - Play/Stop should only trigger on press
         }
-    }
-}
-
-
 
         function handleLaunchpadCC(cc, value) {
             if (value === 0) return; // Ignore button release
