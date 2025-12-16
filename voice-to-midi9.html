@@ -2576,11 +2576,11 @@
                 pad.appendChild(nameDiv);
                 pad.appendChild(typeDiv);
                 
-                pad.addEventListener('mousedown', () => playChord(chord));
+                pad.addEventListener('mousedown', (e) => playChord(chord, e));
                 pad.addEventListener('mouseup', () => stopChord());
                 pad.addEventListener('touchstart', (e) => {
                     e.preventDefault();
-                    playChord(chord);
+                    playChord(chord, e);
                 }, { passive: false });
                 pad.addEventListener('touchend', (e) => {
                     e.preventDefault();
@@ -3903,25 +3903,30 @@
             document.getElementById('playBtn').classList.remove('playing');
             document.getElementById('playBtn').textContent = '▶';
             
-            // Stop all sounds with reverb effect
+            // Stop drum sounds only (not voice-to-midi or chord notes)
             if (state.midiOutCTK) {
                 // Add reverb
-                state.midiOutCTK.send([0xB0, 91, 64]); // Reverb effect
+                state.midiOutCTK.send([0xB9, 91, 64]); // Reverb effect on channel 10 (drums)
                 
-                // Gradual volume fade
+                // Stop only drum notes on channel 10
+                // Send note off for common drum notes
+                const drumNotes = [35, 36, 38, 42, 46];  // Kick, Snare, HiHat, Open HH
+                drumNotes.forEach(note => {
+                    state.midiOutCTK.send([0x89, note, 0]); // Note off on channel 10
+                });
+                
+                // Gradual volume fade for drums only
                 let volume = state.velocity;
                 const fadeInterval = setInterval(() => {
                     volume -= 10;
                     if (volume <= 0) {
                         clearInterval(fadeInterval);
-                        // All notes off
-                        state.midiOutCTK.send([0xB0, 123, 0]);
-                        // Reset reverb
-                        state.midiOutCTK.send([0xB0, 91, 0]);
-                        // Reset volume
-                        state.midiOutCTK.send([0xB0, 7, state.velocity]);
+                        // Reset reverb on channel 10 only
+                        state.midiOutCTK.send([0xB9, 91, 0]);
+                        // Reset volume on channel 10
+                        state.midiOutCTK.send([0xB9, 7, state.velocity]);
                     } else {
-                        state.midiOutCTK.send([0xB0, 7, volume]);
+                        state.midiOutCTK.send([0xB9, 7, volume]);
                     }
                 }, 100);
             }
@@ -4022,7 +4027,7 @@
         // CHORD HANDLING
         // ==========================================
         
-        function playChord(chord) {
+        function playChord(chord, event) {
             state.currentChord = chord.name;
             document.getElementById('currentChord').textContent = chord.name;
             
@@ -4051,7 +4056,9 @@
             document.querySelectorAll('.chord-pad').forEach(pad => {
                 pad.classList.remove('active');
             });
-            event.currentTarget.classList.add('active');
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            }
         }
 
         function stopChord() {
@@ -4413,7 +4420,17 @@
                 
             } catch (error) {
                 console.error('Erreur lors du démarrage:', error);
-                showMessage('Erreur: ' + error.message);
+                
+                // Provide more specific error messages
+                if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                    showMessage('❌ Permission refusée - Autorisez l\'accès au microphone dans les paramètres du navigateur');
+                } else if (error.name === 'NotFoundError') {
+                    showMessage('❌ Aucun microphone détecté sur cet appareil');
+                } else if (error.name === 'NotSupportedError') {
+                    showMessage('❌ Voice-to-MIDI nécessite HTTPS (ou localhost)');
+                } else {
+                    showMessage('❌ Erreur: ' + error.message);
+                }
             }
         }
         
