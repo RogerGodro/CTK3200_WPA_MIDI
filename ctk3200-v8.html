@@ -1369,6 +1369,15 @@
             80: 'Mute Triangle',
             81: 'Open Triangle'
         };
+        // CTK-3200 Drum Sets (Program Change + Bank MSB)
+const CTK_DRUMSETS = [
+    { name: 'Standard', bankMSB: 120, program: 0 },
+    { name: 'Room', bankMSB: 120, program: 8 },
+    { name: 'Power', bankMSB: 120, program: 16 },
+    { name: 'Synth', bankMSB: 120, program: 25 },
+    { name: 'Brush', bankMSB: 120, program: 40 },
+    { name: 'Orchestra', bankMSB: 120, program: 48 }
+];
 
         // Drum color groups for User1 mode
         const DRUM_COLORS = [
@@ -2838,16 +2847,59 @@
             }
         }
 
-        function handleLaunchpadNoteOn(note, velocity) {
-            // Find which pad or button
-            for (let row = 0; row < 8; row++) {
-                for (let col = 0; col < 8; col++) {
-                    if (LP_MAPPING.pads[row][col] === note) {
-                        handleLPPadPress(row, col);
-                        return;
-                    }
-                }
+     function handleLaunchpadNoteOn(note, velocity) {
+
+    // === 8x8 GRID ===
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            if (LP_MAPPING.pads[row][col] === note) {
+                handleLPPadPress(row, col);
+                return;
             }
+        }
+    }
+
+    // === RIGHT BUTTONS (Volume column) ===
+    for (let i = 0; i < LP_MAPPING.rightButtons.length; i++) {
+        if (LP_MAPPING.rightButtons[i] === note) {
+            handleLaunchpadRightButton(i, velocity);
+            return;
+        }
+    }
+}
+function handleLaunchpadRightButton(index, velocity) {
+
+    if (velocity === 0) return;
+
+    // SESSION MODE ONLY
+    if (state.launchpadMode !== 'session') return;
+
+    // 6 boutons du haut
+    if (index < 2 || index > 7) return;
+
+    const drumIndex = 7 - index;
+    const drum = CTK_DRUMSETS[drumIndex];
+
+    if (!drum || !state.midiOutCTK) return;
+
+    const channel = 9; // MIDI channel 10 (0-based)
+
+    // BANK SELECT MSB
+    state.midiOutCTK.send([
+        0xB0 | channel,
+        0x00,
+        drum.bankMSB
+    ]);
+
+    // PROGRAM CHANGE
+    state.midiOutCTK.send([
+        0xC0 | channel,
+        drum.program
+    ]);
+
+    showToast(`Drum Set: ${drum.name}`);
+}
+
             
             // Check right buttons
             const rightIndex = LP_MAPPING.rightButtons.indexOf(note);
