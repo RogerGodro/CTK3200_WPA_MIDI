@@ -375,15 +375,65 @@
 
         /* Current Chord Display */
         .chord-display {
-            height: 120px;
+            height: auto;
+            min-height: 100px;
             background: linear-gradient(135deg, var(--bg-medium) 0%, var(--bg-light) 50%);
             border-radius: 16px;
             border: 2px solid var(--bg-lighter);
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: column;
+            padding: 10px;
             position: relative;
             overflow: hidden;
+        }
+        
+        .chord-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            z-index: 10;
+        }
+        
+        .instrument-select {
+            background: var(--bg-dark);
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        
+        .instrument-select:hover {
+            background: rgba(0, 255, 136, 0.1);
+        }
+        
+        .chord-velocity-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .chord-velocity-control label {
+            color: var(--accent);
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .chord-velocity-control input {
+            width: 60px;
+            height: 4px;
+        }
+        
+        .chord-velocity-control span {
+            color: var(--primary);
+            font-size: 11px;
+            font-weight: 700;
+            min-width: 25px;
         }
 
         .chord-display::before {
@@ -403,12 +453,13 @@
         }
 
         .chord-text {
-            font-size: 56px;
+            font-size: 36px;
             font-weight: 900;
             background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             z-index: 1;
+            margin: 5px 0;
         }
 
         /* Chord Pads */
@@ -468,6 +519,25 @@
         .chord-pad.active .chord-name,
         .chord-pad.active .chord-type {
             color: var(--bg-dark);
+        }
+        
+        /* Harmony coloring based on circle of fifths */
+        .chord-pad.harmony-perfect {
+            background: linear-gradient(145deg, rgba(0, 255, 0, 0.2) 0%, rgba(0, 255, 0, 0.1) 100%) !important;
+            border-color: rgba(0, 255, 0, 0.8) !important;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+        
+        .chord-pad.harmony-good {
+            background: linear-gradient(145deg, rgba(255, 255, 0, 0.2) 0%, rgba(255, 255, 0, 0.1) 100%) !important;
+            border-color: rgba(255, 255, 0, 0.8) !important;
+            box-shadow: 0 0 10px rgba(255, 255, 0, 0.3);
+        }
+        
+        .chord-pad.harmony-clash {
+            background: linear-gradient(145deg, rgba(255, 0, 0, 0.2) 0%, rgba(255, 0, 0, 0.1) 100%) !important;
+            border-color: rgba(255, 0, 0, 0.8) !important;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
         }
 
         /* Pattern Sequencer */
@@ -1010,6 +1080,31 @@
             <div class="center-panel">
                 <!-- Current Chord Display -->
                 <div class="chord-display">
+                    <div class="chord-controls">
+                        <select id="chordInstrument" class="instrument-select">
+                            <option value="0">Grand Piano</option>
+                            <option value="1">Bright Piano</option>
+                            <option value="4">Electric Piano</option>
+                            <option value="24">Nylon Guitar</option>
+                            <option value="25">Steel Guitar</option>
+                            <option value="26">Jazz Guitar</option>
+                            <option value="27">Clean Guitar</option>
+                            <option value="16">Drawbar Organ</option>
+                            <option value="17">Perc. Organ</option>
+                            <option value="19">Church Organ</option>
+                            <option value="21">Accordion</option>
+                            <option value="48">Strings</option>
+                            <option value="50">Synth Strings</option>
+                            <option value="61">Brass</option>
+                            <option value="89">Warm Pad</option>
+                            <option value="95">Sweep Pad</option>
+                        </select>
+                        <div class="chord-velocity-control">
+                            <label>Chord Vol</label>
+                            <input type="range" id="chordVelocity" min="1" max="127" value="80">
+                            <span id="chordVelValue">80</span>
+                        </div>
+                    </div>
                     <div class="chord-text" id="currentChord">C</div>
                 </div>
                 
@@ -1114,6 +1209,8 @@
             // Chord State
             currentChord: 'C',
             chordProgression: [],
+            chordInstrument: 0,  // Grand Piano default
+            chordVelocity: 80,   // Chord velocity default
             
             // Pattern Data (per style/section/variation)
             patterns: {},
@@ -1325,7 +1422,196 @@
                     D: { kick: '1111111111111111', snare: '1111111111111111', hihat: '1111111111111111', open: '0000000000000001' }
                 }
             },
-            // Add more styles here (16BEAT, POP, ROCK, JAZZ, LATIN)
+            '16BEAT': {
+                intro: {
+                    A: { kick: '1000100010001000', snare: '0000100000001000', hihat: '1010101010101010', open: '0000000000000001' },
+                    B: { kick: '1001100110011001', snare: '0000100000001000', hihat: '1111111111111111', open: '0000000000000001' },
+                    C: { kick: '1001100110011001', snare: '0000100100001000', hihat: '1111111111111111', open: '0001000000000001' },
+                    D: { kick: '1011101110111011', snare: '0000100100001001', hihat: '1111111111111111', open: '0001000100010001' }
+                },
+                main: {
+                    A: { kick: '1000001010000010', snare: '0000100000001000', hihat: '1111111111111111', open: '0000000000000000' },
+                    B: { kick: '1001001010010010', snare: '0000100000001000', hihat: '1111111111111111', open: '0000100000000000' },
+                    C: { kick: '1001001110010011', snare: '0000100100001000', hihat: '1111111111111111', open: '0000100000001000' },
+                    D: { kick: '1011101110111011', snare: '0000100100101001', hihat: '1111111111111111', open: '0001001000100010' }
+                },
+                chorus: {
+                    A: { kick: '1010001010100010', snare: '0000100000001000', hihat: '1111111111111111', open: '0000001000000100' },
+                    B: { kick: '1010101010101010', snare: '0000100100001000', hihat: '1111111111111111', open: '0000100000001000' },
+                    C: { kick: '1011101110111011', snare: '0000100100001001', hihat: '1111111111111111', open: '0001000100010001' },
+                    D: { kick: '1111101111111011', snare: '0010100100101001', hihat: '1111111111111111', open: '0100010001000100' }
+                },
+                fill: {
+                    A: { kick: '1000100010001111', snare: '0000000011111111', hihat: '1111111100000000', open: '0000000000000001' },
+                    B: { kick: '1010101010101111', snare: '0000111111111111', hihat: '1111000000000000', open: '0000000000000001' },
+                    C: { kick: '1111111111111111', snare: '0101010110101011', hihat: '1010101010101010', open: '0000000000000001' },
+                    D: { kick: '1111111111111111', snare: '1111111111111111', hihat: '0000000000000000', open: '0000000000000001' }
+                },
+                break: {
+                    A: { kick: '1000000010000000', snare: '0000000000000000', hihat: '1010101010101010', open: '0000000000000000' },
+                    B: { kick: '1000001010000010', snare: '0000100000001000', hihat: '0000000000000000', open: '0000000000000000' },
+                    C: { kick: '1001001010010010', snare: '0000000000000000', hihat: '1111111111111111', open: '0000000000000000' },
+                    D: { kick: '0000000000000000', snare: '0000000000000000', hihat: '1010101010101010', open: '0101010101010101' }
+                },
+                ending: {
+                    A: { kick: '1001001010011111', snare: '0000100011111111', hihat: '1111111100000000', open: '0000000000000001' },
+                    B: { kick: '1010101011111111', snare: '0101010111111111', hihat: '0000000000000000', open: '0000000000000001' },
+                    C: { kick: '1111111111111111', snare: '1010101011111111', hihat: '0101010100000000', open: '0000000000000001' },
+                    D: { kick: '1111111111111111', snare: '1111111111111111', hihat: '1111111111111111', open: '0000000000000001' }
+                }
+            },
+            'POP': {
+                intro: {
+                    A: { kick: '1000100010001000', snare: '0000100000001000', hihat: '1010101010101010', open: '0000000000000000' },
+                    B: { kick: '1001100010011000', snare: '0000100000001000', hihat: '1111111111111111', open: '0000000000000000' },
+                    C: { kick: '1001100110011001', snare: '0000100100001000', hihat: '1111111111111111', open: '0000100000001000' },
+                    D: { kick: '1011101110111011', snare: '0010100100101001', hihat: '1111111111111111', open: '0001000100010001' }
+                },
+                main: {
+                    A: { kick: '1001000010010000', snare: '0000100000001000', hihat: '1111111111111111', open: '0000000000000000' },
+                    B: { kick: '1001001010010010', snare: '0000100000001000', hihat: '1111111111111111', open: '0000100000000100' },
+                    C: { kick: '1011001010110010', snare: '0000100100001000', hihat: '1111111111111111', open: '0100001000000100' },
+                    D: { kick: '1011101110111011', snare: '0000100100001001', hihat: '1111111111111111', open: '0100010001000100' }
+                },
+                chorus: {
+                    A: { kick: '1010100010101000', snare: '0000100000001000', hihat: '1111111111111111', open: '0000001000000010' },
+                    B: { kick: '1010101010101010', snare: '0000100100001000', hihat: '1111111111111111', open: '0001000100010001' },
+                    C: { kick: '1111101110111011', snare: '0000100100001001', hihat: '1111111111111111', open: '0010001000100010' },
+                    D: { kick: '1111111111111111', snare: '0010100100101001', hihat: '1111111111111111', open: '0100010001000100' }
+                },
+                fill: {
+                    A: { kick: '1000100010001111', snare: '0000000011111111', hihat: '0000000000000000', open: '0000000000000001' },
+                    B: { kick: '1001001010011111', snare: '0000001111111111', hihat: '1111110000000000', open: '0000000000000001' },
+                    C: { kick: '1111111111111111', snare: '0101010110101011', hihat: '0000000000000000', open: '0000000000000001' },
+                    D: { kick: '1111111111111111', snare: '1111111111111111', hihat: '0000000000000000', open: '0000000000000001' }
+                },
+                break: {
+                    A: { kick: '1000000000000000', snare: '0000000000000000', hihat: '0000000000000000', open: '0000000000000000' },
+                    B: { kick: '1000000010000000', snare: '0000100000001000', hihat: '0000000000000000', open: '0000000000000000' },
+                    C: { kick: '1001000010010000', snare: '0000000000000000', hihat: '1111111111111111', open: '0000000000000000' },
+                    D: { kick: '0000000000000000', snare: '0000100000001000', hihat: '1010101010101010', open: '0000000000000000' }
+                },
+                ending: {
+                    A: { kick: '1001000010011111', snare: '0000100011111111', hihat: '0000000000000000', open: '0000000000000001' },
+                    B: { kick: '1010101011111111', snare: '0101010111111111', hihat: '0000000000000000', open: '0000000000000001' },
+                    C: { kick: '1111111111111111', snare: '1010101011111111', hihat: '0101010100000000', open: '0000000000000001' },
+                    D: { kick: '1111111111111111', snare: '1111111111111111', hihat: '1111111111111111', open: '0000000000000001' }
+                }
+            },
+            'ROCK': {
+                intro: {
+                    A: { kick: '1000100010001000', snare: '0000100000001000', hihat: '0000000000000000', open: '1111111111111111' },
+                    B: { kick: '1010100010101000', snare: '0000100000001000', hihat: '0000000000000000', open: '1111111111111111' },
+                    C: { kick: '1010101010101010', snare: '0000100100001000', hihat: '0000000000000000', open: '1111111111111111' },
+                    D: { kick: '1111101111111011', snare: '0010100100101001', hihat: '0000000000000000', open: '1111111111111111' }
+                },
+                main: {
+                    A: { kick: '1000100010001000', snare: '0000100000001000', hihat: '0000000000000000', open: '1010101010101010' },
+                    B: { kick: '1010100010101000', snare: '0000100000001000', hihat: '0000000000000000', open: '1111111111111111' },
+                    C: { kick: '1010101010101010', snare: '0000100100001000', hihat: '0000000000000000', open: '1111111111111111' },
+                    D: { kick: '1111101111111011', snare: '0010100100101001', hihat: '1111111111111111', open: '0000000000000000' }
+                },
+                chorus: {
+                    A: { kick: '1010100010101000', snare: '0000100000001000', hihat: '0000000000000000', open: '1111111111111111' },
+                    B: { kick: '1010101010101010', snare: '0000100100001000', hihat: '0000000000000000', open: '1111111111111111' },
+                    C: { kick: '1111101110111011', snare: '0010100100101001', hihat: '0000000000000000', open: '1111111111111111' },
+                    D: { kick: '1111111111111111', snare: '0010100100101001', hihat: '1111111111111111', open: '0000000000000000' }
+                },
+                fill: {
+                    A: { kick: '1000100010001111', snare: '0000000011111111', hihat: '0000000000000000', open: '1111111111111111' },
+                    B: { kick: '1010101010101111', snare: '0000111111111111', hihat: '0000000000000000', open: '1111111111111111' },
+                    C: { kick: '1111111111111111', snare: '0101010110101011', hihat: '0000000000000000', open: '1111111111111111' },
+                    D: { kick: '1111111111111111', snare: '1111111111111111', hihat: '1111111111111111', open: '1111111111111111' }
+                },
+                break: {
+                    A: { kick: '1000000000000000', snare: '0000000000000000', hihat: '0000000000000000', open: '1000000000000000' },
+                    B: { kick: '1000000010000000', snare: '0000100000001000', hihat: '0000000000000000', open: '0000000000000000' },
+                    C: { kick: '1000100010001000', snare: '0000000000000000', hihat: '0000000000000000', open: '1111111111111111' },
+                    D: { kick: '0000000000000000', snare: '0000100000001000', hihat: '0000000000000000', open: '1010101010101010' }
+                },
+                ending: {
+                    A: { kick: '1000100010001111', snare: '0000100011111111', hihat: '0000000000000000', open: '1111111111111111' },
+                    B: { kick: '1010101011111111', snare: '0101010111111111', hihat: '0000000000000000', open: '1111111111111111' },
+                    C: { kick: '1111111111111111', snare: '1010101011111111', hihat: '0101010100000000', open: '1111111111111111' },
+                    D: { kick: '1111111111111111', snare: '1111111111111111', hihat: '1111111111111111', open: '1111111111111111' }
+                }
+            },
+            'JAZZ': {
+                intro: {
+                    A: { kick: '1000001000100010', snare: '0010001000001000', hihat: '1010100010101000', open: '0000000000000000' },
+                    B: { kick: '1000100000100010', snare: '0010001001001000', hihat: '1011101010111010', open: '0000000000000000' },
+                    C: { kick: '1001001000100100', snare: '0010001001001000', hihat: '1111101111111011', open: '0000000000000000' },
+                    D: { kick: '1011001010110010', snare: '0010101001001010', hihat: '1111111111111111', open: '0000000000000000' }
+                },
+                main: {
+                    A: { kick: '1000001000100000', snare: '0010000000100100', hihat: '1010101010101010', open: '0000000000000000' },
+                    B: { kick: '1000100000100010', snare: '0010001000100100', hihat: '1011101110111011', open: '0000000000000000' },
+                    C: { kick: '1001001000100100', snare: '0010001001001000', hihat: '1111101111111011', open: '0000000000000000' },
+                    D: { kick: '1011001010110010', snare: '0010101001001010', hihat: '1111111111111111', open: '0000000000000000' }
+                },
+                chorus: {
+                    A: { kick: '1000100010001000', snare: '0010000100100010', hihat: '1111111111111111', open: '0000000000000000' },
+                    B: { kick: '1001001001001001', snare: '0010010100100101', hihat: '1111111111111111', open: '0000000000000000' },
+                    C: { kick: '1011001010110010', snare: '0010101001001010', hihat: '1111111111111111', open: '0000000000000000' },
+                    D: { kick: '1111101111111011', snare: '0010101010101010', hihat: '1111111111111111', open: '0000000000000000' }
+                },
+                fill: {
+                    A: { kick: '1000001000001111', snare: '0010101011111111', hihat: '1111111100000000', open: '0000000000000000' },
+                    B: { kick: '1001001001001111', snare: '0010111111111111', hihat: '1111110000000000', open: '0000000000000000' },
+                    C: { kick: '1111111111111111', snare: '0101010110101011', hihat: '1010101010101010', open: '0000000000000000' },
+                    D: { kick: '1111111111111111', snare: '1111111111111111', hihat: '0000000000000000', open: '0000000000000001' }
+                },
+                break: {
+                    A: { kick: '1000000000000000', snare: '0010000000000000', hihat: '1010101010101010', open: '0000000000000000' },
+                    B: { kick: '1000001000000000', snare: '0010000000100000', hihat: '0000000000000000', open: '0000000000000000' },
+                    C: { kick: '1000001000100010', snare: '0000000000000000', hihat: '1111111111111111', open: '0000000000000000' },
+                    D: { kick: '0000000000000000', snare: '0010001000100010', hihat: '1010101010101010', open: '0000000000000000' }
+                },
+                ending: {
+                    A: { kick: '1000001000001111', snare: '0010001011111111', hihat: '0000000000000000', open: '0000000000000001' },
+                    B: { kick: '1001001011111111', snare: '0010101111111111', hihat: '0000000000000000', open: '0000000000000001' },
+                    C: { kick: '1111111111111111', snare: '1010101011111111', hihat: '0101010100000000', open: '0000000000000001' },
+                    D: { kick: '1111111111111111', snare: '1111111111111111', hihat: '1111111111111111', open: '0000000000000001' }
+                }
+            },
+            'LATIN': {
+                intro: {
+                    A: { kick: '1001000010010000', snare: '0000001000000010', hihat: '1010101010101010', open: '0100010001000100' },
+                    B: { kick: '1001001010010010', snare: '0001001000010010', hihat: '1111111111111111', open: '0100010001000100' },
+                    C: { kick: '1011001010110010', snare: '0001001000010010', hihat: '1111111111111111', open: '1000100010001000' },
+                    D: { kick: '1011101110111011', snare: '0001101100011011', hihat: '1111111111111111', open: '1000100010001000' }
+                },
+                main: {
+                    A: { kick: '1001000010010000', snare: '0001000000010000', hihat: '1010101010101010', open: '0100010001000100' },
+                    B: { kick: '1001001010010010', snare: '0001001000010010', hihat: '1111111111111111', open: '0100010001000100' },
+                    C: { kick: '1011001010110010', snare: '0001001000010010', hihat: '1111111111111111', open: '1000100010001000' },
+                    D: { kick: '1011101110111011', snare: '0001101100011011', hihat: '1111111111111111', open: '1000100010001000' }
+                },
+                chorus: {
+                    A: { kick: '1010100010101000', snare: '0001001000010010', hihat: '1111111111111111', open: '0100010001000100' },
+                    B: { kick: '1010101010101010', snare: '0001001000010010', hihat: '1111111111111111', open: '1000100010001000' },
+                    C: { kick: '1011101110111011', snare: '0001101100011011', hihat: '1111111111111111', open: '1000100010001000' },
+                    D: { kick: '1111111111111111', snare: '0011011001101100', hihat: '1111111111111111', open: '1000100010001000' }
+                },
+                fill: {
+                    A: { kick: '1001000010011111', snare: '0001000011111111', hihat: '0000000000000000', open: '0100010000000001' },
+                    B: { kick: '1001001010011111', snare: '0001111111111111', hihat: '1111000000000000', open: '0000000000000001' },
+                    C: { kick: '1111111111111111', snare: '0101010110101011', hihat: '0000000000000000', open: '0000000000000001' },
+                    D: { kick: '1111111111111111', snare: '1111111111111111', hihat: '0000000000000000', open: '0000000000000001' }
+                },
+                break: {
+                    A: { kick: '1001000000000000', snare: '0001000000000000', hihat: '0000000000000000', open: '0100010000000000' },
+                    B: { kick: '1001000010010000', snare: '0001000000010000', hihat: '0000000000000000', open: '0100010001000100' },
+                    C: { kick: '1001001010010010', snare: '0000000000000000', hihat: '1111111111111111', open: '0000000000000000' },
+                    D: { kick: '0000000000000000', snare: '0001001000010010', hihat: '1010101010101010', open: '0100010001000100' }
+                },
+                ending: {
+                    A: { kick: '1001000010011111', snare: '0001000011111111', hihat: '0000000000000000', open: '0100010000000001' },
+                    B: { kick: '1010101011111111', snare: '0001010111111111', hihat: '0000000000000000', open: '0000000000000001' },
+                    C: { kick: '1111111111111111', snare: '1010101011111111', hihat: '0101010100000000', open: '0000000000000001' },
+                    D: { kick: '1111111111111111', snare: '1111111111111111', hihat: '1111111111111111', open: '0000000000000001' }
+                }
+            }
         };
 
         // Chord definitions
@@ -1635,6 +1921,24 @@
                         break;
                 }
             });
+            
+            // Chord instrument selector
+            const chordInstrumentSelect = document.getElementById('chordInstrument');
+            if (chordInstrumentSelect) {
+                chordInstrumentSelect.addEventListener('change', (e) => {
+                    state.chordInstrument = parseInt(e.target.value);
+                    showMessage(`Chord instrument: ${e.target.options[e.target.selectedIndex].text}`);
+                });
+            }
+            
+            // Chord velocity control
+            const chordVelocitySlider = document.getElementById('chordVelocity');
+            if (chordVelocitySlider) {
+                chordVelocitySlider.addEventListener('input', (e) => {
+                    state.chordVelocity = parseInt(e.target.value);
+                    document.getElementById('chordVelValue').textContent = e.target.value;
+                });
+            }
         }
 
         function setupKnobControl(knobId, valueId, callback) {
@@ -2786,8 +3090,12 @@
             document.getElementById('currentChord').textContent = chord.name;
             
             if (state.midiOutCTK) {
+                // Send program change for chord instrument (channel 1)
+                state.midiOutCTK.send([0xC0, state.chordInstrument]);
+                
+                // Play chord notes with chord velocity
                 chord.notes.forEach(note => {
-                    state.midiOutCTK.send([0x90, note, state.velocity]);
+                    state.midiOutCTK.send([0x90, note, state.chordVelocity]);
                 });
             }
             
@@ -2798,6 +3106,9 @@
                     beat: state.currentBeat
                 });
             }
+            
+            // Update harmony coloring for all pads
+            updateChordHarmony(chord.name);
             
             // Visual feedback
             document.querySelectorAll('.chord-pad').forEach(pad => {
@@ -2817,6 +3128,83 @@
             document.querySelectorAll('.chord-pad').forEach(pad => {
                 pad.classList.remove('active');
             });
+        }
+
+        // ==========================================
+        // CHORD HARMONY SYSTEM (Circle of Fifths)
+        // ==========================================
+        
+        function updateChordHarmony(currentChord) {
+            // Define the circle of fifths relationships
+            const circleOfFifths = {
+                'C': { perfect: ['G', 'F', 'Am'], good: ['Em', 'Dm'], relative: 'Am' },
+                'G': { perfect: ['D', 'C', 'Em'], good: ['Bm', 'Am'], relative: 'Em' },
+                'D': { perfect: ['A', 'G', 'Bm'], good: ['F#m', 'Em'], relative: 'Bm' },
+                'A': { perfect: ['E', 'D', 'F#m'], good: ['C#m', 'Bm'], relative: 'F#m' },
+                'E': { perfect: ['B', 'A', 'C#m'], good: ['G#m', 'F#m'], relative: 'C#m' },
+                'F': { perfect: ['C', 'Bb', 'Dm'], good: ['Am', 'Gm'], relative: 'Dm' },
+                'Am': { perfect: ['Dm', 'Em', 'C'], good: ['F', 'G'], relative: 'C' },
+                'Em': { perfect: ['Am', 'Bm', 'G'], good: ['C', 'D'], relative: 'G' },
+                'Bm': { perfect: ['Em', 'F#m', 'D'], good: ['G', 'A'], relative: 'D' },
+                'Dm': { perfect: ['Gm', 'Am', 'F'], good: ['Bb', 'C'], relative: 'F' },
+                'Gm': { perfect: ['Cm', 'Dm', 'Bb'], good: ['Eb', 'F'], relative: 'Bb' },
+                'Cm': { perfect: ['Fm', 'Gm', 'Eb'], good: ['Ab', 'Bb'], relative: 'Eb' },
+                'Fm': { perfect: ['Bbm', 'Cm', 'Ab'], good: ['Db', 'Eb'], relative: 'Ab' },
+                // Add 7th chord variants
+                'C7': { perfect: ['G7', 'F', 'Am'], good: ['Em', 'Dm7'], relative: 'Am' },
+                'G7': { perfect: ['D7', 'C', 'Em'], good: ['Bm', 'Am7'], relative: 'Em' },
+                'D7': { perfect: ['A7', 'G', 'Bm'], good: ['F#m', 'Em7'], relative: 'Bm' },
+                'A7': { perfect: ['E7', 'D', 'F#m'], good: ['C#m', 'Bm7'], relative: 'F#m' },
+                'E7': { perfect: ['B7', 'A', 'C#m'], good: ['G#m', 'F#m7'], relative: 'C#m' },
+                'F7': { perfect: ['C7', 'Bb', 'Dm'], good: ['Am', 'Gm7'], relative: 'Dm' }
+            };
+            
+            // Get base chord name for lookup
+            const baseChord = currentChord.replace(/maj7|m7|sus|dim|aug/g, '');
+            const harmonyInfo = circleOfFifths[baseChord] || {};
+            
+            // Clear previous harmony classes
+            document.querySelectorAll('.chord-pad').forEach(pad => {
+                pad.classList.remove('harmony-perfect', 'harmony-good', 'harmony-clash');
+            });
+            
+            // Apply harmony coloring
+            document.querySelectorAll('.chord-pad').forEach(pad => {
+                if (pad.classList.contains('active')) return; // Skip current chord
+                
+                const padChord = pad.querySelector('.chord-name').textContent;
+                const basePadChord = padChord.replace(/maj7|m7|sus|dim|aug/g, '');
+                
+                if (harmonyInfo.perfect && harmonyInfo.perfect.includes(basePadChord)) {
+                    // Perfect harmony (V, IV, relative) - GREEN
+                    pad.classList.add('harmony-perfect');
+                } else if (harmonyInfo.good && harmonyInfo.good.includes(basePadChord)) {
+                    // Good harmony (iii, vi) - YELLOW
+                    pad.classList.add('harmony-good');
+                } else if (isDissonant(baseChord, basePadChord)) {
+                    // Dissonant (semitone, tritone) - RED
+                    pad.classList.add('harmony-clash');
+                }
+            });
+        }
+        
+        function isDissonant(chord1, chord2) {
+            const roots = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+            
+            // Extract root notes
+            const root1 = chord1.replace(/m|7/, '').replace('b', '♭').replace('#', '#');
+            const root2 = chord2.replace(/m|7/, '').replace('b', '♭').replace('#', '#');
+            
+            const idx1 = roots.indexOf(root1);
+            const idx2 = roots.indexOf(root2);
+            
+            if (idx1 === -1 || idx2 === -1) return false;
+            
+            const interval = Math.abs(idx1 - idx2);
+            const normalizedInterval = Math.min(interval, 12 - interval);
+            
+            // Semitone (1) or tritone (6) are dissonant
+            return normalizedInterval === 1 || normalizedInterval === 6;
         }
 
         // ==========================================
