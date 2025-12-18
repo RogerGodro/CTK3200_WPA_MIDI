@@ -102,14 +102,14 @@
     ]
   },
   "rightButtons": [
-    {"position": 1, "note": 89, "name": "Volume", "abletonFunction": "Volume"},
-    {"position": 2, "note": 79, "name": "Pan", "abletonFunction": "Pan"},
-    {"position": 3, "note": 69, "name": "Send A", "abletonFunction": "Send A"},
-    {"position": 4, "note": 59, "name": "Send B", "abletonFunction": "Send B"},
-    {"position": 5, "note": 49, "name": "Stop", "abletonFunction": "Stop Clip"},
-    {"position": 6, "note": 39, "name": "Mute", "abletonFunction": "Mute"},
-    {"position": 7, "note": 29, "name": "Solo", "abletonFunction": "Solo"},
-    {"position": 8, "note": 19, "name": "Record Arm", "abletonFunction": "Record Arm"}
+    {"position": 1, "note": 89, "name": "Volume", "abletonFunction": "Volume", "row": 8},
+    {"position": 2, "note": 79, "name": "Pan", "abletonFunction": "Pan", "row": 7},
+    {"position": 3, "note": 69, "name": "Send A", "abletonFunction": "Send A", "row": 6},
+    {"position": 4, "note": 59, "name": "Send B", "abletonFunction": "Send B", "row": 5},
+    {"position": 5, "note": 49, "name": "Stop", "abletonFunction": "Stop Clip", "row": 4},
+    {"position": 6, "note": 39, "name": "Mute", "abletonFunction": "Mute", "row": 3},
+    {"position": 7, "note": 29, "name": "Solo", "abletonFunction": "Solo", "row": 2},
+    {"position": 8, "note": 19, "name": "Record Arm", "abletonFunction": "Record Arm", "row": 1}
   ],
   "topButtons": [
     {"position": 1, "cc": 104, "name": "Up", "symbol": "▲"},
