@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Local Control - CTK-3200</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #888;
+            margin-bottom: 30px;
+        }
+        .status {
+            background: #2a2a4a;
+            padding: 15px 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .status.connected {
+            border-left: 4px solid #4ade80;
+        }
+        .status.disconnected {
+            border-left: 4px solid #f87171;
+        }
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        button {
+            padding: 20px 40px;
+            font-size: 18px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-off {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-off:hover:not(:disabled) {
+            background: #dc2626;
+            transform: scale(1.05);
+        }
+        .btn-on {
+            background: #22c55e;
+            color: white;
+        }
+        .btn-on:hover:not(:disabled) {
+            background: #16a34a;
+            transform: scale(1.05);
+        }
+        .log {
+            background: #0a0a1a;
+            border-radius: 10px;
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        .log-entry.sent {
+            background: #1e3a5f;
+        }
+        .log-entry.info {
+            background: #3a3a5a;
+        }
+        .log-entry.error {
+            background: #5f1e1e;
+        }
+        .info-box {
+            background: #2a2a4a;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            max-width: 500px;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #fbbf24;
+        }
+        .info-box code {
+            background: #1a1a2e;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎹 Test Local Control</h1>
+    <p class="subtitle">CTK-3200 - CC #122</p>
+    
+    <div id="status" class="status disconnected">
+        En attente de connexion MIDI...
+    </div>
+    
+    <div class="controls">
+        <button id="btnOff" class="btn-off" disabled onclick="sendLocalControl(0)">
+            LOCAL OFF<br><small>(CC 122 = 0)</small>
+        </button>
+        <button id="btnOn" class="btn-on" disabled onclick="sendLocalControl(127)">
+            LOCAL ON<br><small>(CC 122 = 127)</small>
+        </button>
+    </div>
+    
+    <div class="log" id="log"></div>
+    
+    <div class="info-box">
+        <h3>📋 Comment tester</h3>
+        <p>1. Connecte ton CTK-3200 en USB</p>
+        <p>2. Clique sur <strong>LOCAL OFF</strong> ou <strong>LOCAL ON</strong></p>
+        <p>3. Vérifie sur le clavier si le paramètre a changé dans <code>Fonction → Local</code></p>
+        <p><strong>Résultat attendu:</strong> Probablement aucun changement (non supporté), mais on vérifie!</p>
+    </div>
+
+    <script>
+        let midiOutput = null;
+        const logEl = document.getElementById('log');
+        const statusEl = document.getElementById('status');
+        const btnOff = document.getElementById('btnOff');
+        const btnOn = document.getElementById('btnOn');
+
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const time = new Date().toLocaleTimeString();
+            entry.textContent = `[${time}] ${message}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function updateStatus(connected, deviceName = '') {
+            if (connected) {
+                statusEl.className = 'status connected';
+                statusEl.innerHTML = `✅ Connecté: <strong>${deviceName}</strong>`;
+                btnOff.disabled = false;
+                btnOn.disabled = false;
+            } else {
+                statusEl.className = 'status disconnected';
+                statusEl.textContent = '❌ Aucun périphérique MIDI trouvé';
+                btnOff.disabled = true;
+                btnOn.disabled = true;
+            }
+        }
+
+        function sendLocalControl(value) {
+            if (!midiOutput) {
+                log('Erreur: Pas de sortie MIDI', 'error');
+                return;
+            }
+            
+            // CC 122 sur canal 1 (status byte 0xB0)
+            const channel = 0; // Canal 1 (0-15)
+            const cc = 122;    // Local Control
+            
+            const message = [0xB0 + channel, cc, value];
+            midiOutput.send(message);
+            
+            const state = value === 0 ? 'OFF' : 'ON';
+            log(`Envoyé: CC 122 = ${value} (Local ${state})`, 'sent');
+            log(`Bytes: [0x${message[0].toString(16).toUpperCase()}, ${cc}, ${value}]`, 'info');
+        }
+
+        async function initMIDI() {
+            log('Initialisation Web MIDI...');
+            
+            if (!navigator.requestMIDIAccess) {
+                log('Web MIDI non supporté par ce navigateur!', 'error');
+                return;
+            }
+
+            try {
+                const midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+                log('Accès MIDI obtenu');
+                
+                // Chercher le CTK-3200 ou prendre la première sortie
+                for (const output of midiAccess.outputs.values()) {
+                    log(`Sortie trouvée: ${output.name}`);
+                    if (output.name.includes('CTK') || output.name.includes('CASIO')) {
+                        midiOutput = output;
+                        break;
+                    }
+                }
+                
+                // Si pas de Casio trouvé, prendre la première sortie
+                if (!midiOutput && midiAccess.outputs.size > 0) {
+                    midiOutput = midiAccess.outputs.values().next().value;
+                }
+                
+                if (midiOutput) {
+                    updateStatus(true, midiOutput.name);
+                    log(`Sortie sélectionnée: ${midiOutput.name}`, 'info');
+                } else {
+                    updateStatus(false);
+                    log('Aucune sortie MIDI disponible', 'error');
+                }
+                
+                // Gérer les connexions/déconnexions
+                midiAccess.onstatechange = (e) => {
+                    log(`État changé: ${e.port.name} - ${e.port.state}`);
+                    if (e.port.state === 'disconnected' && e.port === midiOutput) {
+                        midiOutput = null;
+                        updateStatus(false);
+                    }
+                };
+                
+            } catch (err) {
+                log(`Erreur MIDI: ${err.message}`, 'error');
+            }
+        }
+
+        // Démarrer
+        initMIDI();
+    </script>
+</body>
+</html>
