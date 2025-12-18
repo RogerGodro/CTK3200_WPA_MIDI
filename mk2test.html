@@ -222,8 +222,8 @@
                 }
             }
             
-            // Boutons de droite (du haut vers le bas = position 8 à 1)
-            for (let pos = 8; pos >= 1; pos--) {
+            // Boutons de droite (position 1 = haut = Volume, position 8 = bas = Record Arm)
+            for (let pos = 1; pos <= 8; pos++) {
                 const btn = mapping.rightButtons.find(b => b.position === pos);
                 const el = document.createElement('div');
                 el.className = 'right-btn';
@@ -269,8 +269,9 @@
             const [status, data1, data2] = event.data;
             const statusType = status & 0xF0;
             
-            // Ignorer Note Off
+            // Ignorer Note Off et CC release (velocity 0)
             if (statusType === 0x80 || (statusType === 0x90 && data2 === 0)) return;
+            if (statusType === 0xB0 && data2 === 0) return;
             
             if (statusType === 0x90) {
                 // Note On - Pad ou bouton droite
