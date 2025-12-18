@@ -35,7 +35,7 @@
             border-radius: 12px;
             margin-bottom: 20px;
             width: 100%;
-            max-width: 500px;
+            max-width: 550px;
         }
         
         .control-row {
@@ -74,9 +74,7 @@
             cursor: pointer;
         }
         
-        input[type="range"] {
-            flex: 1;
-        }
+        input[type="range"] { flex: 1; }
         
         .speed-value {
             width: 50px;
@@ -92,7 +90,7 @@
         }
         
         button {
-            padding: 12px 25px;
+            padding: 10px 20px;
             border-radius: 8px;
             border: none;
             font-size: 14px;
@@ -100,26 +98,32 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-        button.primary {
-            background: #00ffcc;
-            color: #000;
-        }
+        button.primary { background: #00ffcc; color: #000; }
         button.primary:hover { background: #00ff99; }
-        button.secondary {
-            background: #555;
-            color: #fff;
-        }
+        button.secondary { background: #555; color: #fff; }
         button.secondary:hover { background: #666; }
-        button.danger {
-            background: #ff4444;
-            color: #fff;
-        }
+        button.danger { background: #ff4444; color: #fff; }
         button.danger:hover { background: #ff6666; }
+        button.rotate { background: #aa66ff; color: #fff; font-size: 18px; padding: 10px 15px; }
+        button.rotate:hover { background: #bb88ff; }
         
         .buttons-row {
             display: flex;
             gap: 10px;
             justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .rotation-info {
+            background: #1a1a2e;
+            padding: 8px 15px;
+            border-radius: 6px;
+            color: #00ffcc;
+            font-size: 14px;
+        }
+        
+        .launchpad-container {
+            position: relative;
         }
         
         .launchpad {
@@ -127,6 +131,7 @@
             border-radius: 12px;
             padding: 15px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            transition: transform 0.3s;
         }
         
         .grid {
@@ -179,6 +184,12 @@
             <input type="range" id="speed" min="50" max="500" value="150">
             <span class="speed-value" id="speedValue">150ms</span>
         </div>
+        <div class="control-row">
+            <label>Rotation</label>
+            <button class="rotate" onclick="rotate(-90)">↶</button>
+            <span class="rotation-info" id="rotationInfo">0°</span>
+            <button class="rotate" onclick="rotate(90)">↷</button>
+        </div>
         <div class="control-row buttons-row">
             <button class="primary" onclick="startScroll()">▶ Démarrer</button>
             <button class="secondary" onclick="stopScroll()">⏹ Stop</button>
@@ -186,8 +197,10 @@
         </div>
     </div>
     
-    <div class="launchpad">
-        <div class="grid" id="grid"></div>
+    <div class="launchpad-container">
+        <div class="launchpad" id="launchpad">
+            <div class="grid" id="grid"></div>
+        </div>
     </div>
     
     <div class="info">
@@ -200,69 +213,66 @@
         let scrollInterval = null;
         let scrollPosition = 0;
         let bitmap = [];
+        let rotation = 0; // 0, 90, 180, 270
         
-        // Police bitmap 8 pixels de haut (chaque caractère = tableau de colonnes)
+        // Police bitmap 8 pixels de haut
+        // Chaque valeur = une colonne, bit 0 = bas (row 1), bit 7 = haut (row 8)
         const FONT = {
-            'A': [0x7E,0x09,0x09,0x09,0x7E],
+            'A': [0x7C,0x12,0x11,0x12,0x7C],
             'B': [0x7F,0x49,0x49,0x49,0x36],
             'C': [0x3E,0x41,0x41,0x41,0x22],
-            'D': [0x7F,0x41,0x41,0x41,0x3E],
+            'D': [0x7F,0x41,0x41,0x22,0x1C],
             'E': [0x7F,0x49,0x49,0x49,0x41],
             'F': [0x7F,0x09,0x09,0x09,0x01],
-            'G': [0x3E,0x41,0x49,0x49,0x3A],
+            'G': [0x3E,0x41,0x49,0x49,0x7A],
             'H': [0x7F,0x08,0x08,0x08,0x7F],
             'I': [0x41,0x7F,0x41],
-            'J': [0x20,0x40,0x40,0x3F],
+            'J': [0x20,0x40,0x41,0x3F,0x01],
             'K': [0x7F,0x08,0x14,0x22,0x41],
             'L': [0x7F,0x40,0x40,0x40,0x40],
-            'M': [0x7F,0x02,0x04,0x02,0x7F],
-            'N': [0x7F,0x02,0x04,0x08,0x7F],
+            'M': [0x7F,0x02,0x0C,0x02,0x7F],
+            'N': [0x7F,0x04,0x08,0x10,0x7F],
             'O': [0x3E,0x41,0x41,0x41,0x3E],
             'P': [0x7F,0x09,0x09,0x09,0x06],
             'Q': [0x3E,0x41,0x51,0x21,0x5E],
             'R': [0x7F,0x09,0x19,0x29,0x46],
-            'S': [0x26,0x49,0x49,0x49,0x32],
+            'S': [0x46,0x49,0x49,0x49,0x31],
             'T': [0x01,0x01,0x7F,0x01,0x01],
             'U': [0x3F,0x40,0x40,0x40,0x3F],
             'V': [0x1F,0x20,0x40,0x20,0x1F],
-            'W': [0x3F,0x40,0x30,0x40,0x3F],
+            'W': [0x3F,0x40,0x38,0x40,0x3F],
             'X': [0x63,0x14,0x08,0x14,0x63],
-            'Y': [0x03,0x04,0x78,0x04,0x03],
+            'Y': [0x07,0x08,0x70,0x08,0x07],
             'Z': [0x61,0x51,0x49,0x45,0x43],
             '0': [0x3E,0x51,0x49,0x45,0x3E],
-            '1': [0x42,0x7F,0x40],
-            '2': [0x62,0x51,0x49,0x49,0x46],
-            '3': [0x22,0x41,0x49,0x49,0x36],
+            '1': [0x00,0x42,0x7F,0x40,0x00],
+            '2': [0x42,0x61,0x51,0x49,0x46],
+            '3': [0x21,0x41,0x45,0x4B,0x31],
             '4': [0x18,0x14,0x12,0x7F,0x10],
             '5': [0x27,0x45,0x45,0x45,0x39],
-            '6': [0x3E,0x49,0x49,0x49,0x32],
+            '6': [0x3C,0x4A,0x49,0x49,0x30],
             '7': [0x01,0x71,0x09,0x05,0x03],
             '8': [0x36,0x49,0x49,0x49,0x36],
-            '9': [0x26,0x49,0x49,0x49,0x3E],
+            '9': [0x06,0x49,0x49,0x29,0x1E],
             ' ': [0x00,0x00,0x00],
             '!': [0x5F],
             '?': [0x02,0x01,0x51,0x09,0x06],
-            '.': [0x40],
-            ',': [0x80,0x40],
+            '.': [0x60],
+            ',': [0x80,0x60],
             '-': [0x08,0x08,0x08],
             '+': [0x08,0x08,0x3E,0x08,0x08],
             '=': [0x14,0x14,0x14],
-            ':': [0x24],
+            ':': [0x36],
             "'": [0x03],
             '"': [0x03,0x00,0x03],
             '(': [0x1C,0x22,0x41],
             ')': [0x41,0x22,0x1C],
-            '/': [0x40,0x20,0x10,0x08,0x04],
+            '/': [0x20,0x10,0x08,0x04,0x02],
             '<': [0x08,0x14,0x22,0x41],
             '>': [0x41,0x22,0x14,0x08],
             '*': [0x14,0x08,0x3E,0x08,0x14],
             '#': [0x14,0x7F,0x14,0x7F,0x14],
-            '@': [0x3E,0x41,0x5D,0x55,0x1E],
-            '&': [0x36,0x49,0x55,0x22,0x50],
-            '%': [0x23,0x13,0x08,0x64,0x62],
-            '$': [0x26,0x49,0x7F,0x49,0x32],
-            '_': [0x40,0x40,0x40,0x40,0x40],
-            '^': [0x04,0x02,0x01,0x02,0x04]
+            '_': [0x40,0x40,0x40,0x40,0x40]
         };
 
         async function loadMapping() {
@@ -278,7 +288,6 @@
 
         function buildGrid() {
             const grid = document.getElementById('grid');
-            // Row 8 en haut visuel, row 1 en bas (selon documentation)
             for (let row = 8; row >= 1; row--) {
                 for (let col = 1; col <= 8; col++) {
                     const pad = document.createElement('div');
@@ -316,36 +325,56 @@
             const r = parseInt(hex.slice(1, 3), 16);
             const g = parseInt(hex.slice(3, 5), 16);
             const b = parseInt(hex.slice(5, 7), 16);
-            // Convertir 0-255 vers 0-63 pour SysEx
-            return [Math.round(r / 4), Math.round(g / 4), Math.round(b / 4)];
+            // Convertir 0-255 vers 0-63 (max 63, pas 64!)
+            return [Math.min(63, Math.floor(r / 4)), Math.min(63, Math.floor(g / 4)), Math.min(63, Math.floor(b / 4))];
         }
 
-        function setLedRGB(note, r, g, b) {
+        function setLed(note, hex) {
             if (!midiOutput) return;
-            // SysEx: F0 00 20 29 02 18 0B note r g b F7
+            const [r, g, b] = hexToRgb63(hex);
+            // SysEx RGB: F0 00 20 29 02 18 0B note r g b F7
             midiOutput.send([0xF0, 0x00, 0x20, 0x29, 0x02, 0x18, 0x0B, note, r, g, b, 0xF7]);
         }
 
-        function setPixel(row, col, isLit) {
+        function transformCoords(row, col) {
+            // Applique la rotation pour le MK2
+            let newRow, newCol;
+            switch (rotation) {
+                case 90: // 90° horaire
+                    newRow = col;
+                    newCol = 9 - row;
+                    break;
+                case 180:
+                    newRow = 9 - row;
+                    newCol = 9 - col;
+                    break;
+                case 270: // 90° anti-horaire
+                    newRow = 9 - col;
+                    newCol = row;
+                    break;
+                default: // 0
+                    newRow = row;
+                    newCol = col;
+            }
+            return [newRow, newCol];
+        }
+
+        function setPixel(logicalRow, logicalCol, isLit) {
             const textHex = document.getElementById('textColor').value;
             const bgHex = document.getElementById('bgColor').value;
-            const [tr, tg, tb] = hexToRgb63(textHex);
-            const [br, bg, bb] = hexToRgb63(bgHex);
+            const color = isLit ? textHex : bgHex;
             
-            const note = mapping.lookup.positionToNote[`${row}-${col}`];
-            if (note) {
-                if (isLit) {
-                    setLedRGB(note, tr, tg, tb);
-                } else {
-                    setLedRGB(note, br, bg, bb);
-                }
+            // Appliquer rotation pour le Launchpad physique
+            const [physRow, physCol] = transformCoords(logicalRow, logicalCol);
+            
+            if (physRow >= 1 && physRow <= 8 && physCol >= 1 && physCol <= 8) {
+                const note = mapping.lookup.positionToNote[`${physRow}-${physCol}`];
+                if (note) setLed(note, color);
             }
             
-            // Update UI
-            const pad = document.getElementById(`pad-${row}-${col}`);
-            if (pad) {
-                pad.style.background = isLit ? textHex : bgHex;
-            }
+            // UI: affiche toujours sans rotation (pour voir le texte lisible)
+            const pad = document.getElementById(`pad-${logicalRow}-${logicalCol}`);
+            if (pad) pad.style.background = color;
         }
 
         function textToBitmap(text) {
@@ -360,11 +389,7 @@
                 result.push(0x00); // Espace entre caractères
             }
             
-            // Ajouter 8 colonnes vides à la fin pour que le texte sorte complètement
-            for (let i = 0; i < 8; i++) {
-                result.push(0x00);
-            }
-            
+            for (let i = 0; i < 8; i++) result.push(0x00);
             return result;
         }
 
@@ -374,8 +399,10 @@
                 const colData = bitmapCol >= 0 && bitmapCol < bitmap.length ? bitmap[bitmapCol] : 0;
                 
                 for (let row = 1; row <= 8; row++) {
-                    // Bit 0 = row 1 (bas), bit 7 = row 8 (haut)
-                    const isLit = (colData & (1 << (row - 1))) !== 0;
+                    // Police: bit 0 = haut de lettre, bit 6 = bas de lettre
+                    // Écran: row 8 = haut, row 1 = bas
+                    // Donc bit 0 → row 8, bit 7 → row 1
+                    const isLit = (colData & (1 << (8 - row))) !== 0;
                     setPixel(row, col, isLit);
                 }
             }
@@ -386,18 +413,14 @@
             
             const text = document.getElementById('message').value || 'HELLO!';
             bitmap = textToBitmap(text);
-            scrollPosition = -8; // Commence hors écran à droite
+            scrollPosition = -8;
             
             const speed = parseInt(document.getElementById('speed').value);
             
             scrollInterval = setInterval(() => {
                 renderFrame(scrollPosition);
                 scrollPosition++;
-                
-                // Boucle le message
-                if (scrollPosition >= bitmap.length) {
-                    scrollPosition = -8;
-                }
+                if (scrollPosition >= bitmap.length) scrollPosition = -8;
             }, speed);
         }
 
@@ -411,26 +434,22 @@
         function clearDisplay() {
             stopScroll();
             const bgHex = document.getElementById('bgColor').value;
-            const [r, g, b] = hexToRgb63(bgHex);
             
-            // Effacer tous les pads
-            if (midiOutput) {
-                // SysEx clear all avec couleur de fond
-                for (let row = 1; row <= 8; row++) {
-                    for (let col = 1; col <= 8; col++) {
-                        const note = mapping.lookup.positionToNote[`${row}-${col}`];
-                        setLedRGB(note, r, g, b);
-                    }
-                }
-            }
-            
-            // Update UI
             for (let row = 1; row <= 8; row++) {
                 for (let col = 1; col <= 8; col++) {
+                    const note = mapping.lookup.positionToNote[`${row}-${col}`];
+                    if (note) setLed(note, bgHex);
                     const pad = document.getElementById(`pad-${row}-${col}`);
                     if (pad) pad.style.background = bgHex;
                 }
             }
+        }
+
+        function rotate(degrees) {
+            rotation = (rotation + degrees + 360) % 360;
+            document.getElementById('rotationInfo').textContent = rotation + '°';
+            // Rotation visuelle de la preview
+            document.getElementById('launchpad').style.transform = `rotate(${rotation}deg)`;
         }
 
         // Event listeners
@@ -444,16 +463,13 @@
         
         document.getElementById('speed').addEventListener('input', (e) => {
             document.getElementById('speedValue').textContent = e.target.value + 'ms';
-            if (scrollInterval) {
-                startScroll(); // Redémarrer avec nouvelle vitesse
-            }
+            if (scrollInterval) startScroll();
         });
         
         document.getElementById('message').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') startScroll();
         });
 
-        // Charger le mapping au démarrage
         loadMapping();
     </script>
 </body>
