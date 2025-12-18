@@ -9,7 +9,103 @@
       "cols": 8
     },
     "generatedDate": "2025-12-18",
-    "version": "1.0.0"
+    "version": "1.1.0"
+  },
+  "documentation": {
+    "physicalLayout": {
+      "description": "Vue de face du Launchpad MK2",
+      "diagram": [
+        "┌─────────────────────────────────────────────────┐",
+        "│  [▲] [▼] [◄] [►] [Ses][U1][U2][Mix]            │ ← Boutons du HAUT (CC 104-111)",
+        "├─────────────────────────────────────────────────┤",
+        "│  [81][82][83][84][85][86][87][88]  (Volume)    │ ← Row 8 (HAUT de la grille)",
+        "│  [71][72][73][74][75][76][77][78]  (Pan)       │ ← Row 7",
+        "│  [61][62][63][64][65][66][67][68]  (Send A)    │ ← Row 6",
+        "│  [51][52][53][54][55][56][57][58]  (Send B)    │ ← Row 5",
+        "│  [41][42][43][44][45][46][47][48]  (Stop)      │ ← Row 4",
+        "│  [31][32][33][34][35][36][37][38]  (Mute)      │ ← Row 3",
+        "│  [21][22][23][24][25][26][27][28]  (Solo)      │ ← Row 2",
+        "│  [11][12][13][14][15][16][17][18]  (Rec Arm)   │ ← Row 1 (BAS de la grille)",
+        "├─────────────────────────────────────────────────┤",
+        "│   Col1 Col2 Col3 Col4 Col5 Col6 Col7 Col8     │",
+        "└─────────────────────────────────────────────────┘"
+      ],
+      "orientation": {
+        "grid": {
+          "row1": "BAS de la grille (près du bord inférieur)",
+          "row8": "HAUT de la grille (près des boutons du haut)",
+          "col1": "GAUCHE",
+          "col8": "DROITE"
+        },
+        "rightButtons": {
+          "position1": "HAUT (Volume, aligné avec row 8)",
+          "position8": "BAS (Record Arm, aligné avec row 1)"
+        },
+        "topButtons": {
+          "position1": "GAUCHE (Up/▲)",
+          "position8": "DROITE (Mixer)"
+        }
+      }
+    },
+    "midiMessages": {
+      "input": {
+        "gridPads": {
+          "type": "Note On/Off",
+          "channel": 1,
+          "press": "0x90 (144) + note + velocity (127)",
+          "release": "0x90 (144) + note + velocity (0)",
+          "note": "Attention: release envoie Note On avec velocity 0, PAS Note Off"
+        },
+        "rightButtons": {
+          "type": "Note On/Off",
+          "channel": 1,
+          "press": "0x90 (144) + note + velocity (127)",
+          "release": "0x90 (144) + note + velocity (0)"
+        },
+        "topButtons": {
+          "type": "Control Change",
+          "channel": 1,
+          "press": "0xB0 (176) + cc + value (127)",
+          "release": "0xB0 (176) + cc + value (0)",
+          "warning": "IMPORTANT: Les boutons du haut envoient value=0 au relâchement. Filtrer avec: if (value === 0) return;"
+        }
+      },
+      "output": {
+        "setLedColor": {
+          "method": "Note On avec velocity = index couleur",
+          "example": "[0x90, note, colorIndex]",
+          "forTopButtons": "[0xB0, cc, colorIndex]"
+        },
+        "setLedOff": {
+          "method": "Note On avec velocity 0 ou Note Off",
+          "example": "[0x90, note, 0] ou [0x80, note, 0]"
+        },
+        "setLedRGB": {
+          "method": "SysEx",
+          "example": "[0xF0, 0x00, 0x20, 0x29, 0x02, 0x18, 0x0B, note, r, g, b, 0xF7]",
+          "note": "r, g, b sont des valeurs 0-63 (pas 0-255)"
+        },
+        "clearAll": {
+          "method": "SysEx",
+          "example": "[0xF0, 0x00, 0x20, 0x29, 0x02, 0x18, 0x0E, 0, 0xF7]"
+        }
+      }
+    },
+    "commonMistakes": [
+      "❌ Oublier que row 1 est en BAS (pas en haut)",
+      "❌ Afficher les boutons de droite dans le mauvais ordre (position 1 = HAUT)",
+      "❌ Ne pas filtrer velocity/value 0 pour les boutons du haut (cause double-trigger)",
+      "❌ Confondre Note On velocity 0 avec Note Off (les pads envoient Note On vel 0)",
+      "❌ Utiliser des valeurs RGB 0-255 au lieu de 0-63 pour SysEx"
+    ],
+    "codeSnippets": {
+      "filterRelease": "if ((status === 0x90 && velocity === 0) || (status === 0xB0 && value === 0)) return;",
+      "noteToRowCol": "const row = Math.floor(note / 10); const col = note % 10;",
+      "rowColToNote": "const note = row * 10 + col;",
+      "isValidGridNote": "const isValid = note >= 11 && note <= 88 && (note % 10) >= 1 && (note % 10) <= 8;",
+      "renderGrid": "for (let row = 8; row >= 1; row--) { /* row 8 en haut visuel */ }",
+      "renderRightButtons": "for (let pos = 1; pos <= 8; pos++) { /* pos 1 en haut visuel */ }"
+    }
   },
   "midi": {
     "channels": {
