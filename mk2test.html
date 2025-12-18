@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Launchpad MK2 - Test Mapping</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #fff;
+        }
+        h1 { margin-bottom: 10px; color: #00ffcc; }
+        .status {
+            background: #2a2a4a;
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .status.connected { border: 2px solid #00ff88; }
+        .status.disconnected { border: 2px solid #ff4444; }
+        
+        .launchpad {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        
+        .top-row {
+            display: grid;
+            grid-template-columns: repeat(8, 50px) 50px;
+            gap: 8px;
+            margin-bottom: 8px;
+            padding-left: 0;
+        }
+        .top-btn {
+            width: 50px;
+            height: 25px;
+            border-radius: 4px;
+            background: #333;
+            border: 1px solid #444;
+            cursor: pointer;
+            font-size: 10px;
+            color: #888;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s;
+        }
+        .top-btn:hover { background: #444; }
+        .top-btn.active { box-shadow: 0 0 15px currentColor; }
+        .spacer { visibility: hidden; }
+        
+        .main-area {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(8, 50px);
+            gap: 8px;
+        }
+        .pad {
+            width: 50px;
+            height: 50px;
+            border-radius: 6px;
+            background: #333;
+            border: 1px solid #444;
+            cursor: pointer;
+            transition: all 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #666;
+        }
+        .pad:hover { background: #444; transform: scale(1.05); }
+        .pad.active { box-shadow: 0 0 20px currentColor; }
+        
+        .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .right-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #333;
+            border: 1px solid #444;
+            cursor: pointer;
+            font-size: 9px;
+            color: #888;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            transition: all 0.1s;
+        }
+        .right-btn:hover { background: #444; }
+        .right-btn.active { box-shadow: 0 0 15px currentColor; }
+        
+        .info {
+            margin-top: 20px;
+            text-align: center;
+            color: #888;
+            font-size: 13px;
+        }
+        .last-event {
+            margin-top: 10px;
+            background: #2a2a4a;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-family: monospace;
+        }
+        
+        button.connect-btn {
+            background: #00ffcc;
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        button.connect-btn:hover { background: #00ff99; }
+    </style>
+</head>
+<body>
+    <h1>🎛️ Launchpad MK2 - Test Mapping</h1>
+    
+    <button class="connect-btn" onclick="connectMIDI()">Connecter MIDI</button>
+    
+    <div id="status" class="status disconnected">Non connecté</div>
+    
+    <div class="launchpad">
+        <div class="top-row" id="topRow"></div>
+        <div class="main-area">
+            <div class="grid" id="grid"></div>
+            <div class="right-col" id="rightCol"></div>
+        </div>
+    </div>
+    
+    <div class="info">
+        Appuyez sur les boutons du Launchpad pour tester le mapping
+        <div class="last-event" id="lastEvent">En attente...</div>
+    </div>
+
+    <script>
+        let midiInput = null;
+        let midiOutput = null;
+        let mapping = null;
+        let colorIndex = {};
+        
+        const COLORS = [
+            {velocity: 0, hex: '#333333', name: 'Off'},
+            {velocity: 5, hex: '#FF0000', name: 'Red'},
+            {velocity: 9, hex: '#FF5400', name: 'Orange'},
+            {velocity: 13, hex: '#FFFF00', name: 'Yellow'},
+            {velocity: 17, hex: '#54FF00', name: 'Lime'},
+            {velocity: 21, hex: '#00FF00', name: 'Green'},
+            {velocity: 37, hex: '#00FFFF', name: 'Cyan'},
+            {velocity: 41, hex: '#0054FF', name: 'Sky'},
+            {velocity: 45, hex: '#0000FF', name: 'Blue'},
+            {velocity: 49, hex: '#5400FF', name: 'Purple'},
+            {velocity: 53, hex: '#FF00FF', name: 'Magenta'},
+            {velocity: 57, hex: '#FF0054', name: 'Pink'},
+            {velocity: 3, hex: '#FFFFFF', name: 'White'}
+        ];
+
+        async function loadMapping() {
+            try {
+                const response = await fetch('https://rogergodro.github.io/CTK3200_WPA_MIDI/launchpad_mk2_mapping.json');
+                mapping = await response.json();
+                console.log('Mapping chargé:', mapping.device.name);
+                buildUI();
+            } catch (e) {
+                console.error('Erreur chargement mapping:', e);
+                document.getElementById('status').textContent = 'Erreur: impossible de charger le mapping';
+            }
+        }
+
+        function buildUI() {
+            const topRow = document.getElementById('topRow');
+            const grid = document.getElementById('grid');
+            const rightCol = document.getElementById('rightCol');
+            
+            // Boutons du haut (CC 104-111)
+            mapping.topButtons.forEach(btn => {
+                const el = document.createElement('div');
+                el.className = 'top-btn';
+                el.id = `cc-${btn.cc}`;
+                el.textContent = btn.symbol || btn.name;
+                el.title = btn.name;
+                topRow.appendChild(el);
+            });
+            topRow.appendChild(document.createElement('div')).className = 'spacer';
+            
+            // Grille 8x8 (du haut vers le bas visuellement = row 8 à 1)
+            for (let row = 8; row >= 1; row--) {
+                for (let col = 1; col <= 8; col++) {
+                    const note = mapping.lookup.positionToNote[`${row}-${col}`];
+                    const el = document.createElement('div');
+                    el.className = 'pad';
+                    el.id = `note-${note}`;
+                    el.dataset.note = note;
+                    el.textContent = note;
+                    el.title = `Pad ${row}-${col} (Note ${note})`;
+                    colorIndex[note] = 0;
+                    grid.appendChild(el);
+                }
+            }
+            
+            // Boutons de droite (du haut vers le bas = position 8 à 1)
+            for (let pos = 8; pos >= 1; pos--) {
+                const btn = mapping.rightButtons.find(b => b.position === pos);
+                const el = document.createElement('div');
+                el.className = 'right-btn';
+                el.id = `note-${btn.note}`;
+                el.dataset.note = btn.note;
+                el.textContent = btn.name;
+                el.title = `${btn.name} (Note ${btn.note})`;
+                colorIndex[btn.note] = 0;
+                rightCol.appendChild(el);
+            }
+        }
+
+        async function connectMIDI() {
+            try {
+                const access = await navigator.requestMIDIAccess({sysex: true});
+                
+                for (const input of access.inputs.values()) {
+                    if (input.name.includes('Launchpad MK2')) {
+                        midiInput = input;
+                        midiInput.onmidimessage = handleMIDI;
+                    }
+                }
+                
+                for (const output of access.outputs.values()) {
+                    if (output.name.includes('Launchpad MK2')) {
+                        midiOutput = output;
+                    }
+                }
+                
+                if (midiInput && midiOutput) {
+                    document.getElementById('status').className = 'status connected';
+                    document.getElementById('status').textContent = `✓ Connecté: ${midiInput.name}`;
+                    clearAllLeds();
+                } else {
+                    document.getElementById('status').textContent = 'Launchpad MK2 non trouvé';
+                }
+            } catch (e) {
+                document.getElementById('status').textContent = 'Erreur: ' + e.message;
+            }
+        }
+
+        function handleMIDI(event) {
+            const [status, data1, data2] = event.data;
+            const statusType = status & 0xF0;
+            
+            // Ignorer Note Off
+            if (statusType === 0x80 || (statusType === 0x90 && data2 === 0)) return;
+            
+            if (statusType === 0x90) {
+                // Note On - Pad ou bouton droite
+                cycleColor(data1, 'note');
+                const pos = mapping.lookup.noteToPosition[data1.toString()];
+                const info = pos ? (pos.type === 'pad' ? `Pad ${pos.row}-${pos.col}` : pos.name) : '?';
+                showEvent(`Note ${data1} (${info})`);
+            } else if (statusType === 0xB0) {
+                // CC - Boutons du haut
+                cycleColor(data1, 'cc');
+                const btn = mapping.lookup.ccToButton[data1.toString()];
+                showEvent(`CC ${data1} (${btn ? btn.name : '?'})`);
+            }
+        }
+
+        function cycleColor(id, type) {
+            const key = type === 'cc' ? `cc-${id}` : id;
+            
+            if (colorIndex[key] === undefined) colorIndex[key] = 0;
+            colorIndex[key] = (colorIndex[key] + 1) % COLORS.length;
+            
+            const color = COLORS[colorIndex[key]];
+            const el = document.getElementById(type === 'cc' ? `cc-${id}` : `note-${id}`);
+            
+            if (el) {
+                el.style.background = color.hex;
+                el.style.color = color.velocity > 20 ? '#000' : '#fff';
+                el.classList.add('active');
+                setTimeout(() => el.classList.remove('active'), 200);
+            }
+            
+            // Envoyer la couleur au Launchpad
+            if (midiOutput) {
+                if (type === 'note') {
+                    midiOutput.send([0x90, id, color.velocity]);
+                } else {
+                    midiOutput.send([0xB0, id, color.velocity]);
+                }
+            }
+        }
+
+        function clearAllLeds() {
+            if (!midiOutput) return;
+            // SysEx pour éteindre tout
+            midiOutput.send([240, 0, 32, 41, 2, 24, 14, 0, 247]);
+        }
+
+        function showEvent(text) {
+            document.getElementById('lastEvent').textContent = text;
+        }
+
+        // Charger le mapping au démarrage
+        loadMapping();
+    </script>
+</body>
+</html>
