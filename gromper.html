@@ -3,530 +3,301 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ChordFlow + CTK-3200</title>
+  <title>ChordFlow - Klimper Style</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    * { font-family: 'Outfit', sans-serif; }
-    ::-webkit-scrollbar { width: 8px; }
+    * { font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #1e293b; }
-    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-    .tone-grid { max-height: 350px; overflow-y: auto; }
+    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+    
+    .chord-circle { 
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .chord-circle:hover { 
+      transform: scale(1.1);
+      filter: brightness(1.2);
+    }
+    .chord-circle.major { background: linear-gradient(135deg, #22c55e, #16a34a); }
+    .chord-circle.minor { background: linear-gradient(135deg, #a855f7, #9333ea); }
+    .chord-circle.dim { background: linear-gradient(135deg, #64748b, #475569); }
+    .chord-circle.aug { background: linear-gradient(135deg, #f97316, #ea580c); }
+    .chord-circle.sus { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+    .chord-circle.dom7 { background: linear-gradient(135deg, #eab308, #ca8a04); }
+    .chord-circle.borrowed { 
+      background: transparent !important;
+      border: 2px dashed currentColor;
+    }
+    
+    .progression-slot {
+      min-width: 80px;
+      transition: all 0.2s ease;
+    }
+    .progression-slot.playing {
+      animation: pulse 0.5s ease-in-out;
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.6);
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    
+    .drag-handle {
+      cursor: grab;
+    }
+    .drag-handle:active {
+      cursor: grabbing;
+    }
+    
+    .midi-drag-zone {
+      background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(139, 92, 246, 0.1) 10px,
+        rgba(139, 92, 246, 0.1) 20px
+      );
+      border: 2px dashed #8b5cf6;
+      transition: all 0.2s;
+    }
+    .midi-drag-zone:hover {
+      border-color: #a78bfa;
+      background-color: rgba(139, 92, 246, 0.1);
+    }
+    .midi-drag-zone.dragging {
+      border-color: #22c55e;
+      background-color: rgba(34, 197, 94, 0.2);
+    }
+    
+    .circle-of-fifths {
+      position: relative;
+    }
+    .cof-key {
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .cof-key:hover {
+      transform: scale(1.15);
+    }
+    .cof-key.active {
+      box-shadow: 0 0 0 3px #fff, 0 0 15px rgba(139, 92, 246, 0.8);
+    }
+    
+    .tone-grid { max-height: 280px; overflow-y: auto; }
   </style>
 </head>
-<body class="bg-slate-950 text-white">
+<body class="bg-slate-950 text-white min-h-screen">
   <div id="root"></div>
 
   <script>
-    // GM Tones avec vrais noms
-    const GM_TONES = [
-      // Piano (1-8)
-      {number:1,name:"Acoustic Grand Piano",category:"Piano"},
-      {number:2,name:"Bright Acoustic Piano",category:"Piano"},
-      {number:3,name:"Electric Grand Piano",category:"Piano"},
-      {number:4,name:"Honky-tonk Piano",category:"Piano"},
-      {number:5,name:"Electric Piano 1",category:"Piano"},
-      {number:6,name:"Electric Piano 2",category:"Piano"},
-      {number:7,name:"Harpsichord",category:"Piano"},
-      {number:8,name:"Clavinet",category:"Piano"},
-      // Chromatic Percussion (9-16)
-      {number:9,name:"Celesta",category:"Chromatic"},
-      {number:10,name:"Glockenspiel",category:"Chromatic"},
-      {number:11,name:"Music Box",category:"Chromatic"},
-      {number:12,name:"Vibraphone",category:"Chromatic"},
-      {number:13,name:"Marimba",category:"Chromatic"},
-      {number:14,name:"Xylophone",category:"Chromatic"},
-      {number:15,name:"Tubular Bells",category:"Chromatic"},
-      {number:16,name:"Dulcimer",category:"Chromatic"},
-      // Organ (17-24)
-      {number:17,name:"Drawbar Organ",category:"Organ"},
-      {number:18,name:"Percussive Organ",category:"Organ"},
-      {number:19,name:"Rock Organ",category:"Organ"},
-      {number:20,name:"Church Organ",category:"Organ"},
-      {number:21,name:"Reed Organ",category:"Organ"},
-      {number:22,name:"Accordion",category:"Organ"},
-      {number:23,name:"Harmonica",category:"Organ"},
-      {number:24,name:"Tango Accordion",category:"Organ"},
-      // Guitar (25-32)
-      {number:25,name:"Acoustic Guitar (nylon)",category:"Guitar"},
-      {number:26,name:"Acoustic Guitar (steel)",category:"Guitar"},
-      {number:27,name:"Electric Guitar (jazz)",category:"Guitar"},
-      {number:28,name:"Electric Guitar (clean)",category:"Guitar"},
-      {number:29,name:"Electric Guitar (muted)",category:"Guitar"},
-      {number:30,name:"Overdriven Guitar",category:"Guitar"},
-      {number:31,name:"Distortion Guitar",category:"Guitar"},
-      {number:32,name:"Guitar Harmonics",category:"Guitar"},
-      // Bass (33-40)
-      {number:33,name:"Acoustic Bass",category:"Bass"},
-      {number:34,name:"Electric Bass (finger)",category:"Bass"},
-      {number:35,name:"Electric Bass (pick)",category:"Bass"},
-      {number:36,name:"Fretless Bass",category:"Bass"},
-      {number:37,name:"Slap Bass 1",category:"Bass"},
-      {number:38,name:"Slap Bass 2",category:"Bass"},
-      {number:39,name:"Synth Bass 1",category:"Bass"},
-      {number:40,name:"Synth Bass 2",category:"Bass"},
-      // Strings (41-48)
-      {number:41,name:"Violin",category:"Strings"},
-      {number:42,name:"Viola",category:"Strings"},
-      {number:43,name:"Cello",category:"Strings"},
-      {number:44,name:"Contrabass",category:"Strings"},
-      {number:45,name:"Tremolo Strings",category:"Strings"},
-      {number:46,name:"Pizzicato Strings",category:"Strings"},
-      {number:47,name:"Orchestral Harp",category:"Strings"},
-      {number:48,name:"Timpani",category:"Strings"},
-      // Ensemble (49-56)
-      {number:49,name:"String Ensemble 1",category:"Ensemble"},
-      {number:50,name:"String Ensemble 2",category:"Ensemble"},
-      {number:51,name:"Synth Strings 1",category:"Ensemble"},
-      {number:52,name:"Synth Strings 2",category:"Ensemble"},
-      {number:53,name:"Choir Aahs",category:"Ensemble"},
-      {number:54,name:"Voice Oohs",category:"Ensemble"},
-      {number:55,name:"Synth Voice",category:"Ensemble"},
-      {number:56,name:"Orchestra Hit",category:"Ensemble"},
-      // Brass (57-64)
-      {number:57,name:"Trumpet",category:"Brass"},
-      {number:58,name:"Trombone",category:"Brass"},
-      {number:59,name:"Tuba",category:"Brass"},
-      {number:60,name:"Muted Trumpet",category:"Brass"},
-      {number:61,name:"French Horn",category:"Brass"},
-      {number:62,name:"Brass Section",category:"Brass"},
-      {number:63,name:"Synth Brass 1",category:"Brass"},
-      {number:64,name:"Synth Brass 2",category:"Brass"},
-      // Reed (65-72)
-      {number:65,name:"Soprano Sax",category:"Reed"},
-      {number:66,name:"Alto Sax",category:"Reed"},
-      {number:67,name:"Tenor Sax",category:"Reed"},
-      {number:68,name:"Baritone Sax",category:"Reed"},
-      {number:69,name:"Oboe",category:"Reed"},
-      {number:70,name:"English Horn",category:"Reed"},
-      {number:71,name:"Bassoon",category:"Reed"},
-      {number:72,name:"Clarinet",category:"Reed"},
-      // Pipe (73-80)
-      {number:73,name:"Piccolo",category:"Pipe"},
-      {number:74,name:"Flute",category:"Pipe"},
-      {number:75,name:"Recorder",category:"Pipe"},
-      {number:76,name:"Pan Flute",category:"Pipe"},
-      {number:77,name:"Blown Bottle",category:"Pipe"},
-      {number:78,name:"Shakuhachi",category:"Pipe"},
-      {number:79,name:"Whistle",category:"Pipe"},
-      {number:80,name:"Ocarina",category:"Pipe"},
-      // Synth Lead (81-88)
-      {number:81,name:"Lead 1 (square)",category:"Synth Lead"},
-      {number:82,name:"Lead 2 (sawtooth)",category:"Synth Lead"},
-      {number:83,name:"Lead 3 (calliope)",category:"Synth Lead"},
-      {number:84,name:"Lead 4 (chiff)",category:"Synth Lead"},
-      {number:85,name:"Lead 5 (charang)",category:"Synth Lead"},
-      {number:86,name:"Lead 6 (voice)",category:"Synth Lead"},
-      {number:87,name:"Lead 7 (fifths)",category:"Synth Lead"},
-      {number:88,name:"Lead 8 (bass+lead)",category:"Synth Lead"},
-      // Synth Pad (89-96)
-      {number:89,name:"Pad 1 (new age)",category:"Synth Pad"},
-      {number:90,name:"Pad 2 (warm)",category:"Synth Pad"},
-      {number:91,name:"Pad 3 (polysynth)",category:"Synth Pad"},
-      {number:92,name:"Pad 4 (choir)",category:"Synth Pad"},
-      {number:93,name:"Pad 5 (bowed)",category:"Synth Pad"},
-      {number:94,name:"Pad 6 (metallic)",category:"Synth Pad"},
-      {number:95,name:"Pad 7 (halo)",category:"Synth Pad"},
-      {number:96,name:"Pad 8 (sweep)",category:"Synth Pad"},
-      // Synth Effects (97-104)
-      {number:97,name:"FX 1 (rain)",category:"Synth FX"},
-      {number:98,name:"FX 2 (soundtrack)",category:"Synth FX"},
-      {number:99,name:"FX 3 (crystal)",category:"Synth FX"},
-      {number:100,name:"FX 4 (atmosphere)",category:"Synth FX"},
-      {number:101,name:"FX 5 (brightness)",category:"Synth FX"},
-      {number:102,name:"FX 6 (goblins)",category:"Synth FX"},
-      {number:103,name:"FX 7 (echoes)",category:"Synth FX"},
-      {number:104,name:"FX 8 (sci-fi)",category:"Synth FX"},
-      // Ethnic (105-112)
-      {number:105,name:"Sitar",category:"Ethnic"},
-      {number:106,name:"Banjo",category:"Ethnic"},
-      {number:107,name:"Shamisen",category:"Ethnic"},
-      {number:108,name:"Koto",category:"Ethnic"},
-      {number:109,name:"Kalimba",category:"Ethnic"},
-      {number:110,name:"Bagpipe",category:"Ethnic"},
-      {number:111,name:"Fiddle",category:"Ethnic"},
-      {number:112,name:"Shanai",category:"Ethnic"},
-      // Percussive (113-120)
-      {number:113,name:"Tinkle Bell",category:"Percussive"},
-      {number:114,name:"Agogo",category:"Percussive"},
-      {number:115,name:"Steel Drums",category:"Percussive"},
-      {number:116,name:"Woodblock",category:"Percussive"},
-      {number:117,name:"Taiko Drum",category:"Percussive"},
-      {number:118,name:"Melodic Tom",category:"Percussive"},
-      {number:119,name:"Synth Drum",category:"Percussive"},
-      {number:120,name:"Reverse Cymbal",category:"Percussive"},
-      // Sound Effects (121-128)
-      {number:121,name:"Guitar Fret Noise",category:"SFX"},
-      {number:122,name:"Breath Noise",category:"SFX"},
-      {number:123,name:"Seashore",category:"SFX"},
-      {number:124,name:"Bird Tweet",category:"SFX"},
-      {number:125,name:"Telephone Ring",category:"SFX"},
-      {number:126,name:"Helicopter",category:"SFX"},
-      {number:127,name:"Applause",category:"SFX"},
-      {number:128,name:"Gunshot",category:"SFX"},
-    ];
-
-    // Constants
+    // ============ CONSTANTS ============
     const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-    const NOTE_TO_MIDI = { 'C': 0, 'C#': 1, 'D': 2, 'D#': 3, 'E': 4, 'F': 5, 'F#': 6, 'G': 7, 'G#': 8, 'A': 9, 'A#': 10, 'B': 11 };
+    const NOTE_TO_MIDI = { 'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3, 'E': 4, 'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11 };
+    
+    // Circle of fifths order
+    const CIRCLE_OF_FIFTHS = ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'Db', 'Ab', 'Eb', 'Bb', 'F'];
     
     const CHORD_TYPES = {
-      'maj': { intervals: [0, 4, 7], symbol: '' },
-      'min': { intervals: [0, 3, 7], symbol: 'm' },
-      'dim': { intervals: [0, 3, 6], symbol: '°' },
-      'aug': { intervals: [0, 4, 8], symbol: '+' },
-      'maj7': { intervals: [0, 4, 7, 11], symbol: 'maj7' },
-      'min7': { intervals: [0, 3, 7, 10], symbol: 'm7' },
-      '7': { intervals: [0, 4, 7, 10], symbol: '7' },
-      'sus2': { intervals: [0, 2, 7], symbol: 'sus2' },
-      'sus4': { intervals: [0, 5, 7], symbol: 'sus4' },
+      'maj': { intervals: [0, 4, 7], symbol: '', class: 'major' },
+      'min': { intervals: [0, 3, 7], symbol: 'm', class: 'minor' },
+      'dim': { intervals: [0, 3, 6], symbol: '°', class: 'dim' },
+      'aug': { intervals: [0, 4, 8], symbol: '+', class: 'aug' },
+      'sus2': { intervals: [0, 2, 7], symbol: 'sus2', class: 'sus' },
+      'sus4': { intervals: [0, 5, 7], symbol: 'sus4', class: 'sus' },
+      'maj7': { intervals: [0, 4, 7, 11], symbol: 'Δ7', class: 'major' },
+      'min7': { intervals: [0, 3, 7, 10], symbol: 'm7', class: 'minor' },
+      '7': { intervals: [0, 4, 7, 10], symbol: '7', class: 'dom7' },
+      'dim7': { intervals: [0, 3, 6, 9], symbol: '°7', class: 'dim' },
+      'add9': { intervals: [0, 4, 7, 14], symbol: 'add9', class: 'major' },
+      'madd9': { intervals: [0, 3, 7, 14], symbol: 'madd9', class: 'minor' },
     };
 
     const SCALES = {
-      'Majeur': { pattern: [0, 2, 4, 5, 7, 9, 11], chords: ['maj', 'min', 'min', 'maj', 'maj', 'min', 'dim'] },
-      'Mineur': { pattern: [0, 2, 3, 5, 7, 8, 10], chords: ['min', 'dim', 'maj', 'min', 'min', 'maj', 'maj'] },
-      'Dorien': { pattern: [0, 2, 3, 5, 7, 9, 10], chords: ['min', 'min', 'maj', 'maj', 'min', 'dim', 'maj'] },
+      'Majeur': { pattern: [0, 2, 4, 5, 7, 9, 11], chordTypes: ['maj', 'min', 'min', 'maj', 'maj', 'min', 'dim'] },
+      'Mineur': { pattern: [0, 2, 3, 5, 7, 8, 10], chordTypes: ['min', 'dim', 'maj', 'min', 'min', 'maj', 'maj'] },
+      'Dorien': { pattern: [0, 2, 3, 5, 7, 9, 10], chordTypes: ['min', 'min', 'maj', 'maj', 'min', 'dim', 'maj'] },
+      'Mixolydien': { pattern: [0, 2, 4, 5, 7, 9, 10], chordTypes: ['maj', 'min', 'min', 'maj', 'min', 'dim', 'maj'] },
+      'Phrygien': { pattern: [0, 1, 3, 5, 7, 8, 10], chordTypes: ['min', 'maj', 'maj', 'min', 'dim', 'maj', 'min'] },
     };
 
-    const PROGRESSIONS = [
-      { name: 'Pop', degrees: [0, 4, 5, 3] },
-      { name: 'Jazz', degrees: [1, 4, 0] },
-      { name: 'Blues', degrees: [0, 3, 0, 4] },
-      { name: '50s', degrees: [0, 5, 3, 4] },
-      { name: 'Canon', degrees: [0, 4, 5, 2, 3, 0, 3, 4] },
-    ];
-
-    // Patterns en français avec durées correctes
     const PATTERNS = {
-      'Ronde': { beats: 4, division: 1 },      // 1 note de 4 temps
-      'Blanche': { beats: 2, division: 2 },    // 2 notes de 2 temps
-      'Noire': { beats: 1, division: 4 },      // 4 notes de 1 temps
-      'Croche': { beats: 0.5, division: 8 },   // 8 notes de 0.5 temps
+      'Ronde': { beats: 4, division: 1 },
+      'Blanche': { beats: 2, division: 2 },
+      'Noire': { beats: 1, division: 4 },
       'Arpège ↑': { type: 'arpUp' },
       'Arpège ↓': { type: 'arpDown' },
-      'Gratte': { type: 'strum' },
+      'Strum': { type: 'strum' },
     };
 
-    const LP_GRID = [
-      [81,82,83,84,85,86,87,88], [71,72,73,74,75,76,77,78],
-      [61,62,63,64,65,66,67,68], [51,52,53,54,55,56,57,58],
-      [41,42,43,44,45,46,47,48], [31,32,33,34,35,36,37,38],
-      [21,22,23,24,25,26,27,28], [11,12,13,14,15,16,17,18],
+    const QUICK_PROGS = [
+      { name: 'Pop I-V-vi-IV', degrees: [0, 4, 5, 3] },
+      { name: 'Jazz ii-V-I', degrees: [1, 4, 0] },
+      { name: 'Blues I-IV-I-V', degrees: [0, 3, 0, 4] },
+      { name: '50s I-vi-IV-V', degrees: [0, 5, 3, 4] },
+      { name: 'Canon', degrees: [0, 4, 5, 2, 3, 0, 3, 4] },
+      { name: 'Andalouse', degrees: [5, 4, 3, 2] },
     ];
-    const LP_SCENE = [89, 79, 69, 59, 49, 39, 29, 19];
-    const LP_COLORS = { off: 0, green: 87, red: 72, orange: 84, cyan: 90, blue: 78, purple: 94, magenta: 81, pink: 56, white: 119 };
 
-    // State
+    // GM Tones
+    const GM_TONES = [
+      {number:1,name:"Grand Piano",category:"Piano"},{number:2,name:"Bright Piano",category:"Piano"},
+      {number:3,name:"Electric Grand",category:"Piano"},{number:4,name:"Honky-tonk",category:"Piano"},
+      {number:5,name:"E.Piano 1",category:"Piano"},{number:6,name:"E.Piano 2",category:"Piano"},
+      {number:7,name:"Harpsichord",category:"Piano"},{number:8,name:"Clavinet",category:"Piano"},
+      {number:9,name:"Celesta",category:"Chromatic"},{number:10,name:"Glockenspiel",category:"Chromatic"},
+      {number:11,name:"Music Box",category:"Chromatic"},{number:12,name:"Vibraphone",category:"Chromatic"},
+      {number:13,name:"Marimba",category:"Chromatic"},{number:14,name:"Xylophone",category:"Chromatic"},
+      {number:15,name:"Tubular Bells",category:"Chromatic"},{number:16,name:"Dulcimer",category:"Chromatic"},
+      {number:17,name:"Drawbar Organ",category:"Organ"},{number:18,name:"Perc Organ",category:"Organ"},
+      {number:19,name:"Rock Organ",category:"Organ"},{number:20,name:"Church Organ",category:"Organ"},
+      {number:21,name:"Reed Organ",category:"Organ"},{number:22,name:"Accordion",category:"Organ"},
+      {number:23,name:"Harmonica",category:"Organ"},{number:24,name:"Bandoneon",category:"Organ"},
+      {number:25,name:"Nylon Guitar",category:"Guitar"},{number:26,name:"Steel Guitar",category:"Guitar"},
+      {number:27,name:"Jazz Guitar",category:"Guitar"},{number:28,name:"Clean Guitar",category:"Guitar"},
+      {number:29,name:"Muted Guitar",category:"Guitar"},{number:30,name:"Overdrive",category:"Guitar"},
+      {number:31,name:"Distortion",category:"Guitar"},{number:32,name:"Harmonics",category:"Guitar"},
+      {number:33,name:"Acoustic Bass",category:"Bass"},{number:34,name:"Finger Bass",category:"Bass"},
+      {number:35,name:"Pick Bass",category:"Bass"},{number:36,name:"Fretless Bass",category:"Bass"},
+      {number:37,name:"Slap Bass 1",category:"Bass"},{number:38,name:"Slap Bass 2",category:"Bass"},
+      {number:39,name:"Synth Bass 1",category:"Bass"},{number:40,name:"Synth Bass 2",category:"Bass"},
+      {number:41,name:"Violin",category:"Strings"},{number:42,name:"Viola",category:"Strings"},
+      {number:43,name:"Cello",category:"Strings"},{number:44,name:"Contrabass",category:"Strings"},
+      {number:45,name:"Tremolo Str",category:"Strings"},{number:46,name:"Pizzicato",category:"Strings"},
+      {number:47,name:"Harp",category:"Strings"},{number:48,name:"Timpani",category:"Strings"},
+      {number:49,name:"Strings 1",category:"Ensemble"},{number:50,name:"Strings 2",category:"Ensemble"},
+      {number:51,name:"Synth Str 1",category:"Ensemble"},{number:52,name:"Synth Str 2",category:"Ensemble"},
+      {number:53,name:"Choir Aahs",category:"Ensemble"},{number:54,name:"Voice Oohs",category:"Ensemble"},
+      {number:55,name:"Synth Voice",category:"Ensemble"},{number:56,name:"Orch Hit",category:"Ensemble"},
+      {number:57,name:"Trumpet",category:"Brass"},{number:58,name:"Trombone",category:"Brass"},
+      {number:59,name:"Tuba",category:"Brass"},{number:60,name:"Muted Trumpet",category:"Brass"},
+      {number:61,name:"French Horn",category:"Brass"},{number:62,name:"Brass Section",category:"Brass"},
+      {number:63,name:"Synth Brass 1",category:"Brass"},{number:64,name:"Synth Brass 2",category:"Brass"},
+      {number:65,name:"Soprano Sax",category:"Reed"},{number:66,name:"Alto Sax",category:"Reed"},
+      {number:67,name:"Tenor Sax",category:"Reed"},{number:68,name:"Bari Sax",category:"Reed"},
+      {number:69,name:"Oboe",category:"Reed"},{number:70,name:"English Horn",category:"Reed"},
+      {number:71,name:"Bassoon",category:"Reed"},{number:72,name:"Clarinet",category:"Reed"},
+      {number:73,name:"Piccolo",category:"Pipe"},{number:74,name:"Flute",category:"Pipe"},
+      {number:75,name:"Recorder",category:"Pipe"},{number:76,name:"Pan Flute",category:"Pipe"},
+      {number:77,name:"Blown Bottle",category:"Pipe"},{number:78,name:"Shakuhachi",category:"Pipe"},
+      {number:79,name:"Whistle",category:"Pipe"},{number:80,name:"Ocarina",category:"Pipe"},
+      {number:81,name:"Lead Square",category:"Synth"},{number:82,name:"Lead Saw",category:"Synth"},
+      {number:83,name:"Lead Calliope",category:"Synth"},{number:84,name:"Lead Chiff",category:"Synth"},
+      {number:85,name:"Lead Charang",category:"Synth"},{number:86,name:"Lead Voice",category:"Synth"},
+      {number:87,name:"Lead Fifths",category:"Synth"},{number:88,name:"Lead Bass",category:"Synth"},
+      {number:89,name:"Pad New Age",category:"Pad"},{number:90,name:"Pad Warm",category:"Pad"},
+      {number:91,name:"Pad Poly",category:"Pad"},{number:92,name:"Pad Choir",category:"Pad"},
+      {number:93,name:"Pad Bowed",category:"Pad"},{number:94,name:"Pad Metal",category:"Pad"},
+      {number:95,name:"Pad Halo",category:"Pad"},{number:96,name:"Pad Sweep",category:"Pad"},
+      {number:97,name:"FX Rain",category:"FX"},{number:98,name:"FX Soundtrack",category:"FX"},
+      {number:99,name:"FX Crystal",category:"FX"},{number:100,name:"FX Atmosphere",category:"FX"},
+      {number:101,name:"FX Brightness",category:"FX"},{number:102,name:"FX Goblins",category:"FX"},
+      {number:103,name:"FX Echoes",category:"FX"},{number:104,name:"FX Sci-Fi",category:"FX"},
+      {number:105,name:"Sitar",category:"Ethnic"},{number:106,name:"Banjo",category:"Ethnic"},
+      {number:107,name:"Shamisen",category:"Ethnic"},{number:108,name:"Koto",category:"Ethnic"},
+      {number:109,name:"Kalimba",category:"Ethnic"},{number:110,name:"Bagpipe",category:"Ethnic"},
+      {number:111,name:"Fiddle",category:"Ethnic"},{number:112,name:"Shanai",category:"Ethnic"},
+      {number:113,name:"Tinkle Bell",category:"Perc"},{number:114,name:"Agogo",category:"Perc"},
+      {number:115,name:"Steel Drums",category:"Perc"},{number:116,name:"Woodblock",category:"Perc"},
+      {number:117,name:"Taiko",category:"Perc"},{number:118,name:"Melodic Tom",category:"Perc"},
+      {number:119,name:"Synth Drum",category:"Perc"},{number:120,name:"Rev Cymbal",category:"Perc"},
+      {number:121,name:"Fret Noise",category:"SFX"},{number:122,name:"Breath",category:"SFX"},
+      {number:123,name:"Seashore",category:"SFX"},{number:124,name:"Bird",category:"SFX"},
+      {number:125,name:"Telephone",category:"SFX"},{number:126,name:"Helicopter",category:"SFX"},
+      {number:127,name:"Applause",category:"SFX"},{number:128,name:"Gunshot",category:"SFX"},
+    ];
+
+    // Launchpad
+    const LP_GRID = [[81,82,83,84,85,86,87,88],[71,72,73,74,75,76,77,78],[61,62,63,64,65,66,67,68],[51,52,53,54,55,56,57,58],[41,42,43,44,45,46,47,48],[31,32,33,34,35,36,37,38],[21,22,23,24,25,26,27,28],[11,12,13,14,15,16,17,18]];
+    const LP_SCENE = [89, 79, 69, 59, 49, 39, 29, 19];
+    const LP_COLORS = { off: 0, green: 87, red: 72, orange: 84, cyan: 90, blue: 78, purple: 94, magenta: 81, white: 119 };
+
+    // ============ STATE ============
     let state = {
       key: 'C',
       scale: 'Majeur',
       tempo: 120,
       octave: 4,
       velocity: 100,
-      progression: [
-        { root: 'C', type: 'maj', beats: 4 },
-        { root: 'G', type: 'maj', beats: 4 },
-        { root: 'A', type: 'min', beats: 4 },
-        { root: 'F', type: 'maj', beats: 4 },
-      ],
+      progression: [],
       selectedSlot: null,
       pattern: 'Ronde',
       isPlaying: false,
       currentChord: -1,
+      borrowedKey: 0, // 0 = home, +/- steps in circle of fifths
       tones: GM_TONES,
       selectedTone: GM_TONES[0],
       showTones: false,
+      showCircle: false,
       toneSearch: '',
-      toneCategory: 'Tous',
+      hoveredChord: null,
       synthOutput: null,
       launchpadIn: null,
       launchpadOut: null,
       midiOutputs: [],
       midiInputs: [],
       midiEnabled: false,
-      logs: [],
+      isDragging: false,
+      midiDataUrl: null,
     };
 
     let playInterval = null;
-    let scheduledEvents = [];
     let playStartTime = 0;
+    let currentCycle = 0;
 
-    const log = (msg, type = 'info') => {
-      const time = new Date().toLocaleTimeString();
-      state.logs.unshift({ time, msg, type });
-      if (state.logs.length > 10) state.logs.pop();
-      console.log(`[${type}] ${msg}`);
-    };
-
+    // ============ HELPERS ============
     const getChordName = (root, type) => `${root}${CHORD_TYPES[type]?.symbol || ''}`;
+    const getChordClass = (type) => CHORD_TYPES[type]?.class || 'major';
     
     const getChordNotes = (root, type, octave) => {
       const rootMidi = NOTE_TO_MIDI[root] + (octave + 1) * 12;
       return (CHORD_TYPES[type]?.intervals || [0, 4, 7]).map(i => rootMidi + i);
     };
 
-    const getScaleChords = () => {
-      const keyIdx = NOTE_TO_MIDI[state.key];
+    const getBorrowedKeyIndex = () => {
+      const homeIdx = CIRCLE_OF_FIFTHS.indexOf(state.key);
+      if (homeIdx === -1) return 0;
+      return (homeIdx + state.borrowedKey + 12) % 12;
+    };
+
+    const getCurrentKey = () => CIRCLE_OF_FIFTHS[getBorrowedKeyIndex()];
+
+    const getScaleChords = (forKey = null) => {
+      const k = forKey || getCurrentKey();
+      const keyIdx = NOTE_TO_MIDI[k] || NOTE_TO_MIDI[k.replace('b', '#')] || 0;
       const scaleData = SCALES[state.scale];
+      const isHome = state.borrowedKey === 0;
+      
       return scaleData.pattern.map((interval, i) => ({
         root: NOTES[(keyIdx + interval) % 12],
-        type: scaleData.chords[i],
-        degree: ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'][i]
+        type: scaleData.chordTypes[i],
+        degree: ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'][i],
+        borrowed: !isHome
       }));
     };
 
-    // MIDI
-    const sendNoteOn = (note, vel) => {
-      if (state.synthOutput) {
-        try { state.synthOutput.send([0x90, note, vel]); } catch(e) {}
-      }
+    const getRelatedChords = (root, type) => {
+      // Return chords that share notes (for highlighting)
+      const notes = new Set(getChordNotes(root, type, 4).map(n => n % 12));
+      const scaleChords = getScaleChords(state.key);
+      return scaleChords.filter(c => {
+        const chordNotes = getChordNotes(c.root, c.type, 4).map(n => n % 12);
+        return chordNotes.some(n => notes.has(n));
+      }).map(c => `${c.root}${c.type}`);
     };
 
-    const sendNoteOff = (note) => {
-      if (state.synthOutput) {
-        try { state.synthOutput.send([0x80, note, 0]); } catch(e) {}
-      }
-    };
-
-    const allNotesOff = () => {
-      if (state.synthOutput) {
-        for (let n = 0; n < 128; n++) sendNoteOff(n);
-        try { state.synthOutput.send([0xB0, 123, 0]); } catch(e) {}
-      }
-    };
-
-    const playChordPreview = (root, type) => {
-      const notes = getChordNotes(root, type, state.octave);
-      const dur = 400;
-      notes.forEach((n, i) => {
-        setTimeout(() => sendNoteOn(n, state.velocity), i * 20);
-        setTimeout(() => sendNoteOff(n), dur + i * 20);
-      });
-    };
-
-    const sendProgramChange = (tone) => {
-      if (!state.synthOutput || !tone) return;
-      try {
-        const prog = (tone.number - 1) % 128;
-        state.synthOutput.send([0xC0, prog]);
-        log(`🎹 ${tone.number}. ${tone.name}`);
-      } catch (e) {}
-    };
-
-    // Génération des événements de lecture
-    const generatePlaybackEvents = () => {
-      const events = [];
-      const msPerBeat = 60000 / state.tempo;
-      let currentTime = 0;
-
-      state.progression.forEach((chord, chordIdx) => {
-        const notes = getChordNotes(chord.root, chord.type, state.octave);
-        const chordDurationMs = chord.beats * msPerBeat;
-        const patternDef = PATTERNS[state.pattern];
-
-        if (patternDef.type === 'arpUp') {
-          // Arpège montant
-          const noteTime = chordDurationMs / notes.length;
-          notes.forEach((note, i) => {
-            events.push({ time: currentTime + i * noteTime, type: 'on', note, vel: state.velocity, chordIdx });
-            events.push({ time: currentTime + i * noteTime + noteTime * 0.9, type: 'off', note, chordIdx });
-          });
-        } else if (patternDef.type === 'arpDown') {
-          // Arpège descendant
-          const noteTime = chordDurationMs / notes.length;
-          const reversed = [...notes].reverse();
-          reversed.forEach((note, i) => {
-            events.push({ time: currentTime + i * noteTime, type: 'on', note, vel: state.velocity, chordIdx });
-            events.push({ time: currentTime + i * noteTime + noteTime * 0.9, type: 'off', note, chordIdx });
-          });
-        } else if (patternDef.type === 'strum') {
-          // Grattage - toutes les notes décalées légèrement
-          const strumDelay = 30; // ms entre chaque note
-          notes.forEach((note, i) => {
-            events.push({ time: currentTime + i * strumDelay, type: 'on', note, vel: state.velocity, chordIdx });
-            events.push({ time: currentTime + chordDurationMs - 50, type: 'off', note, chordIdx });
-          });
-        } else {
-          // Patterns rythmiques (Ronde, Blanche, Noire, Croche)
-          const division = patternDef.division;
-          const noteDuration = msPerBeat * patternDef.beats * 0.9;
-          
-          for (let i = 0; i < chord.beats * division / 4; i++) {
-            const hitTime = currentTime + (i * msPerBeat * 4 / division);
-            if (hitTime < currentTime + chordDurationMs) {
-              notes.forEach(note => {
-                events.push({ time: hitTime, type: 'on', note, vel: state.velocity, chordIdx });
-                events.push({ time: hitTime + noteDuration, type: 'off', note, chordIdx });
-              });
-            }
-          }
-        }
-        
-        currentTime += chordDurationMs;
-      });
-
-      return events.sort((a, b) => a.time - b.time);
-    };
-
-    const stopPlayback = () => {
-      if (playInterval) { clearInterval(playInterval); playInterval = null; }
-      scheduledEvents = [];
-      allNotesOff();
-      state.isPlaying = false;
-      state.currentChord = -1;
-      render();
-      updateLaunchpad();
-    };
-
-    const startPlayback = () => {
-      if (state.isPlaying) { stopPlayback(); return; }
-      if (state.progression.length === 0) return;
-
-      state.isPlaying = true;
-      log('▶ Lecture');
-      
-      const events = generatePlaybackEvents();
-      const totalDuration = state.progression.reduce((s, c) => s + c.beats, 0) * 60000 / state.tempo;
-      
-      playStartTime = performance.now();
-      let eventIndex = 0;
-      let lastChordIdx = -1;
-
-      playInterval = setInterval(() => {
-        const elapsed = (performance.now() - playStartTime) % totalDuration;
-        
-        // Reset si on boucle
-        if (elapsed < 100 && eventIndex > 0) {
-          eventIndex = 0;
-          allNotesOff();
-        }
-
-        // Jouer les événements
-        while (eventIndex < events.length && events[eventIndex].time <= elapsed) {
-          const evt = events[eventIndex];
-          if (evt.type === 'on') {
-            sendNoteOn(evt.note, evt.vel);
-            if (evt.chordIdx !== lastChordIdx) {
-              lastChordIdx = evt.chordIdx;
-              state.currentChord = evt.chordIdx;
-              render();
-              updateLaunchpad();
-            }
-          } else {
-            sendNoteOff(evt.note);
-          }
-          eventIndex++;
-        }
-      }, 10);
-
-      render();
-      updateLaunchpad();
-    };
-
-    // Launchpad
-    const setLED = (note, color) => {
-      if (state.launchpadOut) {
-        try { state.launchpadOut.send([0x90, note, color]); } catch(e) {}
-      }
-    };
-
-    const updateLaunchpad = () => {
-      if (!state.launchpadOut) return;
-      
-      LP_GRID.flat().forEach(n => setLED(n, 0));
-      LP_SCENE.forEach(n => setLED(n, 0));
-      
-      state.progression.forEach((c, i) => {
-        if (i < 16) {
-          const row = i < 8 ? 0 : 1;
-          const col = i % 8;
-          let color = [LP_COLORS.cyan, LP_COLORS.blue, LP_COLORS.purple, LP_COLORS.magenta, LP_COLORS.pink, LP_COLORS.orange, LP_COLORS.red][i % 7];
-          if (i === state.currentChord && state.isPlaying) color = LP_COLORS.green;
-          else if (i === state.selectedSlot) color = LP_COLORS.white;
-          setLED(LP_GRID[row][col], color);
-        }
-      });
-      
-      getScaleChords().forEach((_, i) => setLED(LP_GRID[2][i], [LP_COLORS.cyan, LP_COLORS.blue, LP_COLORS.purple, LP_COLORS.magenta, LP_COLORS.pink, LP_COLORS.orange, LP_COLORS.red][i]));
-      PROGRESSIONS.forEach((_, i) => setLED(LP_GRID[3][i], LP_COLORS.purple));
-      Object.keys(PATTERNS).forEach((p, i) => setLED(LP_GRID[4][i], state.pattern === p ? LP_COLORS.green : 21));
-      NOTES.slice(0, 8).forEach((n, i) => setLED(LP_GRID[5][i], state.key === n ? LP_COLORS.cyan : 37));
-      NOTES.slice(8).forEach((n, i) => setLED(LP_GRID[6][i], state.key === n ? LP_COLORS.cyan : 37));
-      Object.keys(SCALES).forEach((s, i) => setLED(LP_GRID[6][4+i], state.scale === s ? LP_COLORS.magenta : 53));
-      setLED(LP_GRID[7][0], state.isPlaying ? LP_COLORS.red : LP_COLORS.green);
-      setLED(LP_GRID[7][1], LP_COLORS.orange);
-      setLED(LP_GRID[7][2], LP_COLORS.blue);
-      LP_SCENE.slice(0, 6).forEach((n, i) => setLED(n, state.velocity >= (i+1)*20 ? LP_COLORS.orange : 9));
-      setLED(LP_SCENE[6], LP_COLORS.blue);
-      setLED(LP_SCENE[7], LP_COLORS.blue);
-    };
-
-    const handleLaunchpadInput = (note, vel) => {
-      if (vel === 0) return;
-      
-      let row = -1, col = -1;
-      for (let r = 0; r < 8; r++) {
-        const c = LP_GRID[r].indexOf(note);
-        if (c !== -1) { row = r; col = c; break; }
-      }
-      
-      if (row !== -1) {
-        if (row < 2) {
-          const idx = row * 8 + col;
-          if (idx < state.progression.length) {
-            state.selectedSlot = idx;
-            playChordPreview(state.progression[idx].root, state.progression[idx].type);
-          }
-        } else if (row === 2 && col < 7) {
-          const chord = getScaleChords()[col];
-          if (state.selectedSlot !== null) {
-            state.progression[state.selectedSlot] = { ...state.progression[state.selectedSlot], root: chord.root, type: chord.type };
-            state.selectedSlot = null;
-          } else {
-            state.progression.push({ root: chord.root, type: chord.type, beats: 4 });
-          }
-          playChordPreview(chord.root, chord.type);
-        } else if (row === 3 && col < PROGRESSIONS.length) {
-          const scaleChords = getScaleChords();
-          state.progression = PROGRESSIONS[col].degrees.map(d => ({ root: scaleChords[d].root, type: scaleChords[d].type, beats: 4 }));
-        } else if (row === 4 && col < Object.keys(PATTERNS).length) {
-          state.pattern = Object.keys(PATTERNS)[col];
-        } else if (row === 5 && col < 8) {
-          state.key = NOTES[col];
-        } else if (row === 6) {
-          if (col < 4) state.key = NOTES[8 + col];
-          else if (col - 4 < Object.keys(SCALES).length) state.scale = Object.keys(SCALES)[col - 4];
-        } else if (row === 7) {
-          if (col === 0) state.isPlaying ? stopPlayback() : startPlayback();
-          else if (col === 1) { state.progression = []; state.selectedSlot = null; }
-          else if (col === 2) downloadMidi();
-        }
-        render();
-        updateLaunchpad();
-      }
-      
-      const sceneIdx = LP_SCENE.indexOf(note);
-      if (sceneIdx !== -1) {
-        if (sceneIdx < 6) state.velocity = Math.min(127, (sceneIdx + 1) * 21);
-        else if (sceneIdx === 6) navigateTone(-1);
-        else if (sceneIdx === 7) navigateTone(1);
-        render();
-        updateLaunchpad();
-      }
-    };
-
-    const navigateTone = (dir) => {
-      const idx = state.tones.findIndex(t => t.number === state.selectedTone?.number);
-      let newIdx = idx + dir;
-      if (newIdx < 0) newIdx = state.tones.length - 1;
-      if (newIdx >= state.tones.length) newIdx = 0;
-      state.selectedTone = state.tones[newIdx];
-      sendProgramChange(state.selectedTone);
-      render();
-    };
-
-    // MIDI Export
-    const downloadMidi = () => {
+    // ============ MIDI GENERATION ============
+    const generateMidiBytes = () => {
       const tpb = 480;
       const events = [];
       let tick = 0;
@@ -545,12 +316,14 @@
       const track = [];
       let lastTick = 0;
       
+      // Tempo
       const uspb = Math.floor(60000000 / state.tempo);
       track.push(0, 0xFF, 0x51, 0x03, (uspb >> 16) & 0xFF, (uspb >> 8) & 0xFF, uspb & 0xFF);
       
       // Program change
       track.push(0, 0xC0, (state.selectedTone.number - 1) % 128);
       
+      // Notes
       events.forEach(e => {
         const delta = e.tick - lastTick;
         if (delta < 128) track.push(delta);
@@ -565,268 +338,518 @@
       const header = [0x4D, 0x54, 0x68, 0x64, 0, 0, 0, 6, 0, 0, 0, 1, (tpb >> 8) & 0xFF, tpb & 0xFF];
       const trackHeader = [0x4D, 0x54, 0x72, 0x6B, (track.length >> 24) & 0xFF, (track.length >> 16) & 0xFF, (track.length >> 8) & 0xFF, track.length & 0xFF];
       
-      const midi = new Uint8Array([...header, ...trackHeader, ...track]);
-      const blob = new Blob([midi], { type: 'audio/midi' });
+      return new Uint8Array([...header, ...trackHeader, ...track]);
+    };
+
+    const updateMidiDataUrl = () => {
+      if (state.progression.length === 0) {
+        state.midiDataUrl = null;
+        return;
+      }
+      const bytes = generateMidiBytes();
+      const blob = new Blob([bytes], { type: 'audio/midi' });
+      if (state.midiDataUrl) URL.revokeObjectURL(state.midiDataUrl);
+      state.midiDataUrl = URL.createObjectURL(blob);
+    };
+
+    const downloadMidi = () => {
+      if (state.progression.length === 0) return;
+      const bytes = generateMidiBytes();
+      const blob = new Blob([bytes], { type: 'audio/midi' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = `ChordFlow_${state.key}_${state.scale}_${state.tempo}bpm.mid`;
       a.click();
-      log('💾 MIDI exporté');
     };
 
-    // MIDI Access
-    const requestMidiAccess = async () => {
-      log('Demande MIDI...');
-      if (!navigator.requestMIDIAccess) { log('Web MIDI non supporté!', 'error'); return; }
+    // ============ MIDI PLAYBACK ============
+    const sendNoteOn = (note, vel) => { if (state.synthOutput) try { state.synthOutput.send([0x90, note, vel]); } catch(e) {} };
+    const sendNoteOff = (note) => { if (state.synthOutput) try { state.synthOutput.send([0x80, note, 0]); } catch(e) {} };
+    const allNotesOff = () => { if (state.synthOutput) { for (let n = 0; n < 128; n++) sendNoteOff(n); try { state.synthOutput.send([0xB0, 123, 0]); } catch(e) {} } };
+
+    const playChordPreview = (root, type) => {
+      const notes = getChordNotes(root, type, state.octave);
+      notes.forEach((n, i) => {
+        setTimeout(() => sendNoteOn(n, state.velocity), i * 15);
+        setTimeout(() => sendNoteOff(n), 350 + i * 15);
+      });
+    };
+
+    const sendProgramChange = (tone) => {
+      if (!state.synthOutput || !tone) return;
+      try { state.synthOutput.send([0xC0, (tone.number - 1) % 128]); } catch(e) {}
+    };
+
+    const generatePlaybackEvents = () => {
+      const events = [];
+      const msPerBeat = 60000 / state.tempo;
+      let currentTime = 0;
+
+      state.progression.forEach((chord, chordIdx) => {
+        const notes = getChordNotes(chord.root, chord.type, state.octave);
+        const chordDurationMs = chord.beats * msPerBeat;
+        const patternDef = PATTERNS[state.pattern];
+
+        if (patternDef.type === 'arpUp') {
+          const noteTime = chordDurationMs / notes.length;
+          notes.forEach((note, i) => {
+            events.push({ time: currentTime + i * noteTime, type: 'on', note, vel: state.velocity, chordIdx });
+            events.push({ time: currentTime + i * noteTime + noteTime * 0.9, type: 'off', note, chordIdx });
+          });
+        } else if (patternDef.type === 'arpDown') {
+          const noteTime = chordDurationMs / notes.length;
+          [...notes].reverse().forEach((note, i) => {
+            events.push({ time: currentTime + i * noteTime, type: 'on', note, vel: state.velocity, chordIdx });
+            events.push({ time: currentTime + i * noteTime + noteTime * 0.9, type: 'off', note, chordIdx });
+          });
+        } else if (patternDef.type === 'strum') {
+          notes.forEach((note, i) => {
+            events.push({ time: currentTime + i * 25, type: 'on', note, vel: state.velocity, chordIdx });
+            events.push({ time: currentTime + chordDurationMs - 50, type: 'off', note, chordIdx });
+          });
+        } else {
+          const division = patternDef.division;
+          const noteDuration = msPerBeat * patternDef.beats * 0.9;
+          for (let i = 0; i < chord.beats * division / 4; i++) {
+            const hitTime = currentTime + (i * msPerBeat * 4 / division);
+            if (hitTime < currentTime + chordDurationMs) {
+              notes.forEach(note => {
+                events.push({ time: hitTime, type: 'on', note, vel: state.velocity, chordIdx });
+                events.push({ time: hitTime + noteDuration, type: 'off', note, chordIdx });
+              });
+            }
+          }
+        }
+        currentTime += chordDurationMs;
+      });
+      return events.sort((a, b) => a.time - b.time);
+    };
+
+    const stopPlayback = () => {
+      if (playInterval) { cancelAnimationFrame(playInterval); playInterval = null; }
+      allNotesOff();
+      state.isPlaying = false;
+      state.currentChord = -1;
+      currentCycle = 0;
+      render();
+      updateLaunchpad();
+    };
+
+    const startPlayback = () => {
+      if (state.isPlaying) { stopPlayback(); return; }
+      if (state.progression.length === 0) return;
+
+      state.isPlaying = true;
+      const events = generatePlaybackEvents();
+      const totalDuration = state.progression.reduce((s, c) => s + c.beats, 0) * 60000 / state.tempo;
       
+      playStartTime = performance.now();
+      let eventIndex = 0;
+      let lastChordIdx = -1;
+      currentCycle = 0;
+
+      const tick = () => {
+        if (!state.isPlaying) return;
+        
+        const now = performance.now();
+        const totalElapsed = now - playStartTime;
+        const cycle = Math.floor(totalElapsed / totalDuration);
+        const elapsed = totalElapsed % totalDuration;
+        
+        if (cycle > currentCycle) {
+          currentCycle = cycle;
+          eventIndex = 0;
+          lastChordIdx = -1;
+          allNotesOff();
+        }
+
+        while (eventIndex < events.length && events[eventIndex].time <= elapsed) {
+          const evt = events[eventIndex];
+          if (evt.type === 'on') {
+            sendNoteOn(evt.note, evt.vel);
+            if (evt.chordIdx !== lastChordIdx) {
+              lastChordIdx = evt.chordIdx;
+              state.currentChord = evt.chordIdx;
+              render();
+              updateLaunchpad();
+            }
+          } else {
+            sendNoteOff(evt.note);
+          }
+          eventIndex++;
+        }
+        playInterval = requestAnimationFrame(tick);
+      };
+      
+      playInterval = requestAnimationFrame(tick);
+      render();
+      updateLaunchpad();
+    };
+
+    // ============ LAUNCHPAD ============
+    const setLED = (note, color) => { if (state.launchpadOut) try { state.launchpadOut.send([0x90, note, color]); } catch(e) {} };
+
+    const updateLaunchpad = () => {
+      if (!state.launchpadOut) return;
+      LP_GRID.flat().forEach(n => setLED(n, 0));
+      LP_SCENE.forEach(n => setLED(n, 0));
+      
+      state.progression.forEach((c, i) => {
+        if (i < 16) {
+          const row = i < 8 ? 0 : 1;
+          const col = i % 8;
+          let color = i === state.currentChord && state.isPlaying ? LP_COLORS.green : LP_COLORS.cyan;
+          if (i === state.selectedSlot) color = LP_COLORS.white;
+          setLED(LP_GRID[row][col], color);
+        }
+      });
+      
+      getScaleChords(state.key).forEach((_, i) => setLED(LP_GRID[2][i], LP_COLORS.purple));
+      setLED(LP_GRID[7][0], state.isPlaying ? LP_COLORS.red : LP_COLORS.green);
+    };
+
+    // ============ MIDI ACCESS ============
+    const requestMidiAccess = async () => {
+      if (!navigator.requestMIDIAccess) return;
       try {
         const access = await navigator.requestMIDIAccess({ sysex: true });
         state.midiEnabled = true;
-        log('✓ MIDI OK', 'success');
         
         const updateDevices = () => {
           state.midiOutputs = Array.from(access.outputs.values());
           state.midiInputs = Array.from(access.inputs.values());
-          log(`${state.midiOutputs.length} sorties, ${state.midiInputs.length} entrées`);
           
           const lpOut = state.midiOutputs.find(d => d.name.toLowerCase().includes('launchpad'));
           const lpIn = state.midiInputs.find(d => d.name.toLowerCase().includes('launchpad'));
           const synth = state.midiOutputs.find(d => !d.name.toLowerCase().includes('launchpad'));
           
-          if (lpOut && !state.launchpadOut) { state.launchpadOut = lpOut; log(`LP Out: ${lpOut.name}`, 'success'); setTimeout(updateLaunchpad, 100); }
-          if (lpIn && !state.launchpadIn) { state.launchpadIn = lpIn; lpIn.onmidimessage = (e) => { if ((e.data[0] & 0xF0) === 0x90) handleLaunchpadInput(e.data[1], e.data[2]); }; log(`LP In: ${lpIn.name}`, 'success'); }
-          if (synth && !state.synthOutput) { state.synthOutput = synth; log(`Synth: ${synth.name}`, 'success'); sendProgramChange(state.selectedTone); }
+          if (lpOut && !state.launchpadOut) { state.launchpadOut = lpOut; setTimeout(updateLaunchpad, 100); }
+          if (lpIn && !state.launchpadIn) { state.launchpadIn = lpIn; }
+          if (synth && !state.synthOutput) { state.synthOutput = synth; sendProgramChange(state.selectedTone); }
           render();
         };
         
         updateDevices();
         access.onstatechange = updateDevices;
-      } catch (e) { log('Erreur: ' + e.message, 'error'); }
+      } catch(e) {}
     };
 
     const selectSynthOutput = (id) => { state.synthOutput = state.midiOutputs.find(o => o.id === id) || null; if (state.synthOutput) sendProgramChange(state.selectedTone); render(); };
-    const selectLaunchpadIn = (id) => { if (state.launchpadIn) state.launchpadIn.onmidimessage = null; state.launchpadIn = state.midiInputs.find(o => o.id === id) || null; if (state.launchpadIn) state.launchpadIn.onmidimessage = (e) => { if ((e.data[0] & 0xF0) === 0x90) handleLaunchpadInput(e.data[1], e.data[2]); }; render(); };
-    const selectLaunchpadOut = (id) => { state.launchpadOut = state.midiOutputs.find(o => o.id === id) || null; if (state.launchpadOut) updateLaunchpad(); render(); };
     const selectTone = (num) => { state.selectedTone = state.tones.find(t => t.number === num); sendProgramChange(state.selectedTone); state.showTones = false; render(); };
+    const navigateTone = (dir) => { const idx = state.tones.findIndex(t => t.number === state.selectedTone?.number); let newIdx = (idx + dir + state.tones.length) % state.tones.length; state.selectedTone = state.tones[newIdx]; sendProgramChange(state.selectedTone); render(); };
 
-    // Catégories uniques
-    const getCategories = () => ['Tous', ...new Set(state.tones.map(t => t.category))];
+    // ============ CHORD ACTIONS ============
+    const addChord = (root, type, borrowed = false) => {
+      state.progression.push({ root, type, beats: 4, borrowed });
+      playChordPreview(root, type);
+      updateMidiDataUrl();
+      render();
+      updateLaunchpad();
+    };
 
+    const removeChord = (idx) => {
+      state.progression.splice(idx, 1);
+      if (state.selectedSlot === idx) state.selectedSlot = null;
+      updateMidiDataUrl();
+      render();
+      updateLaunchpad();
+    };
+
+    const adjustBeats = (idx, delta) => {
+      state.progression[idx].beats = Math.max(1, Math.min(16, state.progression[idx].beats + delta));
+      updateMidiDataUrl();
+      render();
+    };
+
+    const loadProgression = (prog) => {
+      const scaleChords = getScaleChords(state.key);
+      state.progression = prog.degrees.map(d => ({ root: scaleChords[d].root, type: scaleChords[d].type, beats: 4 }));
+      updateMidiDataUrl();
+      render();
+      updateLaunchpad();
+    };
+
+    const clearProgression = () => {
+      state.progression = [];
+      state.selectedSlot = null;
+      updateMidiDataUrl();
+      render();
+      updateLaunchpad();
+    };
+
+    // ============ DRAG & DROP ============
+    const handleDragStart = (e) => {
+      if (state.progression.length === 0) { e.preventDefault(); return; }
+      
+      state.isDragging = true;
+      updateMidiDataUrl();
+      
+      // Set drag data
+      const filename = `ChordFlow_${state.key}_${state.scale}.mid`;
+      e.dataTransfer.setData('text/plain', filename);
+      e.dataTransfer.setData('DownloadURL', `audio/midi:${filename}:${state.midiDataUrl}`);
+      e.dataTransfer.effectAllowed = 'copy';
+      
+      render();
+    };
+
+    const handleDragEnd = (e) => {
+      state.isDragging = false;
+      render();
+    };
+
+    // ============ RENDER ============
     const render = () => {
       const scaleChords = getScaleChords();
+      const homeChords = state.borrowedKey !== 0 ? getScaleChords(state.key) : [];
       const totalBeats = state.progression.reduce((s, c) => s + c.beats, 0);
-      const categories = getCategories();
+      const duration = Math.round(totalBeats * 60 / state.tempo);
+      const related = state.hoveredChord ? getRelatedChords(state.hoveredChord.root, state.hoveredChord.type) : [];
       
-      let filteredTones = state.tones;
-      if (state.toneCategory !== 'Tous') filteredTones = filteredTones.filter(t => t.category === state.toneCategory);
-      if (state.toneSearch) filteredTones = filteredTones.filter(t => t.name.toLowerCase().includes(state.toneSearch.toLowerCase()) || t.number.toString().includes(state.toneSearch));
+      const filteredTones = state.tones.filter(t => 
+        !state.toneSearch || t.name.toLowerCase().includes(state.toneSearch.toLowerCase())
+      );
 
       document.getElementById('root').innerHTML = `
-        <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-3">
-          <div class="max-w-6xl mx-auto space-y-2">
+        <div class="p-4 max-w-5xl mx-auto space-y-3">
+          
+          <!-- Header -->
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-xl font-black bg-gradient-to-r from-emerald-400 via-purple-400 to-cyan-400 text-transparent bg-clip-text">ChordFlow</h1>
+              <p class="text-slate-500 text-[10px]">Glissez la zone MIDI vers Ableton</p>
+            </div>
+            <div class="flex items-center gap-2">
+              ${!state.midiEnabled ? `<button onclick="requestMidiAccess()" class="bg-emerald-600 hover:bg-emerald-500 px-2 py-1 rounded text-xs">🎹 MIDI</button>` : ''}
+              <select onchange="selectSynthOutput(this.value)" class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs max-w-[120px]">
+                <option value="">Synth: --</option>
+                ${state.midiOutputs.filter(o => !o.name.toLowerCase().includes('launchpad')).map(o => 
+                  `<option value="${o.id}" ${state.synthOutput?.id === o.id ? 'selected' : ''}>${o.name}</option>`
+                ).join('')}
+              </select>
+              <button onclick="navigateTone(-1)" class="w-6 h-6 bg-slate-700 rounded text-xs">◀</button>
+              <button onclick="state.showTones=!state.showTones;render()" class="bg-gradient-to-r from-amber-600 to-orange-600 px-2 py-1 rounded text-xs font-medium max-w-[140px] truncate">
+                ${state.selectedTone?.name || 'Tone'}
+              </button>
+              <button onclick="navigateTone(1)" class="w-6 h-6 bg-slate-700 rounded text-xs">▶</button>
+            </div>
+          </div>
+
+          <!-- Tone Picker -->
+          ${state.showTones ? `
+          <div class="bg-slate-800/95 rounded-xl p-3 border border-slate-700">
+            <div class="flex justify-between items-center mb-2">
+              <span class="font-semibold text-sm">Voix (${filteredTones.length})</span>
+              <button onclick="state.showTones=false;render()" class="text-slate-400 hover:text-white">×</button>
+            </div>
+            <input type="text" placeholder="Rechercher..." value="${state.toneSearch}" oninput="state.toneSearch=this.value;render()" 
+              class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm mb-2">
+            <div class="tone-grid grid grid-cols-4 gap-1">
+              ${filteredTones.slice(0, 64).map(t => `
+                <button onclick="selectTone(${t.number})" class="p-1.5 rounded text-left text-xs ${state.selectedTone?.number === t.number ? 'bg-amber-600' : 'bg-slate-700/50 hover:bg-slate-600'}">
+                  <span class="text-slate-400">${t.number}.</span> ${t.name}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+          ` : ''}
+
+          <!-- Key / Scale / Controls -->
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="flex items-center gap-1 bg-slate-800/50 rounded-lg p-2">
+              <select onchange="state.key=this.value;state.borrowedKey=0;updateMidiDataUrl();render()" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-lg font-bold">
+                ${NOTES.map(n => `<option value="${n}" ${state.key === n ? 'selected' : ''}>${n}</option>`).join('')}
+              </select>
+              <select onchange="state.scale=this.value;updateMidiDataUrl();render()" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm">
+                ${Object.keys(SCALES).map(s => `<option value="${s}" ${state.scale === s ? 'selected' : ''}>${s}</option>`).join('')}
+              </select>
+              <button onclick="state.showCircle=!state.showCircle;render()" class="w-7 h-7 rounded ${state.showCircle ? 'bg-purple-600' : 'bg-slate-700'} text-xs" title="Cercle des quintes">⭕</button>
+            </div>
             
-            <!-- Header -->
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h1 class="text-xl font-black bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 text-transparent bg-clip-text">ChordFlow + CTK-3200</h1>
-                <p class="text-slate-500 text-[10px]">${state.tones.length} Voix ${state.midiEnabled ? '• MIDI ✓' : ''}</p>
-              </div>
+            <div class="flex items-center gap-1 bg-slate-800/50 rounded-lg p-2">
+              <span class="text-[10px] text-slate-400">BPM</span>
+              <input type="range" min="40" max="200" value="${state.tempo}" oninput="state.tempo=+this.value;updateMidiDataUrl();render()" class="w-20 accent-purple-500">
+              <span class="text-sm font-bold w-7">${state.tempo}</span>
+            </div>
+            
+            <div class="flex items-center gap-1 bg-slate-800/50 rounded-lg p-2">
+              <button onclick="state.octave=Math.max(1,state.octave-1);render()" class="w-5 h-5 bg-slate-700 rounded text-[10px]">-</button>
+              <span class="text-xs font-bold">Oct ${state.octave}</span>
+              <button onclick="state.octave=Math.min(7,state.octave+1);render()" class="w-5 h-5 bg-slate-700 rounded text-[10px]">+</button>
+            </div>
+            
+            <div class="flex gap-1 bg-slate-800/50 rounded-lg p-2">
+              ${Object.keys(PATTERNS).map(p => `
+                <button onclick="state.pattern='${p}';render()" class="px-1.5 py-0.5 rounded text-[10px] ${state.pattern === p ? 'bg-purple-600' : 'bg-slate-700 hover:bg-slate-600'}">${p}</button>
+              `).join('')}
+            </div>
+            
+            <div class="flex gap-1 bg-slate-800/50 rounded-lg p-2">
+              <button onclick="startPlayback()" class="px-3 py-1 rounded font-bold ${state.isPlaying ? 'bg-red-500' : 'bg-emerald-500'}">
+                ${state.isPlaying ? '⏹' : '▶'}
+              </button>
+              <button onclick="downloadMidi()" class="px-2 py-1 rounded bg-violet-600 text-sm" title="Télécharger MIDI">💾</button>
+            </div>
+          </div>
+
+          <!-- Circle of Fifths -->
+          ${state.showCircle ? `
+          <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold">Cercle des Quintes - Emprunter accords de:</span>
               <div class="flex items-center gap-1">
-                ${!state.midiEnabled ? `<button onclick="requestMidiAccess()" class="bg-emerald-600 hover:bg-emerald-500 px-2 py-1 rounded text-xs font-bold">🎹 MIDI</button>` : ''}
-                <button onclick="navigateTone(-1)" class="w-7 h-7 bg-slate-700 rounded hover:bg-slate-600 text-sm">◀</button>
-                <button onclick="state.showTones=!state.showTones;render()" class="bg-gradient-to-r from-amber-600 to-orange-600 px-2 py-1 rounded font-bold text-xs max-w-[180px] truncate">
-                  ${state.selectedTone ? `${state.selectedTone.number}. ${state.selectedTone.name}` : 'Sélectionner'}
-                </button>
-                <button onclick="navigateTone(1)" class="w-7 h-7 bg-slate-700 rounded hover:bg-slate-600 text-sm">▶</button>
+                <button onclick="state.borrowedKey=Math.max(-5,state.borrowedKey-1);render()" class="w-6 h-6 bg-slate-700 rounded text-xs">◀</button>
+                <span class="text-sm font-bold w-8 text-center ${state.borrowedKey === 0 ? 'text-emerald-400' : 'text-amber-400'}">${getCurrentKey()}</span>
+                <button onclick="state.borrowedKey=Math.min(5,state.borrowedKey+1);render()" class="w-6 h-6 bg-slate-700 rounded text-xs">▶</button>
+                ${state.borrowedKey !== 0 ? `<button onclick="state.borrowedKey=0;render()" class="px-2 py-0.5 bg-slate-600 rounded text-[10px] ml-2">↩ ${state.key}</button>` : ''}
               </div>
             </div>
-
-            <!-- Tone Picker -->
-            ${state.showTones ? `
-            <div class="bg-slate-800/95 rounded-xl p-3 border border-slate-700">
-              <div class="flex items-center justify-between mb-2">
-                <span class="font-bold text-sm">Voix (${filteredTones.length}/${state.tones.length})</span>
-                <button onclick="state.showTones=false;render()" class="text-slate-400 hover:text-white">×</button>
-              </div>
-              <div class="flex gap-2 mb-2">
-                <input type="text" placeholder="Rechercher..." value="${state.toneSearch}" oninput="state.toneSearch=this.value;render()" 
-                  class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm">
-                <select onchange="state.toneCategory=this.value;render()" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm">
-                  ${categories.map(c => `<option value="${c}" ${state.toneCategory === c ? 'selected' : ''}>${c}</option>`).join('')}
-                </select>
-              </div>
-              <div class="tone-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1">
-                ${filteredTones.map(t => `
-                  <button onclick="selectTone(${t.number})"
-                    class="p-1.5 rounded text-left text-xs ${state.selectedTone?.number === t.number ? 'bg-amber-600' : 'bg-slate-700/50 hover:bg-slate-600'}">
-                    <span class="text-slate-400">${t.number}.</span> ${t.name}
-                    <span class="text-[9px] text-slate-500 block">${t.category}</span>
-                  </button>
-                `).join('')}
+            <div class="flex justify-center">
+              <div class="circle-of-fifths w-48 h-48">
+                ${CIRCLE_OF_FIFTHS.map((k, i) => {
+                  const angle = (i * 30 - 90) * Math.PI / 180;
+                  const x = 84 + 70 * Math.cos(angle);
+                  const y = 84 + 70 * Math.sin(angle);
+                  const isHome = k === state.key;
+                  const isCurrent = i === getBorrowedKeyIndex();
+                  return `<div class="cof-key ${isHome ? 'bg-emerald-600' : isCurrent ? 'bg-amber-600' : 'bg-slate-700'} ${isCurrent ? 'active' : ''}" 
+                    style="left:${x}px;top:${y}px" onclick="state.borrowedKey=${(i - CIRCLE_OF_FIFTHS.indexOf(state.key) + 12) % 12};if(state.borrowedKey>6)state.borrowedKey-=12;render()">${k}</div>`;
+                }).join('')}
               </div>
             </div>
-            ` : ''}
+          </div>
+          ` : ''}
 
-            <!-- MIDI Devices -->
-            <div class="grid grid-cols-3 gap-2">
-              <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
-                <label class="text-[9px] text-slate-400 block">Synth</label>
-                <select onchange="selectSynthOutput(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-[11px]">
-                  <option value="">--</option>
-                  ${state.midiOutputs.filter(o => !o.name.toLowerCase().includes('launchpad')).map(o => 
-                    `<option value="${o.id}" ${state.synthOutput?.id === o.id ? 'selected' : ''}>${o.name}</option>`
-                  ).join('')}
-                </select>
-              </div>
-              <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
-                <label class="text-[9px] text-slate-400 block">LP In</label>
-                <select onchange="selectLaunchpadIn(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-[11px]">
-                  <option value="">--</option>
-                  ${state.midiInputs.map(o => `<option value="${o.id}" ${state.launchpadIn?.id === o.id ? 'selected' : ''}>${o.name}</option>`).join('')}
-                </select>
-              </div>
-              <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
-                <label class="text-[9px] text-slate-400 block">LP Out</label>
-                <select onchange="selectLaunchpadOut(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-[11px]">
-                  <option value="">--</option>
-                  ${state.midiOutputs.map(o => `<option value="${o.id}" ${state.launchpadOut?.id === o.id ? 'selected' : ''}>${o.name}</option>`).join('')}
-                </select>
-              </div>
+          <!-- Chord Palette (Klimper-style) -->
+          <div class="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs text-slate-400">
+                ${state.borrowedKey === 0 ? `Accords en ${state.key} ${state.scale}` : `Empruntés de ${getCurrentKey()} ${state.scale}`}
+              </span>
             </div>
-
-            <!-- Controls -->
-            <div class="grid grid-cols-5 gap-2">
-              <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
-                <div class="flex gap-1">
-                  <select onchange="state.key=this.value;render();updateLaunchpad()" class="flex-1 bg-slate-900 border border-slate-700 rounded px-1 py-1 text-sm font-bold">
-                    ${NOTES.map(n => `<option value="${n}" ${state.key === n ? 'selected' : ''}>${n}</option>`).join('')}
-                  </select>
-                  <select onchange="state.scale=this.value;render();updateLaunchpad()" class="flex-1 bg-slate-900 border border-slate-700 rounded px-1 py-1 text-[11px]">
-                    ${Object.keys(SCALES).map(s => `<option value="${s}" ${state.scale === s ? 'selected' : ''}>${s}</option>`).join('')}
-                  </select>
+            <div class="flex flex-wrap gap-2">
+              ${scaleChords.map((c, i) => {
+                const isRelated = related.includes(`${c.root}${c.type}`);
+                return `
+                <div class="flex flex-col items-center gap-1"
+                  onmouseenter="state.hoveredChord={root:'${c.root}',type:'${c.type}'};render()"
+                  onmouseleave="state.hoveredChord=null;render()">
+                  <div onclick="addChord('${c.root}','${c.type}',${c.borrowed})" 
+                    class="chord-circle ${getChordClass(c.type)} ${c.borrowed ? 'borrowed' : ''} ${isRelated ? 'ring-2 ring-white/50' : ''}
+                    w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm shadow-lg">
+                    ${getChordName(c.root, c.type)}
+                  </div>
+                  <span class="text-[10px] text-slate-500">${c.degree}</span>
                 </div>
-              </div>
+              `}).join('')}
               
-              <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
-                <div class="flex items-center gap-1">
-                  <span class="text-[9px] text-slate-400">BPM</span>
-                  <input type="range" min="40" max="200" value="${state.tempo}" oninput="state.tempo=+this.value;render()" class="flex-1 accent-violet-500">
-                  <span class="font-bold text-xs w-6">${state.tempo}</span>
+              <div class="border-l border-slate-600 mx-2"></div>
+              
+              <!-- Extended chords -->
+              ${['7', 'maj7', 'min7', 'sus2', 'sus4'].map(type => {
+                const root = scaleChords[0].root;
+                return `
+                <div onclick="addChord('${root}','${type}')" 
+                  class="chord-circle ${getChordClass(type)} w-10 h-10 rounded-full flex items-center justify-center font-bold text-[10px] shadow-lg opacity-70 hover:opacity-100">
+                  ${getChordName(root, type)}
                 </div>
-              </div>
-              
-              <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
-                <div class="flex items-center gap-1">
-                  <button onclick="state.octave=Math.max(1,state.octave-1);render()" class="w-5 h-5 bg-slate-700 rounded text-[10px]">-</button>
-                  <span class="text-xs font-bold">Oct ${state.octave}</span>
-                  <button onclick="state.octave=Math.min(7,state.octave+1);render()" class="w-5 h-5 bg-slate-700 rounded text-[10px]">+</button>
-                  <span class="text-[9px] text-slate-400 ml-1">Vel</span>
-                  <input type="range" min="1" max="127" value="${state.velocity}" oninput="state.velocity=+this.value;render()" class="flex-1 accent-cyan-500">
-                </div>
-              </div>
-              
-              <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
-                <div class="flex flex-wrap gap-0.5">
-                  ${Object.keys(PATTERNS).map(p => `
-                    <button onclick="state.pattern='${p}';render();updateLaunchpad()" 
-                      class="px-1 py-0.5 rounded text-[9px] ${state.pattern === p ? 'bg-violet-600' : 'bg-slate-700 hover:bg-slate-600'}">${p}</button>
-                  `).join('')}
-                </div>
-              </div>
-              
-              <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50 flex items-center justify-center gap-2">
-                <button onclick="startPlayback()" class="px-3 py-1 rounded font-bold ${state.isPlaying ? 'bg-red-500' : 'bg-emerald-500'}">
-                  ${state.isPlaying ? '⏹' : '▶'}
-                </button>
-                <button onclick="downloadMidi()" class="px-2 py-1 rounded font-bold bg-violet-600 text-sm">💾</button>
-              </div>
+              `}).join('')}
             </div>
+          </div>
 
-            <!-- Scale Chords + Progressions -->
-            <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
-              <div class="flex flex-wrap gap-1">
-                ${scaleChords.map((c, i) => `
-                  <button onclick="state.progression.push({root:'${c.root}',type:'${c.type}',beats:4});playChordPreview('${c.root}','${c.type}');render();updateLaunchpad()"
-                    class="px-2 py-1 rounded bg-slate-700 hover:bg-violet-600 text-sm">
-                    <span class="text-[9px] text-slate-400">${c.degree}</span> ${getChordName(c.root, c.type)}
-                  </button>
-                `).join('')}
-                <span class="text-slate-600 mx-1">|</span>
-                ${PROGRESSIONS.map(p => `
-                  <button onclick="const sc=getScaleChords();state.progression=${JSON.stringify(p.degrees)}.map(d=>({root:sc[d].root,type:sc[d].type,beats:4}));render();updateLaunchpad()"
-                    class="px-2 py-1 rounded bg-purple-700/50 hover:bg-purple-600 text-xs">${p.name}</button>
-                `).join('')}
-              </div>
+          <!-- Quick Progressions -->
+          <div class="flex flex-wrap gap-1">
+            ${QUICK_PROGS.map(p => `
+              <button onclick="loadProgression(${JSON.stringify(p)})" class="px-2 py-1 rounded bg-slate-700/50 hover:bg-purple-600/50 text-xs">${p.name}</button>
+            `).join('')}
+            <button onclick="clearProgression()" class="px-2 py-1 rounded bg-red-900/30 hover:bg-red-600/50 text-xs ml-auto">🗑 Effacer</button>
+          </div>
+
+          <!-- Progression Timeline + MIDI Drag Zone -->
+          <div class="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs text-slate-400">${state.progression.length} accords • ${totalBeats} temps • ${duration}s</span>
             </div>
-
-            <!-- Progression -->
-            <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
-              <div class="flex items-center justify-between mb-1">
-                <span class="text-[10px] text-slate-400">${state.progression.length} accords • ${totalBeats} temps • ${Math.round(totalBeats * 60 / state.tempo)}s</span>
-                <button onclick="state.progression=[];state.selectedSlot=null;render();updateLaunchpad()" class="text-[10px] text-slate-500 hover:text-red-400">Effacer</button>
+            
+            ${state.progression.length === 0 ? `
+              <div class="text-center py-8 text-slate-500 text-sm">
+                Cliquez sur les accords ci-dessus pour créer une progression
               </div>
-              <div class="grid grid-cols-4 sm:grid-cols-8 gap-1">
+            ` : `
+              <div class="flex gap-1 overflow-x-auto pb-2 mb-3">
                 ${state.progression.map((c, i) => `
-                  <div onclick="state.selectedSlot=${i};playChordPreview('${c.root}','${c.type}');render();updateLaunchpad()"
-                    class="relative group p-1 rounded cursor-pointer text-center ${i === state.currentChord && state.isPlaying ? 'bg-green-600 scale-105' : i === state.selectedSlot ? 'bg-violet-600' : 'bg-slate-700/50 hover:bg-slate-600'}">
-                    <button onclick="event.stopPropagation();state.progression.splice(${i},1);state.selectedSlot=null;render();updateLaunchpad()"
-                      class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-[8px] opacity-0 group-hover:opacity-100">×</button>
-                    <span class="font-bold text-sm block">${getChordName(c.root, c.type)}</span>
-                    <div class="flex items-center justify-center gap-0.5">
-                      <button onclick="event.stopPropagation();state.progression[${i}].beats=Math.max(1,state.progression[${i}].beats-1);render()" class="w-3 h-3 bg-slate-600 rounded text-[7px]">-</button>
-                      <span class="text-[8px]">${c.beats}t</span>
-                      <button onclick="event.stopPropagation();state.progression[${i}].beats=Math.min(16,state.progression[${i}].beats+1);render()" class="w-3 h-3 bg-slate-600 rounded text-[7px]">+</button>
+                  <div class="progression-slot ${i === state.currentChord && state.isPlaying ? 'playing' : ''} ${i === state.selectedSlot ? 'ring-2 ring-white' : ''} 
+                    bg-gradient-to-b ${c.borrowed ? 'from-amber-800/50 to-amber-900/50' : 'from-slate-700/50 to-slate-800/50'} rounded-lg p-2 text-center relative group"
+                    onclick="state.selectedSlot=${i};playChordPreview('${c.root}','${c.type}');render()">
+                    <button onclick="event.stopPropagation();removeChord(${i})" class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] opacity-0 group-hover:opacity-100">×</button>
+                    <div class="font-bold text-lg">${getChordName(c.root, c.type)}</div>
+                    <div class="flex items-center justify-center gap-1 mt-1">
+                      <button onclick="event.stopPropagation();adjustBeats(${i},-1)" class="w-4 h-4 bg-slate-600 rounded text-[10px]">-</button>
+                      <span class="text-[10px] text-slate-400">${c.beats}t</span>
+                      <button onclick="event.stopPropagation();adjustBeats(${i},1)" class="w-4 h-4 bg-slate-600 rounded text-[10px]">+</button>
                     </div>
                   </div>
                 `).join('')}
               </div>
-            </div>
+              
+              <!-- MIDI Drag Zone -->
+              <a href="${state.midiDataUrl || '#'}" download="ChordFlow_${state.key}_${state.scale}.mid"
+                draggable="true" 
+                ondragstart="handleDragStart(event)" 
+                ondragend="handleDragEnd(event)"
+                class="midi-drag-zone ${state.isDragging ? 'dragging' : ''} block rounded-lg p-4 text-center cursor-grab active:cursor-grabbing ${state.progression.length === 0 ? 'opacity-50 pointer-events-none' : ''}">
+                <div class="text-lg mb-1">🎵 Glisser vers Ableton / DAW</div>
+                <div class="text-xs text-slate-400">ou cliquez pour télécharger</div>
+                <div class="text-[10px] text-purple-400 mt-1">ChordFlow_${state.key}_${state.scale}.mid</div>
+              </a>
+            `}
+          </div>
 
-            <!-- Logs -->
-            <div class="bg-slate-800/30 rounded p-2 text-[9px] text-slate-500 max-h-12 overflow-y-auto">
-              ${state.logs.slice(0, 5).map(l => `<span class="${l.type === 'error' ? 'text-red-400' : l.type === 'success' ? 'text-emerald-400' : ''}">${l.time} ${l.msg}</span>`).join(' • ')}
-            </div>
+          <!-- Legend -->
+          <div class="flex flex-wrap gap-3 text-[10px] text-slate-500">
+            <span><span class="inline-block w-3 h-3 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 mr-1"></span>Majeur</span>
+            <span><span class="inline-block w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 mr-1"></span>Mineur</span>
+            <span><span class="inline-block w-3 h-3 rounded-full bg-gradient-to-r from-slate-500 to-slate-600 mr-1"></span>Dim</span>
+            <span><span class="inline-block w-3 h-3 rounded-full bg-gradient-to-r from-cyan-500 to-cyan-600 mr-1"></span>Sus</span>
+            <span><span class="inline-block w-3 h-3 rounded-full border-2 border-dashed border-slate-400 mr-1"></span>Emprunté</span>
           </div>
         </div>
       `;
     };
 
-    // Init
+    // ============ INIT ============
     window.addEventListener('DOMContentLoaded', () => {
-      log('ChordFlow démarré');
-      
-      // Essayer de charger le JSON externe
-      fetch('https://rogergodro.github.io/CTK3200_WPA_MIDI/ctk3200_tones.json')
-        .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
-        .then(data => {
-          if (Array.isArray(data) && data.length > 0) {
-            state.tones = data;
-            state.selectedTone = data[0];
-            log(`✓ ${data.length} voix CTK-3200 chargées`, 'success');
-          }
-        })
-        .catch(() => log('Utilisation voix GM (128)'))
-        .finally(render);
-      
       render();
+      requestMidiAccess();
+      
+      // Try loading CTK-3200 tones
+      fetch('https://rogergodro.github.io/CTK3200_WPA_MIDI/ctk3200_tones.json')
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(data => { if (Array.isArray(data) && data.length > 0) { state.tones = data; state.selectedTone = data[0]; render(); } })
+        .catch(() => {});
     });
 
     // Globals
     window.state = state;
     window.render = render;
-    window.playChordPreview = playChordPreview;
+    window.requestMidiAccess = requestMidiAccess;
+    window.selectSynthOutput = selectSynthOutput;
+    window.selectTone = selectTone;
+    window.navigateTone = navigateTone;
+    window.addChord = addChord;
+    window.removeChord = removeChord;
+    window.adjustBeats = adjustBeats;
+    window.loadProgression = loadProgression;
+    window.clearProgression = clearProgression;
     window.startPlayback = startPlayback;
     window.stopPlayback = stopPlayback;
     window.downloadMidi = downloadMidi;
+    window.playChordPreview = playChordPreview;
+    window.handleDragStart = handleDragStart;
+    window.handleDragEnd = handleDragEnd;
+    window.updateMidiDataUrl = updateMidiDataUrl;
     window.getScaleChords = getScaleChords;
-    window.navigateTone = navigateTone;
-    window.sendProgramChange = sendProgramChange;
-    window.updateLaunchpad = updateLaunchpad;
-    window.requestMidiAccess = requestMidiAccess;
-    window.selectSynthOutput = selectSynthOutput;
-    window.selectLaunchpadIn = selectLaunchpadIn;
-    window.selectLaunchpadOut = selectLaunchpadOut;
-    window.selectTone = selectTone;
+    window.getCurrentKey = getCurrentKey;
   </script>
 </body>
 </html>
