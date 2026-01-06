@@ -12,21 +12,13 @@
     ::-webkit-scrollbar-track { background: #1e293b; }
     ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
     .tone-grid { max-height: 300px; overflow-y: auto; }
+    #status-log { max-height: 100px; overflow-y: auto; font-family: monospace; font-size: 11px; }
   </style>
 </head>
 <body class="bg-slate-950 text-white">
-  <div id="root">
-    <div class="min-h-screen flex items-center justify-center">
-      <div class="text-center">
-        <div class="animate-spin w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p class="text-slate-400">Chargement...</p>
-      </div>
-    </div>
-  </div>
+  <div id="root"></div>
 
   <script>
-    // Pure JavaScript version - no React/Babel to avoid compilation issues
-    
     // Constants
     const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
     const NOTE_TO_MIDI = { 'C': 0, 'C#': 1, 'D': 2, 'D#': 3, 'E': 4, 'F': 5, 'F#': 6, 'G': 7, 'G#': 8, 'A': 9, 'A#': 10, 'B': 11 };
@@ -41,7 +33,6 @@
       '7': { intervals: [0, 4, 7, 10], symbol: '7' },
       'sus2': { intervals: [0, 2, 7], symbol: 'sus2' },
       'sus4': { intervals: [0, 5, 7], symbol: 'sus4' },
-      'add9': { intervals: [0, 4, 7, 14], symbol: 'add9' },
     };
 
     const SCALES = {
@@ -58,13 +49,7 @@
       { name: 'Canon', degrees: [0, 4, 5, 2, 3, 0, 3, 4] },
     ];
 
-    const PATTERNS = {
-      'whole': [[0, 4]],
-      'half': [[0, 2], [2, 2]],
-      'quarter': [[0, 1], [1, 1], [2, 1], [3, 1]],
-      'arpUp': 'arpUp',
-      'strum': 'strum',
-    };
+    const PATTERNS = { 'whole': [[0, 4]], 'half': [[0, 2], [2, 2]], 'quarter': [[0, 1], [1, 1], [2, 1], [3, 1]], 'arpUp': 'arpUp', 'strum': 'strum' };
 
     const LP_GRID = [
       [81,82,83,84,85,86,87,88], [71,72,73,74,75,76,77,78],
@@ -101,10 +86,22 @@
       launchpadOut: null,
       midiOutputs: [],
       midiInputs: [],
+      midiAccess: null,
+      midiEnabled: false,
+      logs: [],
     };
 
     let playInterval = null;
     let activeNotes = new Set();
+
+    // Logging
+    const log = (msg, type = 'info') => {
+      const time = new Date().toLocaleTimeString();
+      state.logs.unshift({ time, msg, type });
+      if (state.logs.length > 20) state.logs.pop();
+      console.log(`[${type}] ${msg}`);
+      render();
+    };
 
     // Helpers
     const getChordName = (root, type) => `${root}${CHORD_TYPES[type]?.symbol || ''}`;
@@ -134,7 +131,7 @@
           if (state.synthOutput) state.synthOutput.send([0x80, note, 0]);
           activeNotes.delete(note);
         }, duration);
-      } catch (e) { console.error('MIDI send error:', e); }
+      } catch (e) { log('Erreur MIDI: ' + e.message, 'error'); }
     };
 
     const playChord = (root, type) => {
@@ -152,8 +149,8 @@
         }
         const prog = tone.program !== undefined ? tone.program : (tone.number - 1) % 128;
         state.synthOutput.send([0xC0, prog]);
-        console.log('Program Change:', tone.name);
-      } catch (e) { console.error('Program change error:', e); }
+        log(`Program Change: ${tone.number}. ${tone.name}`);
+      } catch (e) { log('Erreur Program Change: ' + e.message, 'error'); }
     };
 
     const stopPlayback = () => {
@@ -171,6 +168,7 @@
       if (state.progression.length === 0) return;
       
       state.isPlaying = true;
+      log('Lecture démarrée');
       const beatMs = 60000 / state.tempo;
       const totalBeats = state.progression.reduce((s, c) => s + c.beats, 0);
       
@@ -211,11 +209,9 @@
     const updateLaunchpad = () => {
       if (!state.launchpadOut) return;
       
-      // Clear
       LP_GRID.flat().forEach(n => setLED(n, 0));
       LP_SCENE.forEach(n => setLED(n, 0));
       
-      // Progression (rows 0-1)
       state.progression.forEach((c, i) => {
         if (i < 16) {
           const row = i < 8 ? 0 : 1;
@@ -227,26 +223,15 @@
         }
       });
       
-      // Scale chords (row 2)
       getScaleChords().forEach((_, i) => setLED(LP_GRID[2][i], [LP_COLORS.cyan, LP_COLORS.blue, LP_COLORS.purple, LP_COLORS.magenta, LP_COLORS.pink, LP_COLORS.orange, LP_COLORS.red][i]));
-      
-      // Quick progs (row 3)
       PROGRESSIONS.forEach((_, i) => setLED(LP_GRID[3][i], LP_COLORS.purple));
-      
-      // Patterns (row 4)
       Object.keys(PATTERNS).forEach((p, i) => setLED(LP_GRID[4][i], state.pattern === p ? LP_COLORS.green : 21));
-      
-      // Keys (row 5-6)
       NOTES.slice(0, 8).forEach((n, i) => setLED(LP_GRID[5][i], state.key === n ? LP_COLORS.cyan : 37));
       NOTES.slice(8).forEach((n, i) => setLED(LP_GRID[6][i], state.key === n ? LP_COLORS.cyan : 37));
       Object.keys(SCALES).forEach((s, i) => setLED(LP_GRID[6][4+i], state.scale === s ? LP_COLORS.magenta : 53));
-      
-      // Transport (row 7)
       setLED(LP_GRID[7][0], state.isPlaying ? LP_COLORS.red : LP_COLORS.green);
       setLED(LP_GRID[7][1], LP_COLORS.orange);
       setLED(LP_GRID[7][2], LP_COLORS.blue);
-      
-      // Scene (velocity + tone nav)
       LP_SCENE.slice(0, 6).forEach((n, i) => setLED(n, state.velocity >= (i+1)*20 ? LP_COLORS.orange : 9));
       setLED(LP_SCENE[6], LP_COLORS.blue);
       setLED(LP_SCENE[7], LP_COLORS.blue);
@@ -255,7 +240,6 @@
     const handleLaunchpadInput = (note, vel) => {
       if (vel === 0) return;
       
-      // Find grid position
       let row = -1, col = -1;
       for (let r = 0; r < 8; r++) {
         const c = LP_GRID[r].indexOf(note);
@@ -297,7 +281,6 @@
         updateLaunchpad();
       }
       
-      // Scene buttons
       const sceneIdx = LP_SCENE.indexOf(note);
       if (sceneIdx !== -1) {
         if (sceneIdx < 6) state.velocity = Math.min(127, (sceneIdx + 1) * 21);
@@ -339,16 +322,13 @@
       const track = [];
       let lastTick = 0;
       
-      // Tempo
       const uspb = Math.floor(60000000 / state.tempo);
       track.push(0, 0xFF, 0x51, 0x03, (uspb >> 16) & 0xFF, (uspb >> 8) & 0xFF, uspb & 0xFF);
       
       events.forEach(e => {
         const delta = e.tick - lastTick;
-        // Variable length
         if (delta < 128) track.push(delta);
         else track.push((delta >> 7) | 0x80, delta & 0x7F);
-        
         track.push(e.type === 'on' ? 0x90 : 0x80, e.note, e.type === 'on' ? state.velocity : 0);
         lastTick = e.tick;
       });
@@ -364,62 +344,123 @@
       a.href = URL.createObjectURL(blob);
       a.download = `progression_${state.key}_${state.scale}.mid`;
       a.click();
+      log('Fichier MIDI exporté');
     };
 
-    // Initialize MIDI
-    const initMidi = async () => {
+    // Request MIDI Access - EXPLICIT BUTTON
+    const requestMidiAccess = async () => {
+      log('Demande d\'accès MIDI...');
+      
       if (!navigator.requestMIDIAccess) {
-        console.log('Web MIDI not supported');
+        log('Web MIDI non supporté par ce navigateur!', 'error');
         return;
       }
       
       try {
         const access = await navigator.requestMIDIAccess({ sysex: true });
+        state.midiAccess = access;
+        state.midiEnabled = true;
+        log('Accès MIDI obtenu!', 'success');
         
         const updateDevices = () => {
           state.midiOutputs = Array.from(access.outputs.values());
           state.midiInputs = Array.from(access.inputs.values());
           
-          // Auto-select
+          log(`Trouvé ${state.midiOutputs.length} sorties, ${state.midiInputs.length} entrées`);
+          
+          state.midiOutputs.forEach(d => log(`  Output: ${d.name}`));
+          state.midiInputs.forEach(d => log(`  Input: ${d.name}`));
+          
+          // Auto-select Launchpad
           const lpOut = state.midiOutputs.find(d => d.name.toLowerCase().includes('launchpad'));
           const lpIn = state.midiInputs.find(d => d.name.toLowerCase().includes('launchpad'));
           const synth = state.midiOutputs.find(d => !d.name.toLowerCase().includes('launchpad'));
           
-          if (lpOut && !state.launchpadOut) { state.launchpadOut = lpOut; updateLaunchpad(); }
+          if (lpOut && !state.launchpadOut) {
+            state.launchpadOut = lpOut;
+            log(`Launchpad Out: ${lpOut.name}`, 'success');
+            updateLaunchpad();
+          }
           if (lpIn && !state.launchpadIn) {
             state.launchpadIn = lpIn;
             lpIn.onmidimessage = (e) => {
               if ((e.data[0] & 0xF0) === 0x90) handleLaunchpadInput(e.data[1], e.data[2]);
             };
+            log(`Launchpad In: ${lpIn.name}`, 'success');
           }
-          if (synth && !state.synthOutput) state.synthOutput = synth;
+          if (synth && !state.synthOutput) {
+            state.synthOutput = synth;
+            log(`Synth: ${synth.name}`, 'success');
+            if (state.selectedTone) sendProgramChange(state.selectedTone);
+          }
           
           render();
         };
         
         updateDevices();
-        access.onstatechange = updateDevices;
+        access.onstatechange = () => {
+          log('Changement de périphériques MIDI');
+          updateDevices();
+        };
+        
       } catch (e) {
-        console.error('MIDI init error:', e);
+        log('Erreur accès MIDI: ' + e.message, 'error');
+        state.midiEnabled = false;
       }
+      
+      render();
     };
 
     // Load tones
     const loadTones = async () => {
+      log('Chargement des voix CTK-3200...');
       try {
         const res = await fetch('https://rogergodro.github.io/CTK3200_WPA_MIDI/ctk3200_tones.json');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         state.tones = await res.json();
-        console.log('Loaded', state.tones.length, 'tones');
+        log(`${state.tones.length} voix chargées!`, 'success');
         if (state.tones.length > 0) state.selectedTone = state.tones[0];
       } catch (e) {
-        console.log('Using fallback tones');
+        log('Erreur chargement voix: ' + e.message, 'error');
+        log('Utilisation des voix GM par défaut');
         state.tones = Array.from({ length: 128 }, (_, i) => ({ number: i + 1, name: `GM ${i + 1}`, program: i }));
         state.selectedTone = state.tones[0];
       }
       render();
     };
 
-    // Render UI
+    // Select MIDI device
+    const selectSynthOutput = (id) => {
+      state.synthOutput = state.midiOutputs.find(o => o.id === id) || null;
+      if (state.synthOutput) {
+        log(`Synth sélectionné: ${state.synthOutput.name}`);
+        if (state.selectedTone) sendProgramChange(state.selectedTone);
+      }
+      render();
+    };
+
+    const selectLaunchpadIn = (id) => {
+      if (state.launchpadIn) state.launchpadIn.onmidimessage = null;
+      state.launchpadIn = state.midiInputs.find(o => o.id === id) || null;
+      if (state.launchpadIn) {
+        state.launchpadIn.onmidimessage = (e) => {
+          if ((e.data[0] & 0xF0) === 0x90) handleLaunchpadInput(e.data[1], e.data[2]);
+        };
+        log(`Launchpad In sélectionné: ${state.launchpadIn.name}`);
+      }
+      render();
+    };
+
+    const selectLaunchpadOut = (id) => {
+      state.launchpadOut = state.midiOutputs.find(o => o.id === id) || null;
+      if (state.launchpadOut) {
+        log(`Launchpad Out sélectionné: ${state.launchpadOut.name}`);
+        updateLaunchpad();
+      }
+      render();
+    };
+
+    // Render
     const render = () => {
       const scaleChords = getScaleChords();
       const totalBeats = state.progression.reduce((s, c) => s + c.beats, 0);
@@ -446,6 +487,16 @@
               </div>
             </div>
 
+            <!-- MIDI ACCESS BUTTON -->
+            ${!state.midiEnabled ? `
+            <div class="bg-gradient-to-r from-emerald-600 to-cyan-600 rounded-2xl p-4 text-center">
+              <p class="mb-2">Pour utiliser les appareils MIDI, cliquez sur le bouton ci-dessous:</p>
+              <button onclick="requestMidiAccess()" class="bg-white text-slate-900 px-6 py-3 rounded-xl font-bold text-lg hover:bg-slate-100 transition">
+                🎹 Activer MIDI
+              </button>
+            </div>
+            ` : ''}
+
             <!-- Tone Picker -->
             ${state.showTones ? `
             <div class="bg-slate-800/95 rounded-2xl p-4 border border-slate-700">
@@ -453,7 +504,7 @@
                 <h3 class="font-bold">CTK-3200 Voices (${state.tones.length})</h3>
                 <button onclick="state.showTones=false;render()" class="text-slate-400 hover:text-white">✕</button>
               </div>
-              <input type="text" placeholder="Search..." value="${state.toneSearch}" oninput="state.toneSearch=this.value;render()" 
+              <input type="text" placeholder="Rechercher..." value="${state.toneSearch}" oninput="state.toneSearch=this.value;render()" 
                 class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 mb-3">
               <div class="tone-grid grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-1">
                 ${filteredTones.slice(0, 100).map(t => `
@@ -470,9 +521,8 @@
             <!-- MIDI Devices -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
               <div class="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50">
-                <label class="text-xs text-slate-400 block mb-1">Synth Output</label>
-                <select onchange="state.synthOutput=state.midiOutputs.find(o=>o.id===this.value);if(state.selectedTone)sendProgramChange(state.selectedTone)"
-                  class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-sm">
+                <label class="text-xs text-slate-400 block mb-1">Synth Output (CTK-3200)</label>
+                <select onchange="selectSynthOutput(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-sm">
                   <option value="">None</option>
                   ${state.midiOutputs.filter(o => !o.name.toLowerCase().includes('launchpad')).map(o => 
                     `<option value="${o.id}" ${state.synthOutput?.id === o.id ? 'selected' : ''}>${o.name}</option>`
@@ -481,20 +531,18 @@
               </div>
               <div class="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50">
                 <label class="text-xs text-slate-400 block mb-1">Launchpad In</label>
-                <select onchange="const lp=state.midiInputs.find(o=>o.id===this.value);if(lp){state.launchpadIn=lp;lp.onmidimessage=e=>{if((e.data[0]&0xF0)===0x90)handleLaunchpadInput(e.data[1],e.data[2])}}"
-                  class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-sm">
+                <select onchange="selectLaunchpadIn(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-sm">
                   <option value="">None</option>
-                  ${state.midiInputs.filter(o => o.name.toLowerCase().includes('launchpad')).map(o => 
+                  ${state.midiInputs.map(o => 
                     `<option value="${o.id}" ${state.launchpadIn?.id === o.id ? 'selected' : ''}>${o.name}</option>`
                   ).join('')}
                 </select>
               </div>
               <div class="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50">
                 <label class="text-xs text-slate-400 block mb-1">Launchpad Out</label>
-                <select onchange="state.launchpadOut=state.midiOutputs.find(o=>o.id===this.value);updateLaunchpad()"
-                  class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-sm">
+                <select onchange="selectLaunchpadOut(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-sm">
                   <option value="">None</option>
-                  ${state.midiOutputs.filter(o => o.name.toLowerCase().includes('launchpad')).map(o => 
+                  ${state.midiOutputs.map(o => 
                     `<option value="${o.id}" ${state.launchpadOut?.id === o.id ? 'selected' : ''}>${o.name}</option>`
                   ).join('')}
                 </select>
@@ -548,7 +596,7 @@
               </div>
             </div>
 
-            <!-- Scale Chords + Progressions -->
+            <!-- Scale Chords -->
             <div class="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50">
               <div class="flex flex-wrap gap-1">
                 ${scaleChords.map((c, i) => `
@@ -590,6 +638,21 @@
               </div>
             </div>
 
+            <!-- Status Log -->
+            <div class="bg-slate-800/30 rounded-xl p-3 border border-slate-700/30">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-slate-400">Status Log</span>
+                <button onclick="state.logs=[];render()" class="text-[10px] text-slate-500 hover:text-white">Clear</button>
+              </div>
+              <div id="status-log" class="text-slate-500 space-y-0.5">
+                ${state.logs.map(l => `
+                  <div class="${l.type === 'error' ? 'text-red-400' : l.type === 'success' ? 'text-emerald-400' : 'text-slate-400'}">
+                    <span class="text-slate-600">${l.time}</span> ${l.msg}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
             <!-- Legend -->
             <div class="bg-slate-800/30 rounded-xl p-2 text-[10px] text-slate-500">
               <b class="text-slate-400">Launchpad:</b> Row 1-2: Progression | Row 3: Scale | Row 4: Progs | Row 5: Patterns | Row 6-7: Key/Scale | Row 8: Transport | Scene: Velocity/Tone◀▶
@@ -601,14 +664,12 @@
 
     // Init
     window.addEventListener('DOMContentLoaded', async () => {
-      console.log('ChordFlow initializing...');
+      log('ChordFlow démarré');
       render();
       await loadTones();
-      await initMidi();
-      console.log('ChordFlow ready!');
     });
 
-    // Expose functions globally
+    // Expose functions
     window.state = state;
     window.render = render;
     window.playChord = playChord;
@@ -620,6 +681,10 @@
     window.sendProgramChange = sendProgramChange;
     window.updateLaunchpad = updateLaunchpad;
     window.handleLaunchpadInput = handleLaunchpadInput;
+    window.requestMidiAccess = requestMidiAccess;
+    window.selectSynthOutput = selectSynthOutput;
+    window.selectLaunchpadIn = selectLaunchpadIn;
+    window.selectLaunchpadOut = selectLaunchpadOut;
   </script>
 </body>
 </html>
