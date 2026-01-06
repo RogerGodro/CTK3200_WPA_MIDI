@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,13 +11,161 @@
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: #1e293b; }
     ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-    .tone-grid { max-height: 300px; overflow-y: auto; }
+    .tone-grid { max-height: 350px; overflow-y: auto; }
   </style>
 </head>
 <body class="bg-slate-950 text-white">
   <div id="root"></div>
 
   <script>
+    // GM Tones avec vrais noms
+    const GM_TONES = [
+      // Piano (1-8)
+      {number:1,name:"Acoustic Grand Piano",category:"Piano"},
+      {number:2,name:"Bright Acoustic Piano",category:"Piano"},
+      {number:3,name:"Electric Grand Piano",category:"Piano"},
+      {number:4,name:"Honky-tonk Piano",category:"Piano"},
+      {number:5,name:"Electric Piano 1",category:"Piano"},
+      {number:6,name:"Electric Piano 2",category:"Piano"},
+      {number:7,name:"Harpsichord",category:"Piano"},
+      {number:8,name:"Clavinet",category:"Piano"},
+      // Chromatic Percussion (9-16)
+      {number:9,name:"Celesta",category:"Chromatic"},
+      {number:10,name:"Glockenspiel",category:"Chromatic"},
+      {number:11,name:"Music Box",category:"Chromatic"},
+      {number:12,name:"Vibraphone",category:"Chromatic"},
+      {number:13,name:"Marimba",category:"Chromatic"},
+      {number:14,name:"Xylophone",category:"Chromatic"},
+      {number:15,name:"Tubular Bells",category:"Chromatic"},
+      {number:16,name:"Dulcimer",category:"Chromatic"},
+      // Organ (17-24)
+      {number:17,name:"Drawbar Organ",category:"Organ"},
+      {number:18,name:"Percussive Organ",category:"Organ"},
+      {number:19,name:"Rock Organ",category:"Organ"},
+      {number:20,name:"Church Organ",category:"Organ"},
+      {number:21,name:"Reed Organ",category:"Organ"},
+      {number:22,name:"Accordion",category:"Organ"},
+      {number:23,name:"Harmonica",category:"Organ"},
+      {number:24,name:"Tango Accordion",category:"Organ"},
+      // Guitar (25-32)
+      {number:25,name:"Acoustic Guitar (nylon)",category:"Guitar"},
+      {number:26,name:"Acoustic Guitar (steel)",category:"Guitar"},
+      {number:27,name:"Electric Guitar (jazz)",category:"Guitar"},
+      {number:28,name:"Electric Guitar (clean)",category:"Guitar"},
+      {number:29,name:"Electric Guitar (muted)",category:"Guitar"},
+      {number:30,name:"Overdriven Guitar",category:"Guitar"},
+      {number:31,name:"Distortion Guitar",category:"Guitar"},
+      {number:32,name:"Guitar Harmonics",category:"Guitar"},
+      // Bass (33-40)
+      {number:33,name:"Acoustic Bass",category:"Bass"},
+      {number:34,name:"Electric Bass (finger)",category:"Bass"},
+      {number:35,name:"Electric Bass (pick)",category:"Bass"},
+      {number:36,name:"Fretless Bass",category:"Bass"},
+      {number:37,name:"Slap Bass 1",category:"Bass"},
+      {number:38,name:"Slap Bass 2",category:"Bass"},
+      {number:39,name:"Synth Bass 1",category:"Bass"},
+      {number:40,name:"Synth Bass 2",category:"Bass"},
+      // Strings (41-48)
+      {number:41,name:"Violin",category:"Strings"},
+      {number:42,name:"Viola",category:"Strings"},
+      {number:43,name:"Cello",category:"Strings"},
+      {number:44,name:"Contrabass",category:"Strings"},
+      {number:45,name:"Tremolo Strings",category:"Strings"},
+      {number:46,name:"Pizzicato Strings",category:"Strings"},
+      {number:47,name:"Orchestral Harp",category:"Strings"},
+      {number:48,name:"Timpani",category:"Strings"},
+      // Ensemble (49-56)
+      {number:49,name:"String Ensemble 1",category:"Ensemble"},
+      {number:50,name:"String Ensemble 2",category:"Ensemble"},
+      {number:51,name:"Synth Strings 1",category:"Ensemble"},
+      {number:52,name:"Synth Strings 2",category:"Ensemble"},
+      {number:53,name:"Choir Aahs",category:"Ensemble"},
+      {number:54,name:"Voice Oohs",category:"Ensemble"},
+      {number:55,name:"Synth Voice",category:"Ensemble"},
+      {number:56,name:"Orchestra Hit",category:"Ensemble"},
+      // Brass (57-64)
+      {number:57,name:"Trumpet",category:"Brass"},
+      {number:58,name:"Trombone",category:"Brass"},
+      {number:59,name:"Tuba",category:"Brass"},
+      {number:60,name:"Muted Trumpet",category:"Brass"},
+      {number:61,name:"French Horn",category:"Brass"},
+      {number:62,name:"Brass Section",category:"Brass"},
+      {number:63,name:"Synth Brass 1",category:"Brass"},
+      {number:64,name:"Synth Brass 2",category:"Brass"},
+      // Reed (65-72)
+      {number:65,name:"Soprano Sax",category:"Reed"},
+      {number:66,name:"Alto Sax",category:"Reed"},
+      {number:67,name:"Tenor Sax",category:"Reed"},
+      {number:68,name:"Baritone Sax",category:"Reed"},
+      {number:69,name:"Oboe",category:"Reed"},
+      {number:70,name:"English Horn",category:"Reed"},
+      {number:71,name:"Bassoon",category:"Reed"},
+      {number:72,name:"Clarinet",category:"Reed"},
+      // Pipe (73-80)
+      {number:73,name:"Piccolo",category:"Pipe"},
+      {number:74,name:"Flute",category:"Pipe"},
+      {number:75,name:"Recorder",category:"Pipe"},
+      {number:76,name:"Pan Flute",category:"Pipe"},
+      {number:77,name:"Blown Bottle",category:"Pipe"},
+      {number:78,name:"Shakuhachi",category:"Pipe"},
+      {number:79,name:"Whistle",category:"Pipe"},
+      {number:80,name:"Ocarina",category:"Pipe"},
+      // Synth Lead (81-88)
+      {number:81,name:"Lead 1 (square)",category:"Synth Lead"},
+      {number:82,name:"Lead 2 (sawtooth)",category:"Synth Lead"},
+      {number:83,name:"Lead 3 (calliope)",category:"Synth Lead"},
+      {number:84,name:"Lead 4 (chiff)",category:"Synth Lead"},
+      {number:85,name:"Lead 5 (charang)",category:"Synth Lead"},
+      {number:86,name:"Lead 6 (voice)",category:"Synth Lead"},
+      {number:87,name:"Lead 7 (fifths)",category:"Synth Lead"},
+      {number:88,name:"Lead 8 (bass+lead)",category:"Synth Lead"},
+      // Synth Pad (89-96)
+      {number:89,name:"Pad 1 (new age)",category:"Synth Pad"},
+      {number:90,name:"Pad 2 (warm)",category:"Synth Pad"},
+      {number:91,name:"Pad 3 (polysynth)",category:"Synth Pad"},
+      {number:92,name:"Pad 4 (choir)",category:"Synth Pad"},
+      {number:93,name:"Pad 5 (bowed)",category:"Synth Pad"},
+      {number:94,name:"Pad 6 (metallic)",category:"Synth Pad"},
+      {number:95,name:"Pad 7 (halo)",category:"Synth Pad"},
+      {number:96,name:"Pad 8 (sweep)",category:"Synth Pad"},
+      // Synth Effects (97-104)
+      {number:97,name:"FX 1 (rain)",category:"Synth FX"},
+      {number:98,name:"FX 2 (soundtrack)",category:"Synth FX"},
+      {number:99,name:"FX 3 (crystal)",category:"Synth FX"},
+      {number:100,name:"FX 4 (atmosphere)",category:"Synth FX"},
+      {number:101,name:"FX 5 (brightness)",category:"Synth FX"},
+      {number:102,name:"FX 6 (goblins)",category:"Synth FX"},
+      {number:103,name:"FX 7 (echoes)",category:"Synth FX"},
+      {number:104,name:"FX 8 (sci-fi)",category:"Synth FX"},
+      // Ethnic (105-112)
+      {number:105,name:"Sitar",category:"Ethnic"},
+      {number:106,name:"Banjo",category:"Ethnic"},
+      {number:107,name:"Shamisen",category:"Ethnic"},
+      {number:108,name:"Koto",category:"Ethnic"},
+      {number:109,name:"Kalimba",category:"Ethnic"},
+      {number:110,name:"Bagpipe",category:"Ethnic"},
+      {number:111,name:"Fiddle",category:"Ethnic"},
+      {number:112,name:"Shanai",category:"Ethnic"},
+      // Percussive (113-120)
+      {number:113,name:"Tinkle Bell",category:"Percussive"},
+      {number:114,name:"Agogo",category:"Percussive"},
+      {number:115,name:"Steel Drums",category:"Percussive"},
+      {number:116,name:"Woodblock",category:"Percussive"},
+      {number:117,name:"Taiko Drum",category:"Percussive"},
+      {number:118,name:"Melodic Tom",category:"Percussive"},
+      {number:119,name:"Synth Drum",category:"Percussive"},
+      {number:120,name:"Reverse Cymbal",category:"Percussive"},
+      // Sound Effects (121-128)
+      {number:121,name:"Guitar Fret Noise",category:"SFX"},
+      {number:122,name:"Breath Noise",category:"SFX"},
+      {number:123,name:"Seashore",category:"SFX"},
+      {number:124,name:"Bird Tweet",category:"SFX"},
+      {number:125,name:"Telephone Ring",category:"SFX"},
+      {number:126,name:"Helicopter",category:"SFX"},
+      {number:127,name:"Applause",category:"SFX"},
+      {number:128,name:"Gunshot",category:"SFX"},
+    ];
+
     // Constants
     const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
     const NOTE_TO_MIDI = { 'C': 0, 'C#': 1, 'D': 2, 'D#': 3, 'E': 4, 'F': 5, 'F#': 6, 'G': 7, 'G#': 8, 'A': 9, 'A#': 10, 'B': 11 };
@@ -35,9 +183,9 @@
     };
 
     const SCALES = {
-      'major': { pattern: [0, 2, 4, 5, 7, 9, 11], chords: ['maj', 'min', 'min', 'maj', 'maj', 'min', 'dim'] },
-      'minor': { pattern: [0, 2, 3, 5, 7, 8, 10], chords: ['min', 'dim', 'maj', 'min', 'min', 'maj', 'maj'] },
-      'dorian': { pattern: [0, 2, 3, 5, 7, 9, 10], chords: ['min', 'min', 'maj', 'maj', 'min', 'dim', 'maj'] },
+      'Majeur': { pattern: [0, 2, 4, 5, 7, 9, 11], chords: ['maj', 'min', 'min', 'maj', 'maj', 'min', 'dim'] },
+      'Mineur': { pattern: [0, 2, 3, 5, 7, 8, 10], chords: ['min', 'dim', 'maj', 'min', 'min', 'maj', 'maj'] },
+      'Dorien': { pattern: [0, 2, 3, 5, 7, 9, 10], chords: ['min', 'min', 'maj', 'maj', 'min', 'dim', 'maj'] },
     };
 
     const PROGRESSIONS = [
@@ -48,7 +196,16 @@
       { name: 'Canon', degrees: [0, 4, 5, 2, 3, 0, 3, 4] },
     ];
 
-    const PATTERNS = { 'whole': [[0, 4]], 'half': [[0, 2], [2, 2]], 'quarter': [[0, 1], [1, 1], [2, 1], [3, 1]], 'arpUp': 'arpUp', 'strum': 'strum' };
+    // Patterns en français avec durées correctes
+    const PATTERNS = {
+      'Ronde': { beats: 4, division: 1 },      // 1 note de 4 temps
+      'Blanche': { beats: 2, division: 2 },    // 2 notes de 2 temps
+      'Noire': { beats: 1, division: 4 },      // 4 notes de 1 temps
+      'Croche': { beats: 0.5, division: 8 },   // 8 notes de 0.5 temps
+      'Arpège ↑': { type: 'arpUp' },
+      'Arpège ↓': { type: 'arpDown' },
+      'Gratte': { type: 'strum' },
+    };
 
     const LP_GRID = [
       [81,82,83,84,85,86,87,88], [71,72,73,74,75,76,77,78],
@@ -57,12 +214,12 @@
       [21,22,23,24,25,26,27,28], [11,12,13,14,15,16,17,18],
     ];
     const LP_SCENE = [89, 79, 69, 59, 49, 39, 29, 19];
-    const LP_COLORS = { off: 0, green: 87, red: 72, orange: 84, cyan: 90, blue: 78, purple: 94, magenta: 81, pink: 56, white: 119, yellow: 62 };
+    const LP_COLORS = { off: 0, green: 87, red: 72, orange: 84, cyan: 90, blue: 78, purple: 94, magenta: 81, pink: 56, white: 119 };
 
     // State
     let state = {
       key: 'C',
-      scale: 'major',
+      scale: 'Majeur',
       tempo: 120,
       octave: 4,
       velocity: 100,
@@ -73,35 +230,34 @@
         { root: 'F', type: 'maj', beats: 4 },
       ],
       selectedSlot: null,
-      pattern: 'whole',
+      pattern: 'Ronde',
       isPlaying: false,
       currentChord: -1,
-      tones: [],  // TOUJOURS un tableau
-      selectedTone: null,
+      tones: GM_TONES,
+      selectedTone: GM_TONES[0],
       showTones: false,
       toneSearch: '',
+      toneCategory: 'Tous',
       synthOutput: null,
       launchpadIn: null,
       launchpadOut: null,
       midiOutputs: [],
       midiInputs: [],
-      midiAccess: null,
       midiEnabled: false,
       logs: [],
     };
 
     let playInterval = null;
-    let activeNotes = new Set();
+    let scheduledEvents = [];
+    let playStartTime = 0;
 
-    // Logging
     const log = (msg, type = 'info') => {
       const time = new Date().toLocaleTimeString();
       state.logs.unshift({ time, msg, type });
-      if (state.logs.length > 15) state.logs.pop();
+      if (state.logs.length > 10) state.logs.pop();
       console.log(`[${type}] ${msg}`);
     };
 
-    // Helpers
     const getChordName = (root, type) => `${root}${CHORD_TYPES[type]?.symbol || ''}`;
     
     const getChordNotes = (root, type, octave) => {
@@ -119,44 +275,105 @@
       }));
     };
 
-    // MIDI Functions
-    const sendNote = (note, vel, duration) => {
-      if (!state.synthOutput) return;
-      try {
-        state.synthOutput.send([0x90, note, vel]);
-        activeNotes.add(note);
-        setTimeout(() => {
-          if (state.synthOutput) state.synthOutput.send([0x80, note, 0]);
-          activeNotes.delete(note);
-        }, duration);
-      } catch (e) { log('Erreur MIDI: ' + e.message, 'error'); }
+    // MIDI
+    const sendNoteOn = (note, vel) => {
+      if (state.synthOutput) {
+        try { state.synthOutput.send([0x90, note, vel]); } catch(e) {}
+      }
     };
 
-    const playChord = (root, type) => {
+    const sendNoteOff = (note) => {
+      if (state.synthOutput) {
+        try { state.synthOutput.send([0x80, note, 0]); } catch(e) {}
+      }
+    };
+
+    const allNotesOff = () => {
+      if (state.synthOutput) {
+        for (let n = 0; n < 128; n++) sendNoteOff(n);
+        try { state.synthOutput.send([0xB0, 123, 0]); } catch(e) {}
+      }
+    };
+
+    const playChordPreview = (root, type) => {
       const notes = getChordNotes(root, type, state.octave);
-      const dur = 60000 / state.tempo * 0.8;
-      notes.forEach((n, i) => setTimeout(() => sendNote(n, state.velocity, dur), i * 25));
+      const dur = 400;
+      notes.forEach((n, i) => {
+        setTimeout(() => sendNoteOn(n, state.velocity), i * 20);
+        setTimeout(() => sendNoteOff(n), dur + i * 20);
+      });
     };
 
     const sendProgramChange = (tone) => {
       if (!state.synthOutput || !tone) return;
       try {
-        if (tone.bank !== undefined) {
-          state.synthOutput.send([0xB0, 0, Math.floor(tone.bank / 128)]);
-          state.synthOutput.send([0xB0, 32, tone.bank % 128]);
-        }
-        const prog = tone.program !== undefined ? tone.program : (tone.number - 1) % 128;
+        const prog = (tone.number - 1) % 128;
         state.synthOutput.send([0xC0, prog]);
-        log(`Tone: ${tone.number}. ${tone.name}`);
-      } catch (e) { log('Erreur Program Change: ' + e.message, 'error'); }
+        log(`🎹 ${tone.number}. ${tone.name}`);
+      } catch (e) {}
+    };
+
+    // Génération des événements de lecture
+    const generatePlaybackEvents = () => {
+      const events = [];
+      const msPerBeat = 60000 / state.tempo;
+      let currentTime = 0;
+
+      state.progression.forEach((chord, chordIdx) => {
+        const notes = getChordNotes(chord.root, chord.type, state.octave);
+        const chordDurationMs = chord.beats * msPerBeat;
+        const patternDef = PATTERNS[state.pattern];
+
+        if (patternDef.type === 'arpUp') {
+          // Arpège montant
+          const noteTime = chordDurationMs / notes.length;
+          notes.forEach((note, i) => {
+            events.push({ time: currentTime + i * noteTime, type: 'on', note, vel: state.velocity, chordIdx });
+            events.push({ time: currentTime + i * noteTime + noteTime * 0.9, type: 'off', note, chordIdx });
+          });
+        } else if (patternDef.type === 'arpDown') {
+          // Arpège descendant
+          const noteTime = chordDurationMs / notes.length;
+          const reversed = [...notes].reverse();
+          reversed.forEach((note, i) => {
+            events.push({ time: currentTime + i * noteTime, type: 'on', note, vel: state.velocity, chordIdx });
+            events.push({ time: currentTime + i * noteTime + noteTime * 0.9, type: 'off', note, chordIdx });
+          });
+        } else if (patternDef.type === 'strum') {
+          // Grattage - toutes les notes décalées légèrement
+          const strumDelay = 30; // ms entre chaque note
+          notes.forEach((note, i) => {
+            events.push({ time: currentTime + i * strumDelay, type: 'on', note, vel: state.velocity, chordIdx });
+            events.push({ time: currentTime + chordDurationMs - 50, type: 'off', note, chordIdx });
+          });
+        } else {
+          // Patterns rythmiques (Ronde, Blanche, Noire, Croche)
+          const division = patternDef.division;
+          const noteDuration = msPerBeat * patternDef.beats * 0.9;
+          
+          for (let i = 0; i < chord.beats * division / 4; i++) {
+            const hitTime = currentTime + (i * msPerBeat * 4 / division);
+            if (hitTime < currentTime + chordDurationMs) {
+              notes.forEach(note => {
+                events.push({ time: hitTime, type: 'on', note, vel: state.velocity, chordIdx });
+                events.push({ time: hitTime + noteDuration, type: 'off', note, chordIdx });
+              });
+            }
+          }
+        }
+        
+        currentTime += chordDurationMs;
+      });
+
+      return events.sort((a, b) => a.time - b.time);
     };
 
     const stopPlayback = () => {
       if (playInterval) { clearInterval(playInterval); playInterval = null; }
+      scheduledEvents = [];
+      allNotesOff();
       state.isPlaying = false;
       state.currentChord = -1;
-      activeNotes.forEach(n => { if (state.synthOutput) state.synthOutput.send([0x80, n, 0]); });
-      activeNotes.clear();
       render();
       updateLaunchpad();
     };
@@ -164,35 +381,44 @@
     const startPlayback = () => {
       if (state.isPlaying) { stopPlayback(); return; }
       if (state.progression.length === 0) return;
-      
+
       state.isPlaying = true;
       log('▶ Lecture');
-      const beatMs = 60000 / state.tempo;
-      const totalBeats = state.progression.reduce((s, c) => s + c.beats, 0);
       
-      let chordStarts = [], cum = 0;
-      state.progression.forEach(c => { chordStarts.push(cum); cum += c.beats; });
+      const events = generatePlaybackEvents();
+      const totalDuration = state.progression.reduce((s, c) => s + c.beats, 0) * 60000 / state.tempo;
       
-      const startTime = performance.now();
-      
+      playStartTime = performance.now();
+      let eventIndex = 0;
+      let lastChordIdx = -1;
+
       playInterval = setInterval(() => {
-        const elapsed = performance.now() - startTime;
-        const beat = (elapsed / beatMs) % totalBeats;
+        const elapsed = (performance.now() - playStartTime) % totalDuration;
         
-        let chordIdx = 0;
-        for (let i = 0; i < chordStarts.length; i++) {
-          if (beat >= chordStarts[i]) chordIdx = i;
+        // Reset si on boucle
+        if (elapsed < 100 && eventIndex > 0) {
+          eventIndex = 0;
+          allNotesOff();
         }
-        
-        if (chordIdx !== state.currentChord) {
-          state.currentChord = chordIdx;
-          const chord = state.progression[chordIdx];
-          playChord(chord.root, chord.type);
-          render();
-          updateLaunchpad();
+
+        // Jouer les événements
+        while (eventIndex < events.length && events[eventIndex].time <= elapsed) {
+          const evt = events[eventIndex];
+          if (evt.type === 'on') {
+            sendNoteOn(evt.note, evt.vel);
+            if (evt.chordIdx !== lastChordIdx) {
+              lastChordIdx = evt.chordIdx;
+              state.currentChord = evt.chordIdx;
+              render();
+              updateLaunchpad();
+            }
+          } else {
+            sendNoteOff(evt.note);
+          }
+          eventIndex++;
         }
-      }, 50);
-      
+      }, 10);
+
       render();
       updateLaunchpad();
     };
@@ -200,7 +426,7 @@
     // Launchpad
     const setLED = (note, color) => {
       if (state.launchpadOut) {
-        try { state.launchpadOut.send([0x90, note, color]); } catch (e) {}
+        try { state.launchpadOut.send([0x90, note, color]); } catch(e) {}
       }
     };
 
@@ -249,7 +475,7 @@
           const idx = row * 8 + col;
           if (idx < state.progression.length) {
             state.selectedSlot = idx;
-            playChord(state.progression[idx].root, state.progression[idx].type);
+            playChordPreview(state.progression[idx].root, state.progression[idx].type);
           }
         } else if (row === 2 && col < 7) {
           const chord = getScaleChords()[col];
@@ -259,7 +485,7 @@
           } else {
             state.progression.push({ root: chord.root, type: chord.type, beats: 4 });
           }
-          playChord(chord.root, chord.type);
+          playChordPreview(chord.root, chord.type);
         } else if (row === 3 && col < PROGRESSIONS.length) {
           const scaleChords = getScaleChords();
           state.progression = PROGRESSIONS[col].degrees.map(d => ({ root: scaleChords[d].root, type: scaleChords[d].type, beats: 4 }));
@@ -290,8 +516,7 @@
     };
 
     const navigateTone = (dir) => {
-      if (!Array.isArray(state.tones) || state.tones.length === 0) return;
-      const idx = state.selectedTone ? state.tones.findIndex(t => t.number === state.selectedTone.number) : -1;
+      const idx = state.tones.findIndex(t => t.number === state.selectedTone?.number);
       let newIdx = idx + dir;
       if (newIdx < 0) newIdx = state.tones.length - 1;
       if (newIdx >= state.tones.length) newIdx = 0;
@@ -323,10 +548,14 @@
       const uspb = Math.floor(60000000 / state.tempo);
       track.push(0, 0xFF, 0x51, 0x03, (uspb >> 16) & 0xFF, (uspb >> 8) & 0xFF, uspb & 0xFF);
       
+      // Program change
+      track.push(0, 0xC0, (state.selectedTone.number - 1) % 128);
+      
       events.forEach(e => {
         const delta = e.tick - lastTick;
         if (delta < 128) track.push(delta);
-        else track.push((delta >> 7) | 0x80, delta & 0x7F);
+        else if (delta < 16384) track.push((delta >> 7) | 0x80, delta & 0x7F);
+        else track.push((delta >> 14) | 0x80, ((delta >> 7) & 0x7F) | 0x80, delta & 0x7F);
         track.push(e.type === 'on' ? 0x90 : 0x80, e.note, e.type === 'on' ? state.velocity : 0);
         lastTick = e.tick;
       });
@@ -340,168 +569,75 @@
       const blob = new Blob([midi], { type: 'audio/midi' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `progression_${state.key}_${state.scale}.mid`;
+      a.download = `ChordFlow_${state.key}_${state.scale}_${state.tempo}bpm.mid`;
       a.click();
       log('💾 MIDI exporté');
     };
 
-    // Request MIDI Access
+    // MIDI Access
     const requestMidiAccess = async () => {
-      log('Demande accès MIDI...');
-      
-      if (!navigator.requestMIDIAccess) {
-        log('Web MIDI non supporté!', 'error');
-        alert('Web MIDI non supporté par ce navigateur!');
-        return;
-      }
+      log('Demande MIDI...');
+      if (!navigator.requestMIDIAccess) { log('Web MIDI non supporté!', 'error'); return; }
       
       try {
         const access = await navigator.requestMIDIAccess({ sysex: true });
-        state.midiAccess = access;
         state.midiEnabled = true;
-        log('✓ Accès MIDI OK', 'success');
+        log('✓ MIDI OK', 'success');
         
         const updateDevices = () => {
           state.midiOutputs = Array.from(access.outputs.values());
           state.midiInputs = Array.from(access.inputs.values());
-          
           log(`${state.midiOutputs.length} sorties, ${state.midiInputs.length} entrées`);
           
-          // Auto-select
           const lpOut = state.midiOutputs.find(d => d.name.toLowerCase().includes('launchpad'));
           const lpIn = state.midiInputs.find(d => d.name.toLowerCase().includes('launchpad'));
           const synth = state.midiOutputs.find(d => !d.name.toLowerCase().includes('launchpad'));
           
-          if (lpOut && !state.launchpadOut) {
-            state.launchpadOut = lpOut;
-            log(`LP Out: ${lpOut.name}`, 'success');
-            setTimeout(updateLaunchpad, 100);
-          }
-          if (lpIn && !state.launchpadIn) {
-            state.launchpadIn = lpIn;
-            lpIn.onmidimessage = (e) => {
-              if ((e.data[0] & 0xF0) === 0x90) handleLaunchpadInput(e.data[1], e.data[2]);
-            };
-            log(`LP In: ${lpIn.name}`, 'success');
-          }
-          if (synth && !state.synthOutput) {
-            state.synthOutput = synth;
-            log(`Synth: ${synth.name}`, 'success');
-            if (state.selectedTone) sendProgramChange(state.selectedTone);
-          }
-          
+          if (lpOut && !state.launchpadOut) { state.launchpadOut = lpOut; log(`LP Out: ${lpOut.name}`, 'success'); setTimeout(updateLaunchpad, 100); }
+          if (lpIn && !state.launchpadIn) { state.launchpadIn = lpIn; lpIn.onmidimessage = (e) => { if ((e.data[0] & 0xF0) === 0x90) handleLaunchpadInput(e.data[1], e.data[2]); }; log(`LP In: ${lpIn.name}`, 'success'); }
+          if (synth && !state.synthOutput) { state.synthOutput = synth; log(`Synth: ${synth.name}`, 'success'); sendProgramChange(state.selectedTone); }
           render();
         };
         
         updateDevices();
         access.onstatechange = updateDevices;
-        
-      } catch (e) {
-        log('Erreur MIDI: ' + e.message, 'error');
-        alert('Erreur accès MIDI: ' + e.message);
-      }
+      } catch (e) { log('Erreur: ' + e.message, 'error'); }
     };
 
-    // Load tones
-    const loadTones = async () => {
-      log('Chargement voix CTK-3200...');
-      
-      try {
-        const res = await fetch('https://rogergodro.github.io/CTK3200_WPA_MIDI/ctk3200_tones.json');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        
-        // Vérifier que c'est un tableau
-        if (Array.isArray(data) && data.length > 0) {
-          state.tones = data;
-          state.selectedTone = data[0];
-          log(`✓ ${data.length} voix chargées`, 'success');
-        } else {
-          throw new Error('Format JSON invalide');
-        }
-      } catch (e) {
-        log('Erreur: ' + e.message, 'error');
-        log('Utilisation voix GM par défaut');
-        // Fallback GM
-        state.tones = Array.from({ length: 128 }, (_, i) => ({ 
-          number: i + 1, 
-          name: `GM ${i + 1}`, 
-          program: i,
-          category: 'General MIDI'
-        }));
-        state.selectedTone = state.tones[0];
-      }
-      render();
-    };
+    const selectSynthOutput = (id) => { state.synthOutput = state.midiOutputs.find(o => o.id === id) || null; if (state.synthOutput) sendProgramChange(state.selectedTone); render(); };
+    const selectLaunchpadIn = (id) => { if (state.launchpadIn) state.launchpadIn.onmidimessage = null; state.launchpadIn = state.midiInputs.find(o => o.id === id) || null; if (state.launchpadIn) state.launchpadIn.onmidimessage = (e) => { if ((e.data[0] & 0xF0) === 0x90) handleLaunchpadInput(e.data[1], e.data[2]); }; render(); };
+    const selectLaunchpadOut = (id) => { state.launchpadOut = state.midiOutputs.find(o => o.id === id) || null; if (state.launchpadOut) updateLaunchpad(); render(); };
+    const selectTone = (num) => { state.selectedTone = state.tones.find(t => t.number === num); sendProgramChange(state.selectedTone); state.showTones = false; render(); };
 
-    // Select devices
-    const selectSynthOutput = (id) => {
-      state.synthOutput = state.midiOutputs.find(o => o.id === id) || null;
-      if (state.synthOutput) {
-        log(`Synth: ${state.synthOutput.name}`);
-        if (state.selectedTone) sendProgramChange(state.selectedTone);
-      }
-      render();
-    };
+    // Catégories uniques
+    const getCategories = () => ['Tous', ...new Set(state.tones.map(t => t.category))];
 
-    const selectLaunchpadIn = (id) => {
-      if (state.launchpadIn) state.launchpadIn.onmidimessage = null;
-      state.launchpadIn = state.midiInputs.find(o => o.id === id) || null;
-      if (state.launchpadIn) {
-        state.launchpadIn.onmidimessage = (e) => {
-          if ((e.data[0] & 0xF0) === 0x90) handleLaunchpadInput(e.data[1], e.data[2]);
-        };
-        log(`LP In: ${state.launchpadIn.name}`);
-      }
-      render();
-    };
-
-    const selectLaunchpadOut = (id) => {
-      state.launchpadOut = state.midiOutputs.find(o => o.id === id) || null;
-      if (state.launchpadOut) {
-        log(`LP Out: ${state.launchpadOut.name}`);
-        updateLaunchpad();
-      }
-      render();
-    };
-
-    const selectTone = (num) => {
-      state.selectedTone = state.tones.find(t => t.number === num);
-      if (state.selectedTone) sendProgramChange(state.selectedTone);
-      state.showTones = false;
-      render();
-    };
-
-    // Render
     const render = () => {
       const scaleChords = getScaleChords();
       const totalBeats = state.progression.reduce((s, c) => s + c.beats, 0);
+      const categories = getCategories();
       
-      // Filtrer les tones de manière sécurisée
-      const tonesArray = Array.isArray(state.tones) ? state.tones : [];
-      const filteredTones = tonesArray.filter(t => 
-        !state.toneSearch || 
-        (t.name && t.name.toLowerCase().includes(state.toneSearch.toLowerCase())) || 
-        (t.number && t.number.toString().includes(state.toneSearch))
-      );
+      let filteredTones = state.tones;
+      if (state.toneCategory !== 'Tous') filteredTones = filteredTones.filter(t => t.category === state.toneCategory);
+      if (state.toneSearch) filteredTones = filteredTones.filter(t => t.name.toLowerCase().includes(state.toneSearch.toLowerCase()) || t.number.toString().includes(state.toneSearch));
 
       document.getElementById('root').innerHTML = `
-        <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4">
-          <div class="max-w-6xl mx-auto space-y-3">
+        <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-3">
+          <div class="max-w-6xl mx-auto space-y-2">
             
             <!-- Header -->
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h1 class="text-2xl font-black bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 text-transparent bg-clip-text">ChordFlow + CTK-3200</h1>
-                <p class="text-slate-500 text-xs">Launchpad MK2 • ${tonesArray.length} Voices ${state.midiEnabled ? '• MIDI ✓' : ''}</p>
+                <h1 class="text-xl font-black bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 text-transparent bg-clip-text">ChordFlow + CTK-3200</h1>
+                <p class="text-slate-500 text-[10px]">${state.tones.length} Voix ${state.midiEnabled ? '• MIDI ✓' : ''}</p>
               </div>
-              <div class="flex items-center gap-2">
-                ${!state.midiEnabled ? `<button onclick="requestMidiAccess()" class="bg-emerald-600 hover:bg-emerald-500 px-3 py-1 rounded-lg text-sm font-bold">🎹 MIDI</button>` : ''}
-                <button onclick="navigateTone(-1)" class="w-8 h-8 bg-slate-700 rounded-lg hover:bg-slate-600">◀</button>
-                <button onclick="state.showTones=!state.showTones;render()" class="bg-gradient-to-r from-amber-600 to-orange-600 px-3 py-1.5 rounded-lg font-bold text-sm">
-                  ${state.selectedTone ? `${state.selectedTone.number}. ${state.selectedTone.name}` : 'Select Tone'}
+              <div class="flex items-center gap-1">
+                ${!state.midiEnabled ? `<button onclick="requestMidiAccess()" class="bg-emerald-600 hover:bg-emerald-500 px-2 py-1 rounded text-xs font-bold">🎹 MIDI</button>` : ''}
+                <button onclick="navigateTone(-1)" class="w-7 h-7 bg-slate-700 rounded hover:bg-slate-600 text-sm">◀</button>
+                <button onclick="state.showTones=!state.showTones;render()" class="bg-gradient-to-r from-amber-600 to-orange-600 px-2 py-1 rounded font-bold text-xs max-w-[180px] truncate">
+                  ${state.selectedTone ? `${state.selectedTone.number}. ${state.selectedTone.name}` : 'Sélectionner'}
                 </button>
-                <button onclick="navigateTone(1)" class="w-8 h-8 bg-slate-700 rounded-lg hover:bg-slate-600">▶</button>
+                <button onclick="navigateTone(1)" class="w-7 h-7 bg-slate-700 rounded hover:bg-slate-600 text-sm">▶</button>
               </div>
             </div>
 
@@ -509,16 +645,22 @@
             ${state.showTones ? `
             <div class="bg-slate-800/95 rounded-xl p-3 border border-slate-700">
               <div class="flex items-center justify-between mb-2">
-                <span class="font-bold text-sm">Voix CTK-3200 (${tonesArray.length})</span>
-                <button onclick="state.showTones=false;render()" class="text-slate-400 hover:text-white text-lg">×</button>
+                <span class="font-bold text-sm">Voix (${filteredTones.length}/${state.tones.length})</span>
+                <button onclick="state.showTones=false;render()" class="text-slate-400 hover:text-white">×</button>
               </div>
-              <input type="text" placeholder="Rechercher..." value="${state.toneSearch}" oninput="state.toneSearch=this.value;render()" 
-                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 mb-2 text-sm">
-              <div class="tone-grid grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-1">
-                ${filteredTones.slice(0, 120).map(t => `
+              <div class="flex gap-2 mb-2">
+                <input type="text" placeholder="Rechercher..." value="${state.toneSearch}" oninput="state.toneSearch=this.value;render()" 
+                  class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm">
+                <select onchange="state.toneCategory=this.value;render()" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm">
+                  ${categories.map(c => `<option value="${c}" ${state.toneCategory === c ? 'selected' : ''}>${c}</option>`).join('')}
+                </select>
+              </div>
+              <div class="tone-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1">
+                ${filteredTones.map(t => `
                   <button onclick="selectTone(${t.number})"
                     class="p-1.5 rounded text-left text-xs ${state.selectedTone?.number === t.number ? 'bg-amber-600' : 'bg-slate-700/50 hover:bg-slate-600'}">
                     <span class="text-slate-400">${t.number}.</span> ${t.name}
+                    <span class="text-[9px] text-slate-500 block">${t.category}</span>
                   </button>
                 `).join('')}
               </div>
@@ -526,91 +668,87 @@
             ` : ''}
 
             <!-- MIDI Devices -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-              <div class="bg-slate-800/50 rounded-xl p-2 border border-slate-700/50">
-                <label class="text-[10px] text-slate-400 block mb-1">Synth (CTK-3200)</label>
-                <select onchange="selectSynthOutput(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs">
-                  <option value="">-- Sélectionner --</option>
+            <div class="grid grid-cols-3 gap-2">
+              <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
+                <label class="text-[9px] text-slate-400 block">Synth</label>
+                <select onchange="selectSynthOutput(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-[11px]">
+                  <option value="">--</option>
                   ${state.midiOutputs.filter(o => !o.name.toLowerCase().includes('launchpad')).map(o => 
                     `<option value="${o.id}" ${state.synthOutput?.id === o.id ? 'selected' : ''}>${o.name}</option>`
                   ).join('')}
                 </select>
               </div>
-              <div class="bg-slate-800/50 rounded-xl p-2 border border-slate-700/50">
-                <label class="text-[10px] text-slate-400 block mb-1">Launchpad In</label>
-                <select onchange="selectLaunchpadIn(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs">
-                  <option value="">-- Sélectionner --</option>
-                  ${state.midiInputs.map(o => 
-                    `<option value="${o.id}" ${state.launchpadIn?.id === o.id ? 'selected' : ''}>${o.name}</option>`
-                  ).join('')}
+              <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
+                <label class="text-[9px] text-slate-400 block">LP In</label>
+                <select onchange="selectLaunchpadIn(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-[11px]">
+                  <option value="">--</option>
+                  ${state.midiInputs.map(o => `<option value="${o.id}" ${state.launchpadIn?.id === o.id ? 'selected' : ''}>${o.name}</option>`).join('')}
                 </select>
               </div>
-              <div class="bg-slate-800/50 rounded-xl p-2 border border-slate-700/50">
-                <label class="text-[10px] text-slate-400 block mb-1">Launchpad Out</label>
-                <select onchange="selectLaunchpadOut(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs">
-                  <option value="">-- Sélectionner --</option>
-                  ${state.midiOutputs.map(o => 
-                    `<option value="${o.id}" ${state.launchpadOut?.id === o.id ? 'selected' : ''}>${o.name}</option>`
-                  ).join('')}
+              <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
+                <label class="text-[9px] text-slate-400 block">LP Out</label>
+                <select onchange="selectLaunchpadOut(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-[11px]">
+                  <option value="">--</option>
+                  ${state.midiOutputs.map(o => `<option value="${o.id}" ${state.launchpadOut?.id === o.id ? 'selected' : ''}>${o.name}</option>`).join('')}
                 </select>
               </div>
             </div>
 
             <!-- Controls -->
-            <div class="grid grid-cols-2 lg:grid-cols-5 gap-2">
-              <div class="bg-slate-800/50 rounded-xl p-2 border border-slate-700/50">
-                <div class="grid grid-cols-2 gap-1">
-                  <select onchange="state.key=this.value;render();updateLaunchpad()" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-lg font-bold">
+            <div class="grid grid-cols-5 gap-2">
+              <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
+                <div class="flex gap-1">
+                  <select onchange="state.key=this.value;render();updateLaunchpad()" class="flex-1 bg-slate-900 border border-slate-700 rounded px-1 py-1 text-sm font-bold">
                     ${NOTES.map(n => `<option value="${n}" ${state.key === n ? 'selected' : ''}>${n}</option>`).join('')}
                   </select>
-                  <select onchange="state.scale=this.value;render();updateLaunchpad()" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm capitalize">
+                  <select onchange="state.scale=this.value;render();updateLaunchpad()" class="flex-1 bg-slate-900 border border-slate-700 rounded px-1 py-1 text-[11px]">
                     ${Object.keys(SCALES).map(s => `<option value="${s}" ${state.scale === s ? 'selected' : ''}>${s}</option>`).join('')}
                   </select>
                 </div>
               </div>
               
-              <div class="bg-slate-800/50 rounded-xl p-2 border border-slate-700/50">
+              <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
                 <div class="flex items-center gap-1">
-                  <span class="text-[10px] text-slate-400">BPM</span>
+                  <span class="text-[9px] text-slate-400">BPM</span>
                   <input type="range" min="40" max="200" value="${state.tempo}" oninput="state.tempo=+this.value;render()" class="flex-1 accent-violet-500">
-                  <span class="font-bold text-sm w-7 text-right">${state.tempo}</span>
+                  <span class="font-bold text-xs w-6">${state.tempo}</span>
                 </div>
               </div>
               
-              <div class="bg-slate-800/50 rounded-xl p-2 border border-slate-700/50">
+              <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
                 <div class="flex items-center gap-1">
-                  <button onclick="state.octave=Math.max(1,state.octave-1);render()" class="w-5 h-5 bg-slate-700 rounded text-xs">-</button>
-                  <span class="font-bold text-sm">Oct ${state.octave}</span>
-                  <button onclick="state.octave=Math.min(7,state.octave+1);render()" class="w-5 h-5 bg-slate-700 rounded text-xs">+</button>
-                  <input type="range" min="1" max="127" value="${state.velocity}" oninput="state.velocity=+this.value;render();updateLaunchpad()" class="flex-1 accent-cyan-500">
-                  <span class="text-[10px] text-slate-400 w-5">${state.velocity}</span>
+                  <button onclick="state.octave=Math.max(1,state.octave-1);render()" class="w-5 h-5 bg-slate-700 rounded text-[10px]">-</button>
+                  <span class="text-xs font-bold">Oct ${state.octave}</span>
+                  <button onclick="state.octave=Math.min(7,state.octave+1);render()" class="w-5 h-5 bg-slate-700 rounded text-[10px]">+</button>
+                  <span class="text-[9px] text-slate-400 ml-1">Vel</span>
+                  <input type="range" min="1" max="127" value="${state.velocity}" oninput="state.velocity=+this.value;render()" class="flex-1 accent-cyan-500">
                 </div>
               </div>
               
-              <div class="bg-slate-800/50 rounded-xl p-2 border border-slate-700/50">
-                <div class="flex flex-wrap gap-1">
+              <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
+                <div class="flex flex-wrap gap-0.5">
                   ${Object.keys(PATTERNS).map(p => `
                     <button onclick="state.pattern='${p}';render();updateLaunchpad()" 
-                      class="px-1.5 py-0.5 rounded text-[10px] ${state.pattern === p ? 'bg-violet-600' : 'bg-slate-700'}">${p}</button>
+                      class="px-1 py-0.5 rounded text-[9px] ${state.pattern === p ? 'bg-violet-600' : 'bg-slate-700 hover:bg-slate-600'}">${p}</button>
                   `).join('')}
                 </div>
               </div>
               
-              <div class="bg-slate-800/50 rounded-xl p-2 border border-slate-700/50 flex items-center justify-center gap-2">
-                <button onclick="startPlayback()" class="px-4 py-1.5 rounded-lg font-bold ${state.isPlaying ? 'bg-red-500' : 'bg-emerald-500'}">
+              <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50 flex items-center justify-center gap-2">
+                <button onclick="startPlayback()" class="px-3 py-1 rounded font-bold ${state.isPlaying ? 'bg-red-500' : 'bg-emerald-500'}">
                   ${state.isPlaying ? '⏹' : '▶'}
                 </button>
-                <button onclick="downloadMidi()" class="px-3 py-1.5 rounded-lg font-bold bg-violet-600">💾</button>
+                <button onclick="downloadMidi()" class="px-2 py-1 rounded font-bold bg-violet-600 text-sm">💾</button>
               </div>
             </div>
 
-            <!-- Scale Chords -->
-            <div class="bg-slate-800/50 rounded-xl p-2 border border-slate-700/50">
+            <!-- Scale Chords + Progressions -->
+            <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
               <div class="flex flex-wrap gap-1">
                 ${scaleChords.map((c, i) => `
-                  <button onclick="state.progression.push({root:'${c.root}',type:'${c.type}',beats:4});playChord('${c.root}','${c.type}');render();updateLaunchpad()"
+                  <button onclick="state.progression.push({root:'${c.root}',type:'${c.type}',beats:4});playChordPreview('${c.root}','${c.type}');render();updateLaunchpad()"
                     class="px-2 py-1 rounded bg-slate-700 hover:bg-violet-600 text-sm">
-                    <span class="text-[10px] text-slate-400">${c.degree}</span> ${getChordName(c.root, c.type)}
+                    <span class="text-[9px] text-slate-400">${c.degree}</span> ${getChordName(c.root, c.type)}
                   </button>
                 `).join('')}
                 <span class="text-slate-600 mx-1">|</span>
@@ -622,55 +760,61 @@
             </div>
 
             <!-- Progression -->
-            <div class="bg-slate-800/50 rounded-xl p-2 border border-slate-700/50">
+            <div class="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
               <div class="flex items-center justify-between mb-1">
-                <span class="text-[10px] text-slate-400">${state.progression.length} accords • ${totalBeats} beats</span>
-                <button onclick="state.progression=[];state.selectedSlot=null;render();updateLaunchpad()" class="text-[10px] text-slate-500 hover:text-red-400">Clear</button>
+                <span class="text-[10px] text-slate-400">${state.progression.length} accords • ${totalBeats} temps • ${Math.round(totalBeats * 60 / state.tempo)}s</span>
+                <button onclick="state.progression=[];state.selectedSlot=null;render();updateLaunchpad()" class="text-[10px] text-slate-500 hover:text-red-400">Effacer</button>
               </div>
               <div class="grid grid-cols-4 sm:grid-cols-8 gap-1">
                 ${state.progression.map((c, i) => `
-                  <div onclick="state.selectedSlot=${i};playChord('${c.root}','${c.type}');render();updateLaunchpad()"
-                    class="relative group p-1.5 rounded-lg cursor-pointer text-center ${i === state.currentChord && state.isPlaying ? 'bg-green-600 scale-105' : i === state.selectedSlot ? 'bg-violet-600' : 'bg-slate-700/50 hover:bg-slate-600'}">
+                  <div onclick="state.selectedSlot=${i};playChordPreview('${c.root}','${c.type}');render();updateLaunchpad()"
+                    class="relative group p-1 rounded cursor-pointer text-center ${i === state.currentChord && state.isPlaying ? 'bg-green-600 scale-105' : i === state.selectedSlot ? 'bg-violet-600' : 'bg-slate-700/50 hover:bg-slate-600'}">
                     <button onclick="event.stopPropagation();state.progression.splice(${i},1);state.selectedSlot=null;render();updateLaunchpad()"
-                      class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-[8px] opacity-0 group-hover:opacity-100 leading-none">×</button>
+                      class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-[8px] opacity-0 group-hover:opacity-100">×</button>
                     <span class="font-bold text-sm block">${getChordName(c.root, c.type)}</span>
                     <div class="flex items-center justify-center gap-0.5">
-                      <button onclick="event.stopPropagation();state.progression[${i}].beats=Math.max(1,state.progression[${i}].beats-1);render()" class="w-3 h-3 bg-slate-600 rounded text-[8px]">-</button>
-                      <span class="text-[9px]">${c.beats}b</span>
-                      <button onclick="event.stopPropagation();state.progression[${i}].beats=Math.min(16,state.progression[${i}].beats+1);render()" class="w-3 h-3 bg-slate-600 rounded text-[8px]">+</button>
+                      <button onclick="event.stopPropagation();state.progression[${i}].beats=Math.max(1,state.progression[${i}].beats-1);render()" class="w-3 h-3 bg-slate-600 rounded text-[7px]">-</button>
+                      <span class="text-[8px]">${c.beats}t</span>
+                      <button onclick="event.stopPropagation();state.progression[${i}].beats=Math.min(16,state.progression[${i}].beats+1);render()" class="w-3 h-3 bg-slate-600 rounded text-[7px]">+</button>
                     </div>
                   </div>
                 `).join('')}
               </div>
             </div>
 
-            <!-- Status Log -->
-            <div class="bg-slate-800/30 rounded-lg p-2 border border-slate-700/30 text-[10px]">
-              <div class="text-slate-500 space-y-0.5 max-h-16 overflow-y-auto">
-                ${state.logs.slice(0, 8).map(l => `
-                  <div class="${l.type === 'error' ? 'text-red-400' : l.type === 'success' ? 'text-emerald-400' : 'text-slate-400'}">
-                    <span class="text-slate-600">${l.time}</span> ${l.msg}
-                  </div>
-                `).join('')}
-              </div>
+            <!-- Logs -->
+            <div class="bg-slate-800/30 rounded p-2 text-[9px] text-slate-500 max-h-12 overflow-y-auto">
+              ${state.logs.slice(0, 5).map(l => `<span class="${l.type === 'error' ? 'text-red-400' : l.type === 'success' ? 'text-emerald-400' : ''}">${l.time} ${l.msg}</span>`).join(' • ')}
             </div>
-
           </div>
         </div>
       `;
     };
 
     // Init
-    window.addEventListener('DOMContentLoaded', async () => {
+    window.addEventListener('DOMContentLoaded', () => {
       log('ChordFlow démarré');
+      
+      // Essayer de charger le JSON externe
+      fetch('https://rogergodro.github.io/CTK3200_WPA_MIDI/ctk3200_tones.json')
+        .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
+        .then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            state.tones = data;
+            state.selectedTone = data[0];
+            log(`✓ ${data.length} voix CTK-3200 chargées`, 'success');
+          }
+        })
+        .catch(() => log('Utilisation voix GM (128)'))
+        .finally(render);
+      
       render();
-      await loadTones();
     });
 
-    // Expose
+    // Globals
     window.state = state;
     window.render = render;
-    window.playChord = playChord;
+    window.playChordPreview = playChordPreview;
     window.startPlayback = startPlayback;
     window.stopPlayback = stopPlayback;
     window.downloadMidi = downloadMidi;
@@ -678,7 +822,6 @@
     window.navigateTone = navigateTone;
     window.sendProgramChange = sendProgramChange;
     window.updateLaunchpad = updateLaunchpad;
-    window.handleLaunchpadInput = handleLaunchpadInput;
     window.requestMidiAccess = requestMidiAccess;
     window.selectSynthOutput = selectSynthOutput;
     window.selectLaunchpadIn = selectLaunchpadIn;
