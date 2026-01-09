@@ -374,22 +374,24 @@
                     let hat = null;
                     
                     // Method 1: HAT on axis 9 for Logitech Extreme 3D Pro
-                    // Neutral position is ~1.286 (or any value > 1), ignore it
+                    // Exact values from user testing:
+                    // up: -1, up-right: ~-0.714, right: -0.429, down-right: -0.143
+                    // down: 0.143, down-left: 0.429, left: 0.714, up-left: ~1.0
+                    // neutral: >1 (like 1.286)
                     if (gp.axes.length > 9) {
                         const povAxis = gp.axes[9];
-                        // Only process if within valid range (-1 to 1)
-                        if (povAxis >= -1 && povAxis <= 1) {
-                            // Logitech POV values (8 directions mapped to -1 to 1)
-                            if (povAxis >= -1 && povAxis < -0.85) hat = 'up';
-                            else if (povAxis >= -0.75 && povAxis < -0.55) hat = 'up-right';
-                            else if (povAxis >= -0.45 && povAxis < -0.25) hat = 'right';
-                            else if (povAxis >= -0.15 && povAxis < 0.05) hat = 'down-right';
-                            else if (povAxis >= 0.1 && povAxis < 0.3) hat = 'down';
-                            else if (povAxis >= 0.35 && povAxis < 0.55) hat = 'down-left';
-                            else if (povAxis >= 0.6 && povAxis < 0.8) hat = 'left';
-                            else if (povAxis >= 0.85 && povAxis <= 1) hat = 'up-left';
+                        // Only process if within valid range (neutral is > 1)
+                        if (povAxis <= 1.1) {
+                            if (povAxis < -0.85) hat = 'up';
+                            else if (povAxis >= -0.85 && povAxis < -0.55) hat = 'up-right';
+                            else if (povAxis >= -0.55 && povAxis < -0.28) hat = 'right';
+                            else if (povAxis >= -0.28 && povAxis < 0) hat = 'down-right';
+                            else if (povAxis >= 0 && povAxis < 0.28) hat = 'down';
+                            else if (povAxis >= 0.28 && povAxis < 0.55) hat = 'down-left';
+                            else if (povAxis >= 0.55 && povAxis < 0.85) hat = 'left';
+                            else if (povAxis >= 0.85 && povAxis <= 1.1) hat = 'up-left';
                         }
-                        // Values outside -1 to 1 (like 1.286) = neutral, hat stays null
+                        // Values > 1.1 (like 1.286) = neutral, hat stays null
                     }
                     
                     // Method 2: Check axes 4 and 5 as HAT X/Y (some drivers)
@@ -452,9 +454,9 @@
                     const newCutoff = 50 + cutoffRatio * 7950;
                     setCutoff(newCutoff);
                     
-                    // Axe 5 (Twist) -> MIX VCO1/VCO2
+                    // Axe 5 (Twist) -> MIX VCO1/VCO2 uniquement
                     const twistValue = gp.axes[5] || 0;
-                    const mixRatio = (twistValue + 1) / 2; // 0-1
+                    const mixRatio = (twistValue + 1) / 2; // -1 = 0% (VCO1 only), +1 = 100% (VCO2 only)
                     setOsc2Mix(mixRatio);
                     
                     // Axe 3 (Throttle slider sur la base) -> LFO Depth
@@ -463,11 +465,11 @@
                     setLfoDepth(newLfoDepth);
                     
                     // Axe 6 (Molette sur la base) -> LFO Rate
-                    // La molette va de 1.0 (position "-") à -1.0 (position "+")
-                    // Donc on inverse: quand valeur = -1 ("+"), on veut rate max
+                    // axe 6 = 1 (position "-") -> rate = 0.1Hz (lent)
+                    // axe 6 = -1 (position "+") -> rate = 20Hz (rapide)
                     const dialValue = gp.axes[6] || 0;
-                    const rateRatio = (1 - dialValue) / 2; // Inversé: -1 -> 1.0, +1 -> 0.0
-                    const newLfoRate = 0.1 + rateRatio * 19.9;
+                    const rateRatio = (dialValue + 1) / 2; // 1 -> 1.0 (lent), -1 -> 0.0 (rapide)
+                    const newLfoRate = 0.1 + (1 - rateRatio) * 19.9; // Inversé: 1->0.1Hz, -1->20Hz
                     setLfoRate(newLfoRate);
                     
                     // Trigger control
