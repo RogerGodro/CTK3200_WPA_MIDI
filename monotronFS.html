@@ -28,9 +28,10 @@
             // États du joystick
             const [gamepadConnected, setGamepadConnected] = useState(false);
             const [gamepadName, setGamepadName] = useState('');
-            const [axes, setAxes] = useState([0, 0, 0, 0]);
+            const [axes, setAxes] = useState([0, 0, 0, 0, 0, 0]);
             const [buttons, setButtons] = useState(Array(12).fill(false));
             const [hatDirection, setHatDirection] = useState(null);
+            const [rawAxes, setRawAxes] = useState([]);
             
             // États synth
             const [isPlaying, setIsPlaying] = useState(false);
@@ -349,12 +350,19 @@
                         return;
                     }
                     
-                    // Read axes
+                    // Read ALL axes for debugging and finding the dial
+                    const allAxes = Array.from(gp.axes);
+                    setRawAxes(allAxes);
+                    
+                    // Read axes - Logitech Extreme 3D Pro typical mapping:
+                    // 0: X (left/right), 1: Y (forward/back), 2: Twist, 3: Throttle/Slider
                     const newAxes = [
                         gp.axes[0] || 0,  // X
                         gp.axes[1] || 0,  // Y
                         gp.axes[2] || 0,  // Twist (Z rotation)
-                        gp.axes[3] || 0   // Throttle
+                        gp.axes[3] || 0,  // Throttle
+                        gp.axes[4] || 0,  // Possibly dial or extra
+                        gp.axes[5] || 0   // Possibly dial or extra
                     ];
                     setAxes(newAxes);
                     
@@ -362,20 +370,48 @@
                     const newButtons = gp.buttons.slice(0, 12).map(b => b.pressed);
                     setButtons(newButtons);
                     
-                    // HAT/POV - Logitech uses axes[4] and axes[5] or button states
-                    // Usually axes[9] for POV or check buttons 12-15
+                    // HAT/POV Detection - Multiple methods for compatibility
                     let hat = null;
+                    
+                    // Method 1: Check if HAT is on axes (common for Logitech)
+                    // POV hat often on axis 9, or could be axes 4-5 as X/Y
                     if (gp.axes.length > 9) {
                         const povAxis = gp.axes[9];
-                        if (povAxis === -1) hat = 'up';
-                        else if (povAxis === -0.7142857142857143) hat = 'up-right';
-                        else if (povAxis === -0.4285714285714286) hat = 'right';
-                        else if (povAxis === -0.14285714285714285) hat = 'down-right';
-                        else if (povAxis === 0.14285714285714285) hat = 'down';
-                        else if (povAxis === 0.4285714285714286) hat = 'down-left';
-                        else if (povAxis === 0.7142857142857143) hat = 'left';
-                        else if (povAxis === 1) hat = 'up-left';
+                        // Standard POV axis values (circular, -1 to 1)
+                        if (povAxis < -0.9) hat = 'up';
+                        else if (povAxis > -0.8 && povAxis < -0.6) hat = 'up-right';
+                        else if (povAxis > -0.5 && povAxis < -0.3) hat = 'right';
+                        else if (povAxis > -0.2 && povAxis < 0) hat = 'down-right';
+                        else if (povAxis > 0 && povAxis < 0.2) hat = 'down';
+                        else if (povAxis > 0.3 && povAxis < 0.5) hat = 'down-left';
+                        else if (povAxis > 0.6 && povAxis < 0.8) hat = 'left';
+                        else if (povAxis > 0.9) hat = 'up-left';
                     }
+                    
+                    // Method 2: Check axes 4 and 5 as HAT X/Y (some drivers)
+                    if (!hat && gp.axes.length > 5) {
+                        const hatX = gp.axes[4];
+                        const hatY = gp.axes[5];
+                        if (Math.abs(hatX) > 0.5 || Math.abs(hatY) > 0.5) {
+                            if (hatY < -0.5 && Math.abs(hatX) < 0.5) hat = 'up';
+                            else if (hatY > 0.5 && Math.abs(hatX) < 0.5) hat = 'down';
+                            else if (hatX > 0.5 && Math.abs(hatY) < 0.5) hat = 'right';
+                            else if (hatX < -0.5 && Math.abs(hatY) < 0.5) hat = 'left';
+                            else if (hatX > 0.3 && hatY < -0.3) hat = 'up-right';
+                            else if (hatX > 0.3 && hatY > 0.3) hat = 'down-right';
+                            else if (hatX < -0.3 && hatY > 0.3) hat = 'down-left';
+                            else if (hatX < -0.3 && hatY < -0.3) hat = 'up-left';
+                        }
+                    }
+                    
+                    // Method 3: HAT as buttons 12-15 (some configurations)
+                    if (!hat && gp.buttons.length > 15) {
+                        if (gp.buttons[12]?.pressed) hat = 'up';
+                        else if (gp.buttons[13]?.pressed) hat = 'right';
+                        else if (gp.buttons[14]?.pressed) hat = 'down';
+                        else if (gp.buttons[15]?.pressed) hat = 'left';
+                    }
+                    
                     setHatDirection(hat);
                     
                     // Process button presses (edge detection)
@@ -400,20 +436,41 @@
                     const maxFreq = 1046.5; // C6
                     const freq = minFreq * Math.pow(maxFreq / minFreq, pitchRatio);
                     
-                    // Axe Y -> Cutoff (inversé pour naturel)
+                    // Axe Y -> Cutoff (inversé pour naturel - pousser = ouvrir)
                     const cutoffRatio = 1 - ((newAxes[1] + 1) / 2);
                     const newCutoff = 50 + cutoffRatio * 7950;
                     setCutoff(newCutoff);
                     
-                    // Axe Z (twist) -> Resonance
-                    const resRatio = (newAxes[2] + 1) / 2;
-                    const newRes = 0.1 + resRatio * 29.9;
-                    setResonance(newRes);
+                    // Axe Z (twist) -> MIX VCO1/VCO2
+                    const mixRatio = (newAxes[2] + 1) / 2; // 0-1
+                    setOsc2Mix(mixRatio);
                     
-                    // Throttle -> LFO Depth
-                    const throttleRatio = 1 - ((newAxes[3] + 1) / 2); // Inversé (throttle avant = max)
+                    // Throttle (slider sur la base) -> LFO Depth
+                    const throttleRatio = 1 - ((newAxes[3] + 1) / 2); // Inversé (avant = max)
                     const newLfoDepth = throttleRatio * 100;
                     setLfoDepth(newLfoDepth);
+                    
+                    // Dial/Slider additionnel (axes[5] ou axes[6]) -> LFO Rate
+                    // Cherchons le bon axe - souvent c'est le slider rotatif
+                    let dialValue = 0;
+                    // Essayer différents axes pour trouver la molette
+                    if (gp.axes.length > 5 && Math.abs(gp.axes[5]) > 0.01) {
+                        dialValue = gp.axes[5];
+                    } else if (gp.axes.length > 6 && Math.abs(gp.axes[6]) > 0.01) {
+                        dialValue = gp.axes[6];
+                    } else if (gp.axes.length > 4 && Math.abs(gp.axes[4]) > 0.01) {
+                        // Parfois sur axe 4
+                        dialValue = gp.axes[4];
+                    }
+                    // Si on a trouvé une molette, l'utiliser pour LFO Rate
+                    if (Math.abs(dialValue) > 0.01) {
+                        const rateRatio = (dialValue + 1) / 2;
+                        const newLfoRate = 0.1 + rateRatio * 19.9;
+                        setLfoRate(newLfoRate);
+                    }
+                    
+                    // Resonance maintenant contrôlée par HAT diagonales ou fixe
+                    // On garde la résonance manuelle via l'interface
                     
                     // Trigger control
                     if (newButtons[0]) {
@@ -466,20 +523,35 @@
             }, [cycleWave, toggleLfoTarget, randomize, resetParams, loadPreset, quickPresets]);
             
             const handleHatPress = useCallback((direction) => {
+                // Directions principales
                 if (direction === 'up') {
-                    setOsc1Pitch(p => Math.min(24, p + 1));
-                    showAction(`VCO1: +1 → ${osc1Pitch + 1}`);
+                    setOsc1Pitch(p => { const newP = Math.min(24, p + 1); showAction(`VCO1: +1 → ${newP}`); return newP; });
                 } else if (direction === 'down') {
-                    setOsc1Pitch(p => Math.max(-24, p - 1));
-                    showAction(`VCO1: -1 → ${osc1Pitch - 1}`);
+                    setOsc1Pitch(p => { const newP = Math.max(-24, p - 1); showAction(`VCO1: -1 → ${newP}`); return newP; });
                 } else if (direction === 'right') {
-                    setOsc2Pitch(p => Math.min(24, p + 1));
-                    showAction(`VCO2: +1 → ${osc2Pitch + 1}`);
+                    setOsc2Pitch(p => { const newP = Math.min(24, p + 1); showAction(`VCO2: +1 → ${newP}`); return newP; });
                 } else if (direction === 'left') {
-                    setOsc2Pitch(p => Math.max(-24, p - 1));
-                    showAction(`VCO2: -1 → ${osc2Pitch - 1}`);
+                    setOsc2Pitch(p => { const newP = Math.max(-24, p - 1); showAction(`VCO2: -1 → ${newP}`); return newP; });
                 }
-            }, [osc1Pitch, osc2Pitch]);
+                // Diagonales - ajustent les deux VCOs
+                else if (direction === 'up-right') {
+                    setOsc1Pitch(p => Math.min(24, p + 1));
+                    setOsc2Pitch(p => Math.min(24, p + 1));
+                    showAction('VCO1 & VCO2: +1');
+                } else if (direction === 'up-left') {
+                    setOsc1Pitch(p => Math.min(24, p + 1));
+                    setOsc2Pitch(p => Math.max(-24, p - 1));
+                    showAction('VCO1↑ VCO2↓');
+                } else if (direction === 'down-right') {
+                    setOsc1Pitch(p => Math.max(-24, p - 1));
+                    setOsc2Pitch(p => Math.min(24, p + 1));
+                    showAction('VCO1↓ VCO2↑');
+                } else if (direction === 'down-left') {
+                    setOsc1Pitch(p => Math.max(-24, p - 1));
+                    setOsc2Pitch(p => Math.max(-24, p - 1));
+                    showAction('VCO1 & VCO2: -1');
+                }
+            }, []);
             
             // Visual joystick component
             const JoystickVisual = () => {
@@ -487,6 +559,7 @@
                 const stickY = axes[1] * 35;
                 const twist = axes[2] * 45;
                 const throttle = ((1 - axes[3]) / 2) * 100;
+                const mixPercent = ((axes[2] + 1) / 2) * 100;
                 
                 return (
                     <div className="flex gap-4 items-center justify-center">
@@ -505,11 +578,12 @@
                                 </div>
                             </div>
                             <div className="text-center text-xs text-gray-400 mt-1">X/Y: Pitch/Cutoff</div>
-                            <div className="text-center text-xs text-gray-400">Twist: Resonance</div>
+                            <div className="text-center text-xs text-purple-400">Twist: Mix {mixPercent.toFixed(0)}%</div>
                         </div>
                         
-                        {/* Throttle */}
+                        {/* Throttle - LFO Depth */}
                         <div className="flex flex-col items-center">
+                            <div className="text-[10px] text-gray-500 mb-1">LFO DEPTH</div>
                             <div className="w-8 h-32 bg-gray-800 rounded border-2 border-gray-600 relative overflow-hidden">
                                 <div 
                                     className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-cyan-500 to-cyan-300 transition-all duration-75"
@@ -520,22 +594,21 @@
                                     style={{ bottom: `calc(${throttle}% - 4px)` }}
                                 ></div>
                             </div>
-                            <div className="text-xs text-gray-400 mt-1">Throttle</div>
-                            <div className="text-xs text-cyan-400">{lfoDepth.toFixed(0)}%</div>
+                            <div className="text-xs text-cyan-400 mt-1">{lfoDepth.toFixed(0)}%</div>
                         </div>
                         
                         {/* HAT */}
                         <div className="flex flex-col items-center">
+                            <div className="text-[10px] text-gray-500 mb-1">HAT</div>
                             <div className="grid grid-cols-3 gap-1 w-16">
                                 {['up-left', 'up', 'up-right', 'left', null, 'right', 'down-left', 'down', 'down-right'].map((dir, i) => (
                                     <div 
                                         key={i}
-                                        className={`w-5 h-5 rounded ${dir === null ? 'bg-gray-700' : hatDirection === dir ? 'bg-yellow-400' : 'bg-gray-600'} ${dir === null ? '' : 'border border-gray-500'}`}
+                                        className={`w-5 h-5 rounded ${dir === null ? 'bg-gray-700' : hatDirection === dir ? 'bg-yellow-400 shadow-lg shadow-yellow-400/50' : 'bg-gray-600'} ${dir === null ? '' : 'border border-gray-500'} transition-all`}
                                     ></div>
                                 ))}
                             </div>
-                            <div className="text-xs text-gray-400 mt-1">HAT</div>
-                            <div className="text-xs text-yellow-400">VCO Pitch</div>
+                            <div className="text-xs text-yellow-400 mt-1">VCO Pitch</div>
                         </div>
                     </div>
                 );
@@ -588,7 +661,7 @@
                 </div>
             );
             
-            // Parameter display
+            // Parameter display with manual controls
             const ParamDisplay = () => (
                 <div className="grid grid-cols-4 gap-2 text-xs mt-4">
                     <div className="bg-blue-900/50 rounded p-2">
@@ -600,18 +673,54 @@
                         <div className="text-purple-300 font-bold mb-1">VCO 2</div>
                         <div className="text-white">{osc2Wave.toUpperCase()}</div>
                         <div className="text-gray-400">Pitch: {osc2Pitch > 0 ? '+' : ''}{osc2Pitch}</div>
-                        <div className="text-gray-400">Mix: {(osc2Mix * 100).toFixed(0)}%</div>
+                        <div className="text-purple-300">Mix: {(osc2Mix * 100).toFixed(0)}%</div>
                     </div>
                     <div className="bg-green-900/50 rounded p-2">
                         <div className="text-green-300 font-bold mb-1">FILTER</div>
                         <div className="text-white">{cutoff.toFixed(0)} Hz</div>
-                        <div className="text-gray-400">Res: {resonance.toFixed(1)}</div>
-                        <div className="text-gray-400">Peak: {peak.toFixed(1)}</div>
+                        <div className="flex items-center gap-1 mt-1">
+                            <span className="text-gray-400 text-[10px]">Res:</span>
+                            <input 
+                                type="range" 
+                                min="0.1" 
+                                max="30" 
+                                step="0.5"
+                                value={resonance}
+                                onChange={(e) => setResonance(parseFloat(e.target.value))}
+                                className="flex-1 h-2 cursor-pointer"
+                            />
+                            <span className="text-green-300 w-8">{resonance.toFixed(1)}</span>
+                        </div>
+                        <div className="flex items-center gap-1 mt-1">
+                            <span className="text-gray-400 text-[10px]">Peak:</span>
+                            <input 
+                                type="range" 
+                                min="0" 
+                                max="5" 
+                                step="0.1"
+                                value={peak}
+                                onChange={(e) => setPeak(parseFloat(e.target.value))}
+                                className="flex-1 h-2 cursor-pointer"
+                            />
+                            <span className="text-green-300 w-6">{peak.toFixed(1)}</span>
+                        </div>
                     </div>
                     <div className="bg-cyan-900/50 rounded p-2">
                         <div className="text-cyan-300 font-bold mb-1">LFO</div>
-                        <div className="text-white">{lfoRate.toFixed(1)} Hz</div>
-                        <div className="text-gray-400">Depth: {lfoDepth.toFixed(0)}%</div>
+                        <div className="flex items-center gap-1">
+                            <span className="text-gray-400 text-[10px]">Rate:</span>
+                            <input 
+                                type="range" 
+                                min="0.1" 
+                                max="20" 
+                                step="0.1"
+                                value={lfoRate}
+                                onChange={(e) => setLfoRate(parseFloat(e.target.value))}
+                                className="flex-1 h-2 cursor-pointer"
+                            />
+                            <span className="text-cyan-300 w-10">{lfoRate.toFixed(1)}Hz</span>
+                        </div>
+                        <div className="text-white mt-1">Depth: {lfoDepth.toFixed(0)}%</div>
                         <div className="text-gray-400">→ {lfoTarget.toUpperCase()}</div>
                     </div>
                 </div>
@@ -673,20 +782,33 @@
                             <div className="text-xs space-y-1">
                                 <div className="flex justify-between text-cyan-400"><span>Axe X:</span><span>Note Pitch</span></div>
                                 <div className="flex justify-between text-green-400"><span>Axe Y:</span><span>Filter Cutoff</span></div>
-                                <div className="flex justify-between text-purple-400"><span>Twist:</span><span>Resonance</span></div>
-                                <div className="flex justify-between text-orange-400"><span>Throttle:</span><span>LFO Depth</span></div>
+                                <div className="flex justify-between text-purple-400"><span>Twist:</span><span>VCO Mix</span></div>
+                                <div className="flex justify-between text-orange-400"><span>Slider:</span><span>LFO Depth</span></div>
                                 <div className="border-t border-gray-600 my-2"></div>
                                 <div className="flex justify-between text-yellow-400"><span>HAT ↑↓:</span><span>VCO1 Pitch</span></div>
                                 <div className="flex justify-between text-yellow-400"><span>HAT ←→:</span><span>VCO2 Pitch</span></div>
+                                <div className="flex justify-between text-yellow-300"><span>HAT ↗↘↙↖:</span><span>Both VCOs</span></div>
                             </div>
                             
-                            <div className="mt-4 flex gap-2">
+                            <div className="mt-3 flex gap-2">
                                 <button 
                                     onClick={() => setHoldMode(!holdMode)}
                                     className={`flex-1 py-2 rounded font-bold text-sm ${holdMode ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-gray-300'}`}
                                 >
                                     {holdMode ? '🔒 HOLD ON' : '🔓 HOLD OFF'}
                                 </button>
+                            </div>
+                            
+                            {/* Debug: Show all axes */}
+                            <div className="mt-3 bg-black/30 rounded p-2">
+                                <div className="text-[10px] text-gray-500 mb-1">DEBUG AXES:</div>
+                                <div className="text-[9px] text-gray-400 font-mono grid grid-cols-2 gap-x-2">
+                                    {rawAxes.map((val, i) => (
+                                        <div key={i} className={Math.abs(val) > 0.1 ? 'text-green-400' : ''}>
+                                            [{i}]: {val.toFixed(3)}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
