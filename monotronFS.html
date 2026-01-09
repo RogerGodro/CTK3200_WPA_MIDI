@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✈️ MONOTRON FLIGHT CONTROLLER</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background: #0a0a1a; }
+        @keyframes glow { 0%, 100% { box-shadow: 0 0 5px currentColor; } 50% { box-shadow: 0 0 20px currentColor, 0 0 30px currentColor; } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .glow-active { animation: glow 0.5s ease-in-out infinite; }
+        .pulse { animation: pulse 1s ease-in-out infinite; }
+        .joystick-base { background: radial-gradient(circle at 30% 30%, #444, #222); }
+        .btn-active { transform: scale(0.95); filter: brightness(1.5); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef, useEffect, useCallback } = React;
+
+        const MonotronFlightController = () => {
+            // États du joystick
+            const [gamepadConnected, setGamepadConnected] = useState(false);
+            const [gamepadName, setGamepadName] = useState('');
+            const [axes, setAxes] = useState([0, 0, 0, 0]);
+            const [buttons, setButtons] = useState(Array(12).fill(false));
+            const [hatDirection, setHatDirection] = useState(null);
+            
+            // États synth
+            const [isPlaying, setIsPlaying] = useState(false);
+            const [currentNote, setCurrentNote] = useState('');
+            const [currentFreq, setCurrentFreq] = useState(440);
+            
+            const [osc1Wave, setOsc1Wave] = useState('sawtooth');
+            const [osc2Wave, setOsc2Wave] = useState('square');
+            const [osc1Pitch, setOsc1Pitch] = useState(0);
+            const [osc2Pitch, setOsc2Pitch] = useState(-12);
+            const [osc2Mix, setOsc2Mix] = useState(0.5);
+            
+            const [cutoff, setCutoff] = useState(2000);
+            const [resonance, setResonance] = useState(5);
+            const [peak, setPeak] = useState(0);
+            
+            const [lfoRate, setLfoRate] = useState(5);
+            const [lfoDepth, setLfoDepth] = useState(0);
+            const [lfoTarget, setLfoTarget] = useState('pitch');
+            
+            const [volume, setVolume] = useState(0.5);
+            
+            // Quick presets (6 slots pour boutons 7-12)
+            const [quickPresets, setQuickPresets] = useState([
+                { name: "BASS DRONE", osc1Wave: 'sawtooth', osc2Wave: 'square', osc1Pitch: -12, osc2Pitch: -24, osc2Mix: 0.7, cutoff: 400, resonance: 8, peak: 2, lfoRate: 0.5, lfoDepth: 30, lfoTarget: 'filter', volume: 0.6 },
+                { name: "ACID LEAD", osc1Wave: 'sawtooth', osc2Wave: 'sawtooth', osc1Pitch: 0, osc2Pitch: 7, osc2Mix: 0.3, cutoff: 1500, resonance: 20, peak: 3, lfoRate: 8, lfoDepth: 50, lfoTarget: 'filter', volume: 0.5 },
+                { name: "SCI-FI", osc1Wave: 'sine', osc2Wave: 'square', osc1Pitch: 12, osc2Pitch: 19, osc2Mix: 0.5, cutoff: 3000, resonance: 15, peak: 1, lfoRate: 3, lfoDepth: 80, lfoTarget: 'pitch', volume: 0.4 },
+                { name: "WARM PAD", osc1Wave: 'triangle', osc2Wave: 'sine', osc1Pitch: 0, osc2Pitch: 12, osc2Mix: 0.6, cutoff: 1200, resonance: 2, peak: 0, lfoRate: 0.3, lfoDepth: 20, lfoTarget: 'filter', volume: 0.5 },
+                { name: "ALARM", osc1Wave: 'square', osc2Wave: 'square', osc1Pitch: 0, osc2Pitch: 5, osc2Mix: 0.5, cutoff: 5000, resonance: 1, peak: 0, lfoRate: 15, lfoDepth: 100, lfoTarget: 'pitch', volume: 0.4 },
+                { name: "DARK GROWL", osc1Wave: 'sawtooth', osc2Wave: 'sawtooth', osc1Pitch: -24, osc2Pitch: -23, osc2Mix: 0.5, cutoff: 600, resonance: 25, peak: 4, lfoRate: 6, lfoDepth: 40, lfoTarget: 'filter', volume: 0.6 }
+            ]);
+            
+            const [lastAction, setLastAction] = useState('');
+            const [holdMode, setHoldMode] = useState(false);
+            
+            // Audio refs
+            const audioContextRef = useRef(null);
+            const osc1Ref = useRef(null);
+            const osc2Ref = useRef(null);
+            const filterRef = useRef(null);
+            const lfoRef = useRef(null);
+            const lfoGainRef = useRef(null);
+            const gainNodeRef = useRef(null);
+            const masterGainRef = useRef(null);
+            const osc1GainRef = useRef(null);
+            const osc2GainRef = useRef(null);
+            
+            const gamepadIndexRef = useRef(null);
+            const animationFrameRef = useRef(null);
+            const prevButtonsRef = useRef(Array(12).fill(false));
+            const prevHatRef = useRef(null);
+            
+            const waveforms = ['sine', 'triangle', 'sawtooth', 'square'];
+            const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+            
+            const frequencyToNote = (frequency) => {
+                const noteNum = 12 * Math.log2(frequency / 440) + 69;
+                const noteIndex = Math.round(noteNum);
+                const octave = Math.floor((noteIndex - 12) / 12);
+                const note = noteNames[((noteIndex % 12) + 12) % 12];
+                return note + octave;
+            };
+            
+            // Init audio context
+            useEffect(() => {
+                audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+                return () => {
+                    if (audioContextRef.current) {
+                        audioContextRef.current.close();
+                    }
+                };
+            }, []);
+            
+            const showAction = (text) => {
+                setLastAction(text);
+                setTimeout(() => setLastAction(''), 1500);
+            };
+            
+            const loadPreset = useCallback((preset) => {
+                setOsc1Wave(preset.osc1Wave);
+                setOsc2Wave(preset.osc2Wave);
+                setOsc1Pitch(preset.osc1Pitch);
+                setOsc2Pitch(preset.osc2Pitch);
+                setOsc2Mix(preset.osc2Mix);
+                setCutoff(preset.cutoff);
+                setResonance(preset.resonance);
+                setPeak(preset.peak);
+                setLfoRate(preset.lfoRate);
+                setLfoDepth(preset.lfoDepth);
+                setLfoTarget(preset.lfoTarget);
+                setVolume(preset.volume);
+                showAction(`⚡ ${preset.name}`);
+            }, []);
+            
+            const randomize = useCallback(() => {
+                setOsc1Wave(waveforms[Math.floor(Math.random() * 4)]);
+                setOsc2Wave(waveforms[Math.floor(Math.random() * 4)]);
+                setOsc1Pitch(Math.floor(Math.random() * 49) - 24);
+                setOsc2Pitch(Math.floor(Math.random() * 49) - 24);
+                setOsc2Mix(Math.random());
+                setCutoff(50 + Math.random() * 7950);
+                setResonance(0.1 + Math.random() * 29.9);
+                setPeak(Math.random() * 5);
+                setLfoRate(0.1 + Math.random() * 19.9);
+                setLfoDepth(Math.random() * 100);
+                setLfoTarget(Math.random() > 0.5 ? 'pitch' : 'filter');
+                showAction('🎲 RANDOMIZED!');
+            }, []);
+            
+            const resetParams = useCallback(() => {
+                setOsc1Wave('sawtooth');
+                setOsc2Wave('square');
+                setOsc1Pitch(0);
+                setOsc2Pitch(-12);
+                setOsc2Mix(0.5);
+                setCutoff(2000);
+                setResonance(5);
+                setPeak(0);
+                setLfoRate(5);
+                setLfoDepth(0);
+                setLfoTarget('pitch');
+                setVolume(0.5);
+                showAction('🔄 RESET');
+            }, []);
+            
+            const cycleWave = useCallback((oscNum) => {
+                if (oscNum === 1) {
+                    setOsc1Wave(prev => {
+                        const idx = (waveforms.indexOf(prev) + 1) % 4;
+                        showAction(`VCO1: ${waveforms[idx].toUpperCase()}`);
+                        return waveforms[idx];
+                    });
+                } else {
+                    setOsc2Wave(prev => {
+                        const idx = (waveforms.indexOf(prev) + 1) % 4;
+                        showAction(`VCO2: ${waveforms[idx].toUpperCase()}`);
+                        return waveforms[idx];
+                    });
+                }
+            }, []);
+            
+            const toggleLfoTarget = useCallback(() => {
+                setLfoTarget(prev => {
+                    const next = prev === 'pitch' ? 'filter' : 'pitch';
+                    showAction(`LFO → ${next.toUpperCase()}`);
+                    return next;
+                });
+            }, []);
+            
+            // Start/Update note
+            const startNote = useCallback((frequency) => {
+                if (!audioContextRef.current) return;
+                
+                const ctx = audioContextRef.current;
+                if (ctx.state === 'suspended') ctx.resume();
+                
+                setCurrentFreq(frequency);
+                setCurrentNote(frequencyToNote(frequency));
+                
+                // Update existing oscillators
+                if (osc1Ref.current && osc2Ref.current) {
+                    const now = ctx.currentTime;
+                    osc1Ref.current.frequency.setTargetAtTime(frequency * Math.pow(2, osc1Pitch / 12), now, 0.01);
+                    osc2Ref.current.frequency.setTargetAtTime(frequency * Math.pow(2, osc2Pitch / 12), now, 0.01);
+                    return;
+                }
+                
+                // Create new audio graph
+                osc1Ref.current = ctx.createOscillator();
+                osc2Ref.current = ctx.createOscillator();
+                filterRef.current = ctx.createBiquadFilter();
+                lfoRef.current = ctx.createOscillator();
+                lfoGainRef.current = ctx.createGain();
+                osc1GainRef.current = ctx.createGain();
+                osc2GainRef.current = ctx.createGain();
+                gainNodeRef.current = ctx.createGain();
+                masterGainRef.current = ctx.createGain();
+                
+                osc1Ref.current.type = osc1Wave;
+                osc2Ref.current.type = osc2Wave;
+                osc1Ref.current.frequency.value = frequency * Math.pow(2, osc1Pitch / 12);
+                osc2Ref.current.frequency.value = frequency * Math.pow(2, osc2Pitch / 12);
+                
+                filterRef.current.type = 'lowpass';
+                filterRef.current.frequency.value = cutoff + (peak * 1000);
+                filterRef.current.Q.value = resonance;
+                
+                lfoRef.current.frequency.value = lfoRate;
+                lfoGainRef.current.gain.value = lfoDepth;
+                
+                osc1GainRef.current.gain.value = 1 - osc2Mix;
+                osc2GainRef.current.gain.value = osc2Mix;
+                gainNodeRef.current.gain.value = 0.3;
+                masterGainRef.current.gain.value = volume;
+                
+                // LFO routing
+                lfoRef.current.connect(lfoGainRef.current);
+                if (lfoTarget === 'pitch') {
+                    lfoGainRef.current.connect(osc1Ref.current.frequency);
+                    lfoGainRef.current.connect(osc2Ref.current.frequency);
+                } else {
+                    lfoGainRef.current.connect(filterRef.current.frequency);
+                }
+                
+                // Main signal path
+                osc1Ref.current.connect(osc1GainRef.current);
+                osc2Ref.current.connect(osc2GainRef.current);
+                osc1GainRef.current.connect(gainNodeRef.current);
+                osc2GainRef.current.connect(gainNodeRef.current);
+                gainNodeRef.current.connect(filterRef.current);
+                filterRef.current.connect(masterGainRef.current);
+                masterGainRef.current.connect(ctx.destination);
+                
+                osc1Ref.current.start();
+                osc2Ref.current.start();
+                lfoRef.current.start();
+                
+                setIsPlaying(true);
+            }, [osc1Wave, osc2Wave, osc1Pitch, osc2Pitch, osc2Mix, cutoff, resonance, peak, lfoRate, lfoDepth, lfoTarget, volume]);
+            
+            const stopNote = useCallback(() => {
+                [osc1Ref, osc2Ref, lfoRef].forEach(ref => {
+                    if (ref.current) {
+                        try { ref.current.stop(); } catch (e) {}
+                        ref.current = null;
+                    }
+                });
+                filterRef.current = null;
+                lfoGainRef.current = null;
+                osc1GainRef.current = null;
+                osc2GainRef.current = null;
+                gainNodeRef.current = null;
+                masterGainRef.current = null;
+                setIsPlaying(false);
+                setCurrentNote('');
+            }, []);
+            
+            // Update audio params in real-time
+            useEffect(() => {
+                if (filterRef.current) {
+                    filterRef.current.frequency.value = cutoff + (peak * 1000);
+                    filterRef.current.Q.value = resonance;
+                }
+            }, [cutoff, resonance, peak]);
+            
+            useEffect(() => {
+                if (lfoRef.current) lfoRef.current.frequency.value = lfoRate;
+                if (lfoGainRef.current) lfoGainRef.current.gain.value = lfoDepth;
+            }, [lfoRate, lfoDepth]);
+            
+            useEffect(() => {
+                if (masterGainRef.current) masterGainRef.current.gain.value = volume;
+            }, [volume]);
+            
+            useEffect(() => {
+                if (osc1GainRef.current) osc1GainRef.current.gain.value = 1 - osc2Mix;
+                if (osc2GainRef.current) osc2GainRef.current.gain.value = osc2Mix;
+            }, [osc2Mix]);
+            
+            useEffect(() => {
+                if (osc1Ref.current) osc1Ref.current.type = osc1Wave;
+            }, [osc1Wave]);
+            
+            useEffect(() => {
+                if (osc2Ref.current) osc2Ref.current.type = osc2Wave;
+            }, [osc2Wave]);
+            
+            // Gamepad handling
+            useEffect(() => {
+                const handleGamepadConnected = (e) => {
+                    console.log('Gamepad connected:', e.gamepad.id);
+                    gamepadIndexRef.current = e.gamepad.index;
+                    setGamepadConnected(true);
+                    setGamepadName(e.gamepad.id);
+                    showAction('🎮 JOYSTICK CONNECTED!');
+                };
+                
+                const handleGamepadDisconnected = () => {
+                    gamepadIndexRef.current = null;
+                    setGamepadConnected(false);
+                    setGamepadName('');
+                    showAction('⚠️ JOYSTICK DISCONNECTED');
+                };
+                
+                window.addEventListener('gamepadconnected', handleGamepadConnected);
+                window.addEventListener('gamepaddisconnected', handleGamepadDisconnected);
+                
+                // Check for already connected gamepads
+                const gamepads = navigator.getGamepads();
+                for (let gp of gamepads) {
+                    if (gp) {
+                        gamepadIndexRef.current = gp.index;
+                        setGamepadConnected(true);
+                        setGamepadName(gp.id);
+                        break;
+                    }
+                }
+                
+                return () => {
+                    window.removeEventListener('gamepadconnected', handleGamepadConnected);
+                    window.removeEventListener('gamepaddisconnected', handleGamepadDisconnected);
+                };
+            }, []);
+            
+            // Main gamepad polling loop
+            useEffect(() => {
+                const pollGamepad = () => {
+                    if (gamepadIndexRef.current === null) {
+                        animationFrameRef.current = requestAnimationFrame(pollGamepad);
+                        return;
+                    }
+                    
+                    const gp = navigator.getGamepads()[gamepadIndexRef.current];
+                    if (!gp) {
+                        animationFrameRef.current = requestAnimationFrame(pollGamepad);
+                        return;
+                    }
+                    
+                    // Read axes
+                    const newAxes = [
+                        gp.axes[0] || 0,  // X
+                        gp.axes[1] || 0,  // Y
+                        gp.axes[2] || 0,  // Twist (Z rotation)
+                        gp.axes[3] || 0   // Throttle
+                    ];
+                    setAxes(newAxes);
+                    
+                    // Read buttons (12 boutons)
+                    const newButtons = gp.buttons.slice(0, 12).map(b => b.pressed);
+                    setButtons(newButtons);
+                    
+                    // HAT/POV - Logitech uses axes[4] and axes[5] or button states
+                    // Usually axes[9] for POV or check buttons 12-15
+                    let hat = null;
+                    if (gp.axes.length > 9) {
+                        const povAxis = gp.axes[9];
+                        if (povAxis === -1) hat = 'up';
+                        else if (povAxis === -0.7142857142857143) hat = 'up-right';
+                        else if (povAxis === -0.4285714285714286) hat = 'right';
+                        else if (povAxis === -0.14285714285714285) hat = 'down-right';
+                        else if (povAxis === 0.14285714285714285) hat = 'down';
+                        else if (povAxis === 0.4285714285714286) hat = 'down-left';
+                        else if (povAxis === 0.7142857142857143) hat = 'left';
+                        else if (povAxis === 1) hat = 'up-left';
+                    }
+                    setHatDirection(hat);
+                    
+                    // Process button presses (edge detection)
+                    newButtons.forEach((pressed, idx) => {
+                        if (pressed && !prevButtonsRef.current[idx]) {
+                            handleButtonPress(idx);
+                        }
+                    });
+                    
+                    // HAT edge detection for pitch adjustment
+                    if (hat && hat !== prevHatRef.current) {
+                        handleHatPress(hat);
+                    }
+                    
+                    prevButtonsRef.current = newButtons;
+                    prevHatRef.current = hat;
+                    
+                    // Continuous axis controls
+                    // Axe X -> Pitch (fréquence)
+                    const pitchRatio = (newAxes[0] + 1) / 2; // 0-1
+                    const minFreq = 65.41;  // C2
+                    const maxFreq = 1046.5; // C6
+                    const freq = minFreq * Math.pow(maxFreq / minFreq, pitchRatio);
+                    
+                    // Axe Y -> Cutoff (inversé pour naturel)
+                    const cutoffRatio = 1 - ((newAxes[1] + 1) / 2);
+                    const newCutoff = 50 + cutoffRatio * 7950;
+                    setCutoff(newCutoff);
+                    
+                    // Axe Z (twist) -> Resonance
+                    const resRatio = (newAxes[2] + 1) / 2;
+                    const newRes = 0.1 + resRatio * 29.9;
+                    setResonance(newRes);
+                    
+                    // Throttle -> LFO Depth
+                    const throttleRatio = 1 - ((newAxes[3] + 1) / 2); // Inversé (throttle avant = max)
+                    const newLfoDepth = throttleRatio * 100;
+                    setLfoDepth(newLfoDepth);
+                    
+                    // Trigger control
+                    if (newButtons[0]) {
+                        startNote(freq);
+                    } else if (!holdMode && isPlaying) {
+                        stopNote();
+                    } else if (isPlaying) {
+                        // Update frequency while playing in hold mode
+                        startNote(freq);
+                    }
+                    
+                    animationFrameRef.current = requestAnimationFrame(pollGamepad);
+                };
+                
+                animationFrameRef.current = requestAnimationFrame(pollGamepad);
+                
+                return () => {
+                    if (animationFrameRef.current) {
+                        cancelAnimationFrame(animationFrameRef.current);
+                    }
+                };
+            }, [startNote, stopNote, isPlaying, holdMode, loadPreset, quickPresets, randomize, resetParams, cycleWave, toggleLfoTarget]);
+            
+            const handleButtonPress = useCallback((buttonIndex) => {
+                switch (buttonIndex) {
+                    case 1: // Button 2 - Cycle VCO1 wave
+                        cycleWave(1);
+                        break;
+                    case 2: // Button 3 - Cycle VCO2 wave
+                        cycleWave(2);
+                        break;
+                    case 3: // Button 4 - Toggle LFO target
+                        toggleLfoTarget();
+                        break;
+                    case 4: // Button 5 - Randomize
+                        randomize();
+                        break;
+                    case 5: // Button 6 - Reset
+                        resetParams();
+                        break;
+                    case 6: // Button 7 - Quick Preset 1
+                    case 7: // Button 8 - Quick Preset 2
+                    case 8: // Button 9 - Quick Preset 3
+                    case 9: // Button 10 - Quick Preset 4
+                    case 10: // Button 11 - Quick Preset 5
+                    case 11: // Button 12 - Quick Preset 6
+                        loadPreset(quickPresets[buttonIndex - 6]);
+                        break;
+                }
+            }, [cycleWave, toggleLfoTarget, randomize, resetParams, loadPreset, quickPresets]);
+            
+            const handleHatPress = useCallback((direction) => {
+                if (direction === 'up') {
+                    setOsc1Pitch(p => Math.min(24, p + 1));
+                    showAction(`VCO1: +1 → ${osc1Pitch + 1}`);
+                } else if (direction === 'down') {
+                    setOsc1Pitch(p => Math.max(-24, p - 1));
+                    showAction(`VCO1: -1 → ${osc1Pitch - 1}`);
+                } else if (direction === 'right') {
+                    setOsc2Pitch(p => Math.min(24, p + 1));
+                    showAction(`VCO2: +1 → ${osc2Pitch + 1}`);
+                } else if (direction === 'left') {
+                    setOsc2Pitch(p => Math.max(-24, p - 1));
+                    showAction(`VCO2: -1 → ${osc2Pitch - 1}`);
+                }
+            }, [osc1Pitch, osc2Pitch]);
+            
+            // Visual joystick component
+            const JoystickVisual = () => {
+                const stickX = axes[0] * 35;
+                const stickY = axes[1] * 35;
+                const twist = axes[2] * 45;
+                const throttle = ((1 - axes[3]) / 2) * 100;
+                
+                return (
+                    <div className="flex gap-4 items-center justify-center">
+                        {/* Main joystick */}
+                        <div className="relative">
+                            <div className="w-24 h-24 rounded-full joystick-base border-4 border-gray-600 relative overflow-hidden">
+                                <div 
+                                    className={`absolute w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-700 border-2 border-red-400 shadow-lg transition-all duration-75 ${isPlaying ? 'glow-active' : ''}`}
+                                    style={{
+                                        left: `calc(50% + ${stickX}px - 20px)`,
+                                        top: `calc(50% + ${stickY}px - 20px)`,
+                                        transform: `rotate(${twist}deg)`
+                                    }}
+                                >
+                                    <div className="absolute top-1 left-1/2 w-1 h-3 bg-white rounded -translate-x-1/2"></div>
+                                </div>
+                            </div>
+                            <div className="text-center text-xs text-gray-400 mt-1">X/Y: Pitch/Cutoff</div>
+                            <div className="text-center text-xs text-gray-400">Twist: Resonance</div>
+                        </div>
+                        
+                        {/* Throttle */}
+                        <div className="flex flex-col items-center">
+                            <div className="w-8 h-32 bg-gray-800 rounded border-2 border-gray-600 relative overflow-hidden">
+                                <div 
+                                    className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-cyan-500 to-cyan-300 transition-all duration-75"
+                                    style={{ height: `${throttle}%` }}
+                                ></div>
+                                <div 
+                                    className="absolute left-0 right-0 h-2 bg-white shadow-lg"
+                                    style={{ bottom: `calc(${throttle}% - 4px)` }}
+                                ></div>
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1">Throttle</div>
+                            <div className="text-xs text-cyan-400">{lfoDepth.toFixed(0)}%</div>
+                        </div>
+                        
+                        {/* HAT */}
+                        <div className="flex flex-col items-center">
+                            <div className="grid grid-cols-3 gap-1 w-16">
+                                {['up-left', 'up', 'up-right', 'left', null, 'right', 'down-left', 'down', 'down-right'].map((dir, i) => (
+                                    <div 
+                                        key={i}
+                                        className={`w-5 h-5 rounded ${dir === null ? 'bg-gray-700' : hatDirection === dir ? 'bg-yellow-400' : 'bg-gray-600'} ${dir === null ? '' : 'border border-gray-500'}`}
+                                    ></div>
+                                ))}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1">HAT</div>
+                            <div className="text-xs text-yellow-400">VCO Pitch</div>
+                        </div>
+                    </div>
+                );
+            };
+            
+            // Button panel
+            const ButtonPanel = () => (
+                <div className="grid grid-cols-6 gap-2 mt-4">
+                    {/* Trigger */}
+                    <div className={`col-span-1 p-2 rounded-lg text-center text-xs font-bold transition-all ${buttons[0] ? 'bg-red-500 btn-active text-white' : 'bg-gray-700 text-gray-300'}`}>
+                        <div className="text-lg">🎵</div>
+                        <div>TRIGGER</div>
+                        <div className="text-[10px] opacity-70">BTN 1</div>
+                    </div>
+                    
+                    {/* Buttons 2-6 */}
+                    {[
+                        { label: 'VCO1', icon: '〜', color: 'blue' },
+                        { label: 'VCO2', icon: '∿', color: 'purple' },
+                        { label: 'LFO', icon: '⟳', color: 'green' },
+                        { label: 'RANDOM', icon: '🎲', color: 'orange' },
+                        { label: 'RESET', icon: '🔄', color: 'gray' }
+                    ].map((btn, i) => (
+                        <div 
+                            key={i}
+                            className={`p-2 rounded-lg text-center text-xs font-bold transition-all ${buttons[i + 1] ? `bg-${btn.color}-500 btn-active text-white` : 'bg-gray-700 text-gray-300'}`}
+                        >
+                            <div className="text-lg">{btn.icon}</div>
+                            <div>{btn.label}</div>
+                            <div className="text-[10px] opacity-70">BTN {i + 2}</div>
+                        </div>
+                    ))}
+                </div>
+            );
+            
+            // Quick preset buttons (7-12)
+            const QuickPresetPanel = () => (
+                <div className="grid grid-cols-6 gap-2 mt-2">
+                    {quickPresets.map((preset, i) => (
+                        <div 
+                            key={i}
+                            className={`p-2 rounded-lg text-center text-xs font-bold transition-all cursor-pointer hover:brightness-125 ${buttons[i + 6] ? 'bg-gradient-to-br from-amber-500 to-orange-600 btn-active text-white shadow-lg' : 'bg-gradient-to-br from-amber-700 to-orange-800 text-amber-100'}`}
+                            onClick={() => loadPreset(preset)}
+                        >
+                            <div className="text-lg">⚡</div>
+                            <div className="truncate">{preset.name}</div>
+                            <div className="text-[10px] opacity-70">BTN {i + 7}</div>
+                        </div>
+                    ))}
+                </div>
+            );
+            
+            // Parameter display
+            const ParamDisplay = () => (
+                <div className="grid grid-cols-4 gap-2 text-xs mt-4">
+                    <div className="bg-blue-900/50 rounded p-2">
+                        <div className="text-blue-300 font-bold mb-1">VCO 1</div>
+                        <div className="text-white">{osc1Wave.toUpperCase()}</div>
+                        <div className="text-gray-400">Pitch: {osc1Pitch > 0 ? '+' : ''}{osc1Pitch}</div>
+                    </div>
+                    <div className="bg-purple-900/50 rounded p-2">
+                        <div className="text-purple-300 font-bold mb-1">VCO 2</div>
+                        <div className="text-white">{osc2Wave.toUpperCase()}</div>
+                        <div className="text-gray-400">Pitch: {osc2Pitch > 0 ? '+' : ''}{osc2Pitch}</div>
+                        <div className="text-gray-400">Mix: {(osc2Mix * 100).toFixed(0)}%</div>
+                    </div>
+                    <div className="bg-green-900/50 rounded p-2">
+                        <div className="text-green-300 font-bold mb-1">FILTER</div>
+                        <div className="text-white">{cutoff.toFixed(0)} Hz</div>
+                        <div className="text-gray-400">Res: {resonance.toFixed(1)}</div>
+                        <div className="text-gray-400">Peak: {peak.toFixed(1)}</div>
+                    </div>
+                    <div className="bg-cyan-900/50 rounded p-2">
+                        <div className="text-cyan-300 font-bold mb-1">LFO</div>
+                        <div className="text-white">{lfoRate.toFixed(1)} Hz</div>
+                        <div className="text-gray-400">Depth: {lfoDepth.toFixed(0)}%</div>
+                        <div className="text-gray-400">→ {lfoTarget.toUpperCase()}</div>
+                    </div>
+                </div>
+            );
+            
+            return (
+                <div className="w-full h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black p-4 overflow-auto">
+                    {/* Header */}
+                    <div className="flex justify-between items-center mb-4">
+                        <div>
+                            <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                                ✈️ MONOTRON FLIGHT CONTROLLER
+                            </h1>
+                            <p className="text-gray-500 text-sm">Logitech Extreme 3D Pro Edition</p>
+                        </div>
+                        <div className={`px-4 py-2 rounded-full font-bold ${gamepadConnected ? 'bg-green-500 text-white' : 'bg-red-500/50 text-red-200 pulse'}`}>
+                            {gamepadConnected ? '🎮 CONNECTED' : '⚠️ CONNECT JOYSTICK'}
+                        </div>
+                    </div>
+                    
+                    {/* Action feedback */}
+                    {lastAction && (
+                        <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-black/80 text-white px-6 py-3 rounded-full text-xl font-bold z-50 animate-bounce">
+                            {lastAction}
+                        </div>
+                    )}
+                    
+                    {/* Main display */}
+                    <div className="grid grid-cols-3 gap-4">
+                        {/* Left - Joystick visual */}
+                        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+                            <h2 className="text-lg font-bold text-gray-300 mb-4 text-center">🕹️ JOYSTICK STATUS</h2>
+                            <JoystickVisual />
+                            {gamepadName && (
+                                <div className="text-center text-xs text-gray-500 mt-4 truncate">{gamepadName}</div>
+                            )}
+                        </div>
+                        
+                        {/* Center - Note display */}
+                        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 flex flex-col items-center justify-center">
+                            <div className={`text-8xl font-black mb-2 transition-all ${isPlaying ? 'text-green-400 glow-active' : 'text-gray-600'}`}>
+                                {currentNote || '—'}
+                            </div>
+                            <div className="text-gray-400 text-lg">
+                                {isPlaying ? `${currentFreq.toFixed(1)} Hz` : 'Pull trigger to play'}
+                            </div>
+                            <div className={`mt-4 w-full h-2 rounded-full overflow-hidden bg-gray-700`}>
+                                <div 
+                                    className={`h-full transition-all duration-75 ${isPlaying ? 'bg-green-500' : 'bg-gray-600'}`}
+                                    style={{ width: `${((axes[0] + 1) / 2) * 100}%` }}
+                                ></div>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">Pitch Position</div>
+                        </div>
+                        
+                        {/* Right - Controls info */}
+                        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+                            <h2 className="text-lg font-bold text-gray-300 mb-2">🎛️ MAPPING</h2>
+                            <div className="text-xs space-y-1">
+                                <div className="flex justify-between text-cyan-400"><span>Axe X:</span><span>Note Pitch</span></div>
+                                <div className="flex justify-between text-green-400"><span>Axe Y:</span><span>Filter Cutoff</span></div>
+                                <div className="flex justify-between text-purple-400"><span>Twist:</span><span>Resonance</span></div>
+                                <div className="flex justify-between text-orange-400"><span>Throttle:</span><span>LFO Depth</span></div>
+                                <div className="border-t border-gray-600 my-2"></div>
+                                <div className="flex justify-between text-yellow-400"><span>HAT ↑↓:</span><span>VCO1 Pitch</span></div>
+                                <div className="flex justify-between text-yellow-400"><span>HAT ←→:</span><span>VCO2 Pitch</span></div>
+                            </div>
+                            
+                            <div className="mt-4 flex gap-2">
+                                <button 
+                                    onClick={() => setHoldMode(!holdMode)}
+                                    className={`flex-1 py-2 rounded font-bold text-sm ${holdMode ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-gray-300'}`}
+                                >
+                                    {holdMode ? '🔒 HOLD ON' : '🔓 HOLD OFF'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Button panels */}
+                    <ButtonPanel />
+                    <QuickPresetPanel />
+                    
+                    {/* Parameters */}
+                    <ParamDisplay />
+                    
+                    {/* Keyboard fallback */}
+                    {!gamepadConnected && (
+                        <div className="mt-4 bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-4 text-center">
+                            <p className="text-yellow-200 font-bold">🎮 Connectez votre Logitech Extreme 3D Pro</p>
+                            <p className="text-yellow-100/70 text-sm">Appuyez sur un bouton du joystick pour l'activer</p>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<MonotronFlightController />);
+    </script>
+</body>
+</html>
