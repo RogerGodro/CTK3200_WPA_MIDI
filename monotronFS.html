@@ -394,23 +394,7 @@
                         // Values > 1.1 (like 1.286) = neutral, hat stays null
                     }
                     
-                    // Method 2: Check axes 4 and 5 as HAT X/Y (some drivers)
-                    if (!hat && gp.axes.length > 5) {
-                        const hatX = gp.axes[4];
-                        const hatY = gp.axes[5];
-                        if (Math.abs(hatX) > 0.5 || Math.abs(hatY) > 0.5) {
-                            if (hatY < -0.5 && Math.abs(hatX) < 0.5) hat = 'up';
-                            else if (hatY > 0.5 && Math.abs(hatX) < 0.5) hat = 'down';
-                            else if (hatX > 0.5 && Math.abs(hatY) < 0.5) hat = 'right';
-                            else if (hatX < -0.5 && Math.abs(hatY) < 0.5) hat = 'left';
-                            else if (hatX > 0.3 && hatY < -0.3) hat = 'up-right';
-                            else if (hatX > 0.3 && hatY > 0.3) hat = 'down-right';
-                            else if (hatX < -0.3 && hatY > 0.3) hat = 'down-left';
-                            else if (hatX < -0.3 && hatY < -0.3) hat = 'up-left';
-                        }
-                    }
-                    
-                    // Method 3: HAT as buttons 12-15 (some configurations)
+                    // Method 2: HAT as buttons 12-15 (some configurations)
                     if (!hat && gp.buttons.length > 15) {
                         if (gp.buttons[12]?.pressed) hat = 'up';
                         else if (gp.buttons[13]?.pressed) hat = 'right';
