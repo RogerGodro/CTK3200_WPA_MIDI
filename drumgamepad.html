@@ -86,24 +86,30 @@
         .mode-selector {
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 15px;
             margin-bottom: 30px;
+            flex-wrap: wrap;
         }
 
         .mode-btn {
-            padding: 15px 40px;
-            font-size: 1.2em;
+            padding: 12px 30px;
+            font-size: 1.1em;
             border: none;
             border-radius: 30px;
             cursor: pointer;
             transition: all 0.3s;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
         }
 
         .mode-btn.auto {
             background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .mode-btn.semi {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
             color: white;
         }
 
@@ -478,6 +484,17 @@
             border-left-color: #ff6b6b;
         }
 
+        .sound-item.held {
+            background: rgba(46, 204, 113, 0.2);
+            border-left-color: #2ecc71;
+            animation: heldPulse 0.5s ease infinite;
+        }
+
+        @keyframes heldPulse {
+            0%, 100% { background: rgba(46, 204, 113, 0.2); }
+            50% { background: rgba(46, 204, 113, 0.4); }
+        }
+
         .sound-key {
             font-weight: bold;
             color: #feca57;
@@ -657,6 +674,9 @@
             <button class="mode-btn auto active" onclick="setMode('auto')">
                 🤖 Auto
             </button>
+            <button class="mode-btn semi" onclick="setMode('semi')">
+                🔄 Semi-Auto
+            </button>
             <button class="mode-btn manual" onclick="setMode('manual')">
                 🎯 Manuel
             </button>
@@ -802,20 +822,21 @@
         // CONFIGURATION
         // ============================================
         
-        // Drum Kits (CTK-3200 voices 395+)
+        // Drum Kits (CTK-3200 voices 395+) with GM Program numbers
+        // CTK-3200 uses Bank Select for drum kits on channel 10
         const DRUM_KITS = [
-            { voice: 395, name: "Standard Kit 1", icon: "🥁" },
-            { voice: 396, name: "Standard Kit 2", icon: "🥁" },
-            { voice: 397, name: "Room Kit", icon: "🏠" },
-            { voice: 398, name: "Rock Kit", icon: "🎸" },
-            { voice: 399, name: "Electronic Kit", icon: "⚡" },
-            { voice: 400, name: "Analog Kit", icon: "🎛️" },
-            { voice: 401, name: "Dance Kit", icon: "💃" },
-            { voice: 402, name: "Jazz Kit", icon: "🎷" },
-            { voice: 403, name: "Brush Kit", icon: "🖌️" },
-            { voice: 404, name: "Orchestra Kit", icon: "🎻" },
-            { voice: 405, name: "SFX Kit", icon: "✨" },
-            { voice: 406, name: "GM Kit", icon: "🎹" }
+            { voice: 395, name: "Standard Kit 1", icon: "🥁", program: 0, bankMSB: 0, bankLSB: 0 },
+            { voice: 396, name: "Standard Kit 2", icon: "🥁", program: 0, bankMSB: 0, bankLSB: 1 },
+            { voice: 397, name: "Room Kit", icon: "🏠", program: 8, bankMSB: 0, bankLSB: 0 },
+            { voice: 398, name: "Rock Kit", icon: "🎸", program: 16, bankMSB: 0, bankLSB: 0 },
+            { voice: 399, name: "Electronic Kit", icon: "⚡", program: 24, bankMSB: 0, bankLSB: 0 },
+            { voice: 400, name: "Analog Kit", icon: "🎛️", program: 25, bankMSB: 0, bankLSB: 0 },
+            { voice: 401, name: "Dance Kit", icon: "💃", program: 27, bankMSB: 0, bankLSB: 0 },
+            { voice: 402, name: "Jazz Kit", icon: "🎷", program: 32, bankMSB: 0, bankLSB: 0 },
+            { voice: 403, name: "Brush Kit", icon: "🖌️", program: 40, bankMSB: 0, bankLSB: 0 },
+            { voice: 404, name: "Orchestra Kit", icon: "🎻", program: 48, bankMSB: 0, bankLSB: 0 },
+            { voice: 405, name: "SFX Kit", icon: "✨", program: 56, bankMSB: 0, bankLSB: 0 },
+            { voice: 406, name: "GM Kit", icon: "🎹", program: 0, bankMSB: 121, bankLSB: 0 }
         ];
 
         // GM Drum Notes (Channel 10)
@@ -1051,6 +1072,11 @@
         let gamepadIndex = null;
         let prevButtonStates = {};
         
+        // Semi-auto mode state
+        let heldButtons = new Set();
+        let semiAutoInterval = null;
+        let beatClock = 0;
+        
         // ============================================
         // MIDI FUNCTIONS
         // ============================================
@@ -1108,10 +1134,17 @@
             textEl.textContent = connected ? text : 'Non connecté';
         }
 
-        function sendProgramChange(program) {
+        function sendProgramChange(kit) {
             if (!midiOutput) return;
-            // Program change on channel 10 (index 9)
-            midiOutput.send([0xC0 + midiChannel, program]);
+            
+            // Send Bank Select MSB (CC#0)
+            midiOutput.send([0xB0 + midiChannel, 0, kit.bankMSB]);
+            // Send Bank Select LSB (CC#32)
+            midiOutput.send([0xB0 + midiChannel, 32, kit.bankLSB]);
+            // Send Program Change
+            midiOutput.send([0xC0 + midiChannel, kit.program]);
+            
+            console.log(`Kit changed: ${kit.name} (Bank ${kit.bankMSB}/${kit.bankLSB}, PC ${kit.program})`);
         }
 
         function playNote(note, velocity = 100) {
@@ -1192,9 +1225,20 @@
                 // Update visual
                 updateButtonVisual(index, isPressed);
                 
-                // Trigger on press (not hold)
+                // Handle button state changes
                 if (isPressed && !wasPressed) {
+                    // Button just pressed
                     handleButtonPress(index, button.value);
+                    
+                    // Semi-auto: track held buttons
+                    if (currentMode === 'semi' && MANUAL_MAPPING[index]) {
+                        heldButtons.add(index);
+                        updateSoundGridHeld();
+                    }
+                } else if (!isPressed && wasPressed) {
+                    // Button released
+                    heldButtons.delete(index);
+                    updateSoundGridHeld();
                 }
                 
                 prevButtonStates[index] = isPressed;
@@ -1205,7 +1249,7 @@
             updateJoystickVisual('rightJoystick', gamepad.axes[2], gamepad.axes[3]);
             
             // Use joysticks for tempo/velocity in auto mode
-            if (currentMode === 'auto') {
+            if (currentMode === 'auto' || currentMode === 'semi') {
                 // Left joystick Y for tempo adjustment
                 if (Math.abs(gamepad.axes[1]) > 0.5) {
                     adjustTempo(-gamepad.axes[1] * 2);
@@ -1222,6 +1266,23 @@
                 if (soundName) {
                     const velocity = Math.round(64 + (value || 1) * 63);
                     playSound(soundName, velocity);
+                }
+            } else if (currentMode === 'semi') {
+                // Semi-auto mode - play sound immediately on press
+                // Repeats are handled by the beat clock while held
+                const soundName = MANUAL_MAPPING[buttonIndex];
+                if (soundName) {
+                    const velocity = Math.round(64 + (value || 1) * 63);
+                    playSound(soundName, velocity);
+                }
+                // Handle transport controls same as auto
+                switch (buttonIndex) {
+                    case 8: // Select - Previous kit
+                        selectKit((currentKit - 1 + DRUM_KITS.length) % DRUM_KITS.length);
+                        break;
+                    case 9: // Start - Next kit
+                        selectKit((currentKit + 1) % DRUM_KITS.length);
+                        break;
                 }
             } else {
                 // Auto mode - control patterns and playback
@@ -1410,6 +1471,71 @@
         }
 
         // ============================================
+        // SEMI-AUTO BEAT CLOCK
+        // ============================================
+        
+        function startSemiAutoBeat() {
+            if (semiAutoInterval) return;
+            
+            const ticksPerBeat = 4; // 16th notes
+            let lastTick = performance.now();
+            
+            function semiAutoTick() {
+                if (currentMode !== 'semi') {
+                    stopSemiAutoBeat();
+                    return;
+                }
+                
+                const msPerTick = (60000 / tempo) / ticksPerBeat;
+                const now = performance.now();
+                
+                if (now - lastTick >= msPerTick) {
+                    lastTick = now;
+                    beatClock = (beatClock + 1) % (ticksPerBeat * 4);
+                    
+                    // Play held buttons on the beat (every 4 ticks = quarter note)
+                    // Or every 2 ticks for 8th notes on certain buttons
+                    heldButtons.forEach(buttonIndex => {
+                        const soundName = MANUAL_MAPPING[buttonIndex];
+                        if (soundName) {
+                            // Hi-hats play on 8th notes
+                            const is8thNote = soundName.includes('hihat');
+                            const shouldPlay = is8thNote ? 
+                                (beatClock % 2 === 0) : 
+                                (beatClock % 4 === 0);
+                            
+                            if (shouldPlay) {
+                                playSound(soundName, 90);
+                            }
+                        }
+                    });
+                    
+                    // Visual beat indicator
+                    if (beatClock % 4 === 0) {
+                        triggerVisualizer();
+                    }
+                }
+                
+                semiAutoInterval = requestAnimationFrame(semiAutoTick);
+            }
+            
+            semiAutoTick();
+            document.getElementById('playBtn').textContent = '🔄';
+            document.getElementById('playBtn').style.background = 'linear-gradient(145deg, #11998e, #38ef7d)';
+        }
+        
+        function stopSemiAutoBeat() {
+            if (semiAutoInterval) {
+                cancelAnimationFrame(semiAutoInterval);
+                semiAutoInterval = null;
+            }
+            heldButtons.clear();
+            beatClock = 0;
+            document.getElementById('playBtn').textContent = '▶';
+            document.getElementById('playBtn').style.background = 'linear-gradient(145deg, #2ecc71, #27ae60)';
+        }
+
+        // ============================================
         // UI FUNCTIONS
         // ============================================
         
@@ -1424,14 +1550,19 @@
             
             // Show/hide sections
             document.getElementById('patternSection').classList.toggle('visible', mode === 'auto');
-            document.getElementById('soundMapSection').classList.toggle('visible', mode === 'manual');
+            document.getElementById('soundMapSection').classList.toggle('visible', mode === 'manual' || mode === 'semi');
             
             // Update footer
-            document.getElementById('footerMode').textContent = mode === 'auto' ? 'Auto' : 'Manuel';
+            const modeNames = { auto: 'Auto', semi: 'Semi-Auto', manual: 'Manuel' };
+            document.getElementById('footerMode').textContent = modeNames[mode];
             
-            // Stop playback when switching to manual
-            if (mode === 'manual') {
-                stopPlayback();
+            // Stop any playback when switching modes
+            stopPlayback();
+            stopSemiAutoBeat();
+            
+            // Start semi-auto beat clock
+            if (mode === 'semi') {
+                startSemiAutoBeat();
             }
             
             // Update instructions
@@ -1442,8 +1573,8 @@
             currentKit = index;
             const kit = DRUM_KITS[index];
             
-            // Send program change
-            sendProgramChange(kit.voice - 1); // MIDI is 0-indexed
+            // Send bank select + program change
+            sendProgramChange(kit);
             
             // Update UI
             document.querySelectorAll('.kit-btn').forEach((btn, i) => {
@@ -1507,6 +1638,18 @@
                     <li><strong>Select/Start</strong> - Kit précédent/suivant</li>
                     <li><strong>D-Pad ↑↓</strong> - Crash / Kick accent</li>
                     <li><strong>D-Pad ←→</strong> - Tempo -/+ 10 BPM</li>
+                    <li><strong>Joystick G</strong> - Ajustement tempo</li>
+                `;
+            } else if (currentMode === 'semi') {
+                list.innerHTML = `
+                    <li><strong>🔄 MAINTENIR = RÉPÉTER</strong> sur le beat!</li>
+                    <li><strong>A</strong> - Kick (répète en noires)</li>
+                    <li><strong>B</strong> - Snare (répète en noires)</li>
+                    <li><strong>X</strong> - Hi-Hat Closed (répète en croches!)</li>
+                    <li><strong>Y</strong> - Hi-Hat Open (répète en croches!)</li>
+                    <li><strong>L1/R1</strong> - Tom Low / Tom Mid</li>
+                    <li><strong>L2/R2</strong> - Crash / Ride</li>
+                    <li><strong>Select/Start</strong> - Kit précédent/suivant</li>
                     <li><strong>Joystick G</strong> - Ajustement tempo</li>
                 `;
             } else {
@@ -1598,6 +1741,8 @@
         }
 
         // Keyboard fallback for testing without gamepad
+        const keyboardHeld = new Set();
+        
         document.addEventListener('keydown', (e) => {
             if (e.repeat) return;
             
@@ -1612,14 +1757,48 @@
             
             if (keyMap.hasOwnProperty(e.key)) {
                 e.preventDefault();
-                handleButtonPress(keyMap[e.key], 1);
-                updateButtonVisual(keyMap[e.key], true);
+                const btnIndex = keyMap[e.key];
                 
-                setTimeout(() => {
-                    updateButtonVisual(keyMap[e.key], false);
-                }, 100);
+                handleButtonPress(btnIndex, 1);
+                updateButtonVisual(btnIndex, true);
+                keyboardHeld.add(btnIndex);
+                
+                // Semi-auto: track held keys
+                if (currentMode === 'semi' && MANUAL_MAPPING[btnIndex]) {
+                    heldButtons.add(btnIndex);
+                    updateSoundGridHeld();
+                }
             }
         });
+        
+        document.addEventListener('keyup', (e) => {
+            const keyMap = {
+                'a': 0, 's': 1, 'd': 2, 'w': 3,
+                'q': 4, 'e': 5,
+                'z': 6, 'c': 7,
+                'Tab': 8, 'Enter': 9,
+                'ArrowUp': 12, 'ArrowDown': 13,
+                'ArrowLeft': 14, 'ArrowRight': 15
+            };
+            
+            if (keyMap.hasOwnProperty(e.key)) {
+                const btnIndex = keyMap[e.key];
+                updateButtonVisual(btnIndex, false);
+                keyboardHeld.delete(btnIndex);
+                heldButtons.delete(btnIndex);
+                updateSoundGridHeld();
+            }
+        });
+        
+        function updateSoundGridHeld() {
+            document.querySelectorAll('.sound-item').forEach(item => {
+                item.classList.remove('held');
+            });
+            heldButtons.forEach(btnIndex => {
+                const el = document.getElementById(`sound-${btnIndex}`);
+                if (el) el.classList.add('held');
+            });
+        }
 
         // Start everything
         initUI();
