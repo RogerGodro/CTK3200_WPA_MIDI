@@ -7,11 +7,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;600;700&display=swap');
         
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
         :root {
             --bg-dark: #0a0a0f;
@@ -22,14 +18,12 @@
             --accent-teal: #00d4aa;
             --accent-purple: #9d4edd;
             --accent-pink: #ff69b4;
+            --accent-red: #ff4444;
             --text-primary: #f0f0f0;
             --text-secondary: #888;
         }
         
-        html, body {
-            height: 100%;
-            overflow: hidden;
-        }
+        html, body { height: 100%; overflow: hidden; }
         
         body {
             font-family: 'Outfit', sans-serif;
@@ -44,8 +38,8 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
-            padding: 10px;
-            gap: 10px;
+            padding: 8px;
+            gap: 8px;
         }
         
         /* Header */
@@ -53,7 +47,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 8px 15px;
+            padding: 6px 12px;
             background: var(--bg-panel);
             border-radius: 10px;
             flex-shrink: 0;
@@ -61,7 +55,7 @@
         
         .logo {
             font-family: 'Space Mono', monospace;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 700;
             background: linear-gradient(135deg, var(--accent-orange), var(--accent-yellow));
             -webkit-background-clip: text;
@@ -71,7 +65,7 @@
         
         .header-controls {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             align-items: center;
         }
         
@@ -79,15 +73,15 @@
             background: var(--bg-section);
             border: 2px solid var(--accent-orange);
             color: var(--accent-orange);
-            padding: 8px 16px;
-            border-radius: 8px;
+            padding: 6px 12px;
+            border-radius: 6px;
             font-family: 'Space Mono', monospace;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             cursor: pointer;
             transition: all 0.2s;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
         }
         
         .header-btn:hover {
@@ -105,11 +99,22 @@
             color: #000;
         }
         
+        .header-btn.panic {
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+        
+        .header-btn.panic:hover {
+            background: var(--accent-red);
+            color: #fff;
+        }
+        
         .status-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
             background: #444;
+            transition: all 0.15s;
         }
         
         .status-dot.on {
@@ -126,47 +131,39 @@
         .main-content {
             flex: 1;
             display: grid;
-            grid-template-columns: 1fr 280px;
-            gap: 10px;
+            grid-template-columns: 1fr 260px;
+            gap: 8px;
             min-height: 0;
         }
         
-        .left-panel {
+        .left-panel, .right-panel {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             min-height: 0;
         }
         
-        .right-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            min-height: 0;
-        }
-        
-        /* Panels */
         .panel {
             background: var(--bg-panel);
-            border-radius: 12px;
-            padding: 12px;
+            border-radius: 10px;
+            padding: 10px;
             border: 1px solid rgba(255,255,255,0.05);
         }
         
         .panel-title {
             font-family: 'Space Mono', monospace;
-            font-size: 0.6rem;
+            font-size: 0.55rem;
             color: var(--accent-orange);
             text-transform: uppercase;
             letter-spacing: 1.5px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         
         /* Chord Display */
         .chord-display {
             background: linear-gradient(135deg, var(--bg-section), #1f1f35);
-            border-radius: 12px;
-            padding: 15px;
+            border-radius: 10px;
+            padding: 12px;
             text-align: center;
             border: 1px solid rgba(255,255,255,0.1);
             position: relative;
@@ -176,62 +173,58 @@
         .chord-display::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
+            top: 0; left: 0; right: 0;
             height: 2px;
             background: linear-gradient(90deg, var(--accent-orange), var(--accent-yellow), var(--accent-teal));
         }
         
         .chord-name {
             font-family: 'Space Mono', monospace;
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             font-weight: 700;
             color: var(--accent-yellow);
             text-shadow: 0 0 20px rgba(255, 194, 52, 0.5);
         }
         
         .chord-notes {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--text-secondary);
             letter-spacing: 3px;
-            margin-top: 5px;
+            margin-top: 3px;
         }
         
         /* Chord Matrix */
         .chord-matrix {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: 12px;
             flex-shrink: 0;
         }
         
         .chord-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 5px;
+            gap: 4px;
         }
         
         .chord-btn {
             background: var(--bg-section);
             border: 2px solid transparent;
             color: var(--text-primary);
-            padding: 10px 5px;
-            border-radius: 8px;
+            padding: 8px 4px;
+            border-radius: 6px;
             font-family: 'Space Mono', monospace;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             cursor: pointer;
             transition: all 0.15s;
         }
         
-        .chord-btn:hover {
-            border-color: var(--accent-orange);
-        }
+        .chord-btn:hover { border-color: var(--accent-orange); }
         
         .chord-btn.active {
             background: var(--accent-orange);
             color: #000;
-            box-shadow: 0 0 15px rgba(255, 107, 53, 0.4);
+            box-shadow: 0 0 12px rgba(255, 107, 53, 0.4);
         }
         
         .chord-btn.ext.active {
@@ -241,36 +234,31 @@
         /* Key Selector */
         .key-selector {
             display: flex;
-            gap: 4px;
+            gap: 3px;
             justify-content: center;
             flex-wrap: wrap;
         }
         
         .key-btn {
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             background: var(--bg-section);
             border: 2px solid transparent;
             color: var(--text-primary);
-            border-radius: 6px;
+            border-radius: 5px;
             font-family: 'Space Mono', monospace;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             cursor: pointer;
             transition: all 0.15s;
         }
         
-        .key-btn.black {
-            background: #1a1a1a;
-        }
-        
-        .key-btn:hover {
-            border-color: var(--accent-teal);
-        }
+        .key-btn.black { background: #1a1a1a; }
+        .key-btn:hover { border-color: var(--accent-teal); }
         
         .key-btn.active {
             background: var(--accent-teal);
             color: #000;
-            box-shadow: 0 0 12px rgba(0, 212, 170, 0.4);
+            box-shadow: 0 0 10px rgba(0, 212, 170, 0.4);
         }
         
         /* Knobs Row */
@@ -278,31 +266,27 @@
             display: flex;
             justify-content: space-around;
             align-items: center;
-            padding: 10px 0;
+            padding: 8px 0;
             flex-shrink: 0;
         }
         
-        .knob-container {
-            text-align: center;
-        }
+        .knob-container { text-align: center; }
         
         .knob {
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             background: conic-gradient(from 220deg, var(--accent-orange), var(--accent-yellow), var(--accent-teal), var(--accent-purple), var(--accent-orange));
             border-radius: 50%;
             position: relative;
             cursor: pointer;
-            box-shadow: 0 0 20px rgba(255, 107, 53, 0.2), inset 0 0 20px rgba(0,0,0,0.5);
+            box-shadow: 0 0 15px rgba(255, 107, 53, 0.2), inset 0 0 15px rgba(0,0,0,0.5);
         }
         
         .knob::after {
             content: '';
             position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 42px;
-            height: 42px;
+            top: 50%; left: 50%;
+            width: 34px; height: 34px;
             background: var(--bg-dark);
             border-radius: 50%;
             transform: translate(-50%, -50%);
@@ -310,26 +294,24 @@
         
         .knob-indicator {
             position: absolute;
-            top: 6px;
-            left: 50%;
-            width: 3px;
-            height: 14px;
+            top: 5px; left: 50%;
+            width: 3px; height: 12px;
             background: #fff;
             border-radius: 2px;
-            transform-origin: center 24px;
+            transform-origin: center 20px;
             z-index: 1;
         }
         
         .knob-label {
-            font-size: 0.55rem;
+            font-size: 0.5rem;
             color: var(--text-secondary);
             text-transform: uppercase;
-            margin-top: 6px;
+            margin-top: 4px;
         }
         
         .knob-value {
             font-family: 'Space Mono', monospace;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--accent-teal);
         }
         
@@ -337,169 +319,202 @@
         .perf-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 6px;
+            gap: 4px;
         }
         
         .perf-btn {
             background: var(--bg-section);
             border: 2px solid rgba(255,255,255,0.1);
             color: var(--text-primary);
-            padding: 8px 4px;
-            border-radius: 8px;
-            font-size: 0.6rem;
+            padding: 6px 2px;
+            border-radius: 6px;
+            font-size: 0.55rem;
             text-transform: uppercase;
             cursor: pointer;
             transition: all 0.15s;
             text-align: center;
         }
         
-        .perf-btn .icon {
-            font-size: 1.2rem;
-            display: block;
-            margin-bottom: 2px;
-        }
-        
-        .perf-btn:hover {
-            border-color: var(--accent-purple);
-        }
+        .perf-btn .icon { font-size: 1rem; display: block; }
+        .perf-btn:hover { border-color: var(--accent-purple); }
         
         .perf-btn.active {
             background: var(--accent-purple);
             color: #fff;
-            box-shadow: 0 0 15px rgba(157, 78, 221, 0.5);
+            box-shadow: 0 0 12px rgba(157, 78, 221, 0.5);
         }
         
-        /* Tempo Row */
-        .tempo-row {
+        /* Loop Section - Orchid Style */
+        .loop-section {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             align-items: stretch;
+            margin-top: 8px;
         }
         
         .tempo-box {
             flex: 1;
             background: var(--bg-section);
-            border-radius: 8px;
-            padding: 10px;
+            border-radius: 6px;
+            padding: 8px;
             text-align: center;
         }
         
         .tempo-value {
             font-family: 'Space Mono', monospace;
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             color: var(--accent-yellow);
         }
         
         .tempo-slider {
             width: 100%;
-            margin-top: 5px;
+            margin-top: 4px;
             accent-color: var(--accent-orange);
         }
         
-        .loop-btn {
+        /* Loop Ring Indicator */
+        .loop-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .loop-ring {
             width: 70px;
+            height: 70px;
+            border-radius: 50%;
             background: var(--bg-section);
-            border: 2px solid rgba(255,255,255,0.1);
-            border-radius: 8px;
+            position: relative;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .loop-ring svg {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            transform: rotate(-90deg);
+        }
+        
+        .loop-ring-bg {
+            fill: none;
+            stroke: #333;
+            stroke-width: 4;
+        }
+        
+        .loop-ring-progress {
+            fill: none;
+            stroke: var(--accent-teal);
+            stroke-width: 4;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.1s linear;
+        }
+        
+        .loop-ring.recording .loop-ring-progress {
+            stroke: var(--accent-red);
+        }
+        
+        .loop-ring.countdown .loop-ring-progress {
+            stroke: var(--accent-yellow);
+        }
+        
+        .loop-inner {
+            width: 50px;
+            height: 50px;
+            background: var(--bg-dark);
+            border-radius: 50%;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
-            color: var(--text-primary);
+            z-index: 1;
         }
         
-        .loop-btn:hover {
+        .loop-icon { font-size: 1.2rem; }
+        .loop-text { font-size: 0.5rem; text-transform: uppercase; }
+        
+        .loop-bars {
+            display: flex;
+            gap: 3px;
+        }
+        
+        .bar-btn {
+            width: 28px;
+            height: 22px;
+            background: var(--bg-section);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            font-size: 0.6rem;
+            font-family: 'Space Mono', monospace;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        
+        .bar-btn:hover { border-color: var(--accent-pink); }
+        
+        .bar-btn.active {
+            background: var(--accent-pink);
+            color: #fff;
             border-color: var(--accent-pink);
-        }
-        
-        .loop-btn.recording {
-            background: #3a1520;
-            border-color: #ff4444;
-            animation: rec-pulse 1s infinite;
-        }
-        
-        .loop-btn.playing {
-            background: #152a35;
-            border-color: var(--accent-teal);
-        }
-        
-        @keyframes rec-pulse {
-            0%, 100% { box-shadow: 0 0 5px rgba(255, 68, 68, 0.3); }
-            50% { box-shadow: 0 0 15px rgba(255, 68, 68, 0.6); }
-        }
-        
-        .loop-icon {
-            font-size: 1.3rem;
-        }
-        
-        .loop-text {
-            font-size: 0.55rem;
-            text-transform: uppercase;
         }
         
         /* Visual Keyboard */
         .keyboard-container {
             display: flex;
             justify-content: center;
-            padding: 10px;
+            padding: 8px;
             background: var(--bg-section);
-            border-radius: 10px;
+            border-radius: 8px;
             flex-shrink: 0;
         }
         
         .vkey {
-            width: 28px;
-            height: 70px;
+            width: 26px;
+            height: 60px;
             background: linear-gradient(180deg, #f5f5f5, #ddd);
             border-radius: 0 0 4px 4px;
             cursor: pointer;
             transition: all 0.1s;
-            position: relative;
             margin: 0 1px;
         }
         
-        .vkey:hover {
-            background: linear-gradient(180deg, #fff, #eee);
-        }
+        .vkey:hover { background: linear-gradient(180deg, #fff, #eee); }
         
         .vkey.active {
             background: linear-gradient(180deg, var(--accent-yellow), var(--accent-orange));
-            box-shadow: 0 0 10px rgba(255, 194, 52, 0.5);
+            box-shadow: 0 0 8px rgba(255, 194, 52, 0.5);
         }
         
         .vkey.black {
-            width: 20px;
-            height: 45px;
+            width: 18px;
+            height: 38px;
             background: linear-gradient(180deg, #333, #111);
-            margin: 0 -10px;
+            margin: 0 -9px;
             z-index: 1;
         }
         
-        .vkey.black:hover {
-            background: linear-gradient(180deg, #444, #222);
-        }
+        .vkey.black:hover { background: linear-gradient(180deg, #444, #222); }
+        .vkey.black.active { background: linear-gradient(180deg, var(--accent-purple), #6a2c9a); }
         
-        .vkey.black.active {
-            background: linear-gradient(180deg, var(--accent-purple), #6a2c9a);
-        }
-        
-        /* Right Panel Components */
+        /* Right Panel */
         .engine-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 5px;
-            margin-bottom: 10px;
+            gap: 4px;
+            margin-bottom: 8px;
         }
         
         .engine-btn {
             background: var(--bg-section);
             border: 1px solid rgba(255,255,255,0.1);
             color: var(--text-secondary);
-            padding: 8px 5px;
-            border-radius: 6px;
-            font-size: 0.6rem;
+            padding: 6px 4px;
+            border-radius: 5px;
+            font-size: 0.55rem;
             cursor: pointer;
             text-transform: uppercase;
         }
@@ -512,18 +527,16 @@
         .fx-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
+            gap: 6px;
         }
         
-        .fx-item {
-            text-align: center;
-        }
+        .fx-item { text-align: center; }
         
         .fx-label {
-            font-size: 0.55rem;
+            font-size: 0.5rem;
             color: var(--text-secondary);
             text-transform: uppercase;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
         }
         
         .fx-slider {
@@ -531,136 +544,116 @@
             accent-color: var(--accent-teal);
         }
         
-        /* Beat Grid */
         .beat-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 4px;
+            gap: 3px;
         }
         
         .beat-btn {
             background: var(--bg-section);
             border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 5px;
+            border-radius: 4px;
             color: var(--text-secondary);
-            font-size: 0.55rem;
-            padding: 6px 2px;
+            font-size: 0.5rem;
+            padding: 5px 2px;
             cursor: pointer;
             transition: all 0.15s;
         }
         
-        .beat-btn:hover {
-            border-color: var(--accent-pink);
-        }
+        .beat-btn:hover { border-color: var(--accent-pink); }
+        .beat-btn.active { background: var(--accent-pink); color: #fff; }
         
-        .beat-btn.active {
-            background: var(--accent-pink);
-            color: #fff;
-        }
-        
-        /* MIDI Config */
-        .midi-config {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
+        .midi-config { display: flex; flex-direction: column; gap: 4px; }
         
         .midi-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 6px 10px;
+            padding: 5px 8px;
             background: var(--bg-section);
-            border-radius: 5px;
-            font-size: 0.7rem;
+            border-radius: 4px;
+            font-size: 0.65rem;
         }
         
         .midi-select {
             background: var(--bg-dark);
             border: 1px solid rgba(255,255,255,0.1);
             color: var(--text-primary);
-            padding: 3px 6px;
-            border-radius: 4px;
+            padding: 2px 5px;
+            border-radius: 3px;
             font-family: 'Space Mono', monospace;
-            font-size: 0.65rem;
-            width: 70px;
+            font-size: 0.6rem;
+            width: 60px;
         }
         
-        /* Volume Section */
         .volume-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 8px;
         }
         
         .vol-item {
             background: var(--bg-section);
-            border-radius: 6px;
-            padding: 8px;
+            border-radius: 5px;
+            padding: 6px;
             text-align: center;
         }
         
         .vol-label {
-            font-size: 0.55rem;
+            font-size: 0.5rem;
             color: var(--text-secondary);
             text-transform: uppercase;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
         
-        /* MIDI Modal */
+        /* Modal */
         .modal-overlay {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.8);
             z-index: 1000;
             align-items: center;
             justify-content: center;
         }
         
-        .modal-overlay.show {
-            display: flex;
-        }
+        .modal-overlay.show { display: flex; }
         
         .modal {
             background: var(--bg-panel);
-            border-radius: 16px;
-            padding: 25px;
-            max-width: 400px;
+            border-radius: 14px;
+            padding: 20px;
+            max-width: 380px;
             width: 90%;
             border: 1px solid var(--accent-orange);
-            box-shadow: 0 0 40px rgba(255, 107, 53, 0.3);
+            box-shadow: 0 0 30px rgba(255, 107, 53, 0.3);
         }
         
         .modal-title {
             font-family: 'Space Mono', monospace;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: var(--accent-orange);
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             text-align: center;
         }
         
         .modal-text {
             color: var(--text-secondary);
-            font-size: 0.85rem;
-            margin-bottom: 20px;
+            font-size: 0.8rem;
+            margin-bottom: 15px;
             text-align: center;
-            line-height: 1.5;
+            line-height: 1.4;
         }
         
-        .modal-select-group {
-            margin-bottom: 15px;
-        }
+        .modal-select-group { margin-bottom: 12px; }
         
         .modal-select-group label {
             display: block;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: var(--text-secondary);
             text-transform: uppercase;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
         
         .modal-select-group select {
@@ -668,24 +661,24 @@
             background: var(--bg-section);
             border: 1px solid rgba(255,255,255,0.2);
             color: var(--text-primary);
-            padding: 10px;
-            border-radius: 8px;
+            padding: 8px;
+            border-radius: 6px;
             font-family: 'Space Mono', monospace;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
         }
         
         .modal-buttons {
             display: flex;
-            gap: 10px;
-            margin-top: 20px;
+            gap: 8px;
+            margin-top: 15px;
         }
         
         .modal-btn {
             flex: 1;
-            padding: 12px;
-            border-radius: 8px;
+            padding: 10px;
+            border-radius: 6px;
             font-family: 'Space Mono', monospace;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             cursor: pointer;
             border: 2px solid;
             transition: all 0.2s;
@@ -713,51 +706,44 @@
             color: var(--text-primary);
         }
         
-        /* Responsive */
-        @media (max-height: 700px) {
-            .chord-name { font-size: 2rem; }
-            .knob { width: 50px; height: 50px; }
-            .knob::after { width: 35px; height: 35px; }
-            .knob-indicator { height: 12px; transform-origin: center 19px; }
-            .vkey { height: 55px; }
-            .vkey.black { height: 35px; }
+        @media (max-width: 900px) {
+            .main-content { grid-template-columns: 1fr; }
+            .right-panel { display: none; }
         }
         
-        @media (max-width: 900px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-            .right-panel {
-                display: none;
-            }
+        @media (max-height: 650px) {
+            .chord-name { font-size: 1.8rem; }
+            .knob { width: 42px; height: 42px; }
+            .knob::after { width: 28px; height: 28px; }
+            .knob-indicator { height: 10px; transform-origin: center 16px; }
+            .vkey { height: 50px; }
+            .vkey.black { height: 32px; }
+            .loop-ring { width: 60px; height: 60px; }
+            .loop-inner { width: 42px; height: 42px; }
         }
     </style>
 </head>
 <body>
     <div class="app-container">
-        <!-- Header -->
         <header class="header">
             <div class="logo">🌸 CHORD MACHINE</div>
             <div class="header-controls">
+                <button class="header-btn panic" id="panicBtn">⏹ STOP</button>
                 <button class="header-btn" id="midiBtn">
                     <span class="status-dot" id="statusDot"></span>
                     <span id="midiStatus">Connecter MIDI</span>
                 </button>
-                <button class="header-btn" id="fullscreenBtn">⛶ Plein écran</button>
+                <button class="header-btn" id="fullscreenBtn">⛶</button>
             </div>
         </header>
         
-        <!-- Main Content -->
         <div class="main-content">
-            <!-- Left Panel -->
             <div class="left-panel">
-                <!-- Chord Display -->
                 <div class="chord-display">
                     <div class="chord-name" id="chordName">C</div>
                     <div class="chord-notes" id="chordNotes">C • E • G</div>
                 </div>
                 
-                <!-- Chord Matrix -->
                 <div class="panel chord-matrix">
                     <div>
                         <div class="panel-title">Type</div>
@@ -787,7 +773,6 @@
                     </div>
                 </div>
                 
-                <!-- Key Selection + Knobs -->
                 <div class="panel">
                     <div class="panel-title">Tonalité</div>
                     <div class="key-selector">
@@ -806,30 +791,23 @@
                     </div>
                     <div class="knobs-row">
                         <div class="knob-container">
-                            <div class="knob" id="voicingKnob">
-                                <div class="knob-indicator" id="voicingIndicator"></div>
-                            </div>
+                            <div class="knob" id="voicingKnob"><div class="knob-indicator" id="voicingIndicator"></div></div>
                             <div class="knob-label">Voicing</div>
                             <div class="knob-value" id="voicingValue">0</div>
                         </div>
                         <div class="knob-container">
-                            <div class="knob" id="spreadKnob">
-                                <div class="knob-indicator" id="spreadIndicator"></div>
-                            </div>
+                            <div class="knob" id="spreadKnob"><div class="knob-indicator" id="spreadIndicator"></div></div>
                             <div class="knob-label">Spread</div>
                             <div class="knob-value" id="spreadValue">1</div>
                         </div>
                         <div class="knob-container">
-                            <div class="knob" id="octaveKnob">
-                                <div class="knob-indicator" id="octaveIndicator"></div>
-                            </div>
+                            <div class="knob" id="octaveKnob"><div class="knob-indicator" id="octaveIndicator"></div></div>
                             <div class="knob-label">Octave</div>
                             <div class="knob-value" id="octaveValue">4</div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Performance + Tempo -->
                 <div class="panel">
                     <div class="panel-title">Performance</div>
                     <div class="perf-grid">
@@ -837,22 +815,38 @@
                         <button class="perf-btn" data-mode="arp"><span class="icon">↗️</span>Arp</button>
                         <button class="perf-btn" data-mode="strum"><span class="icon">🎸</span>Strum</button>
                         <button class="perf-btn" data-mode="harp"><span class="icon">🎻</span>Harp</button>
-                        <button class="perf-btn" data-mode="random"><span class="icon">🎲</span>Random</button>
+                        <button class="perf-btn" data-mode="random"><span class="icon">🎲</span>Rand</button>
                     </div>
-                    <div class="tempo-row" style="margin-top: 10px;">
+                    
+                    <div class="loop-section">
                         <div class="tempo-box">
                             <div class="fx-label">BPM</div>
                             <div class="tempo-value" id="bpmDisplay">120</div>
                             <input type="range" class="tempo-slider" id="bpmSlider" min="40" max="200" value="120">
                         </div>
-                        <button class="loop-btn" id="loopBtn">
-                            <span class="loop-icon" id="loopIcon">⏺️</span>
-                            <span class="loop-text" id="loopText">Loop</span>
-                        </button>
+                        
+                        <div class="loop-container">
+                            <div class="loop-ring" id="loopRing">
+                                <svg viewBox="0 0 100 100">
+                                    <circle class="loop-ring-bg" cx="50" cy="50" r="42"/>
+                                    <circle class="loop-ring-progress" id="loopProgress" cx="50" cy="50" r="42" 
+                                        stroke-dasharray="264" stroke-dashoffset="264"/>
+                                </svg>
+                                <div class="loop-inner">
+                                    <span class="loop-icon" id="loopIcon">⏺</span>
+                                    <span class="loop-text" id="loopText">Loop</span>
+                                </div>
+                            </div>
+                            <div class="loop-bars">
+                                <button class="bar-btn active" data-bars="1">1</button>
+                                <button class="bar-btn" data-bars="2">2</button>
+                                <button class="bar-btn" data-bars="4">4</button>
+                                <button class="bar-btn" data-bars="8">8</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
-                <!-- Visual Keyboard -->
                 <div class="panel">
                     <div class="keyboard-container" id="visualKeyboard">
                         <div class="vkey" data-note="48"></div>
@@ -872,9 +866,7 @@
                 </div>
             </div>
             
-            <!-- Right Panel -->
             <div class="right-panel">
-                <!-- Synth Engine -->
                 <div class="panel">
                     <div class="panel-title">Synth Engine</div>
                     <div class="engine-grid">
@@ -898,7 +890,6 @@
                     </div>
                 </div>
                 
-                <!-- Volume -->
                 <div class="panel">
                     <div class="panel-title">Levels</div>
                     <div class="volume-row">
@@ -913,7 +904,6 @@
                     </div>
                 </div>
                 
-                <!-- Beat Machine -->
                 <div class="panel">
                     <div class="panel-title">Beat Machine</div>
                     <div class="beat-grid">
@@ -925,14 +915,13 @@
                         <button class="beat-btn" data-beat="5">Bossa</button>
                         <button class="beat-btn" data-beat="6">R&B</button>
                         <button class="beat-btn" data-beat="7">House</button>
-                        <button class="beat-btn" data-beat="8">Hip Hop</button>
+                        <button class="beat-btn" data-beat="8">Hip</button>
                         <button class="beat-btn" data-beat="9">Trap</button>
                         <button class="beat-btn" data-beat="10">Chill</button>
                         <button class="beat-btn" data-beat="11">Ballad</button>
                     </div>
                 </div>
                 
-                <!-- MIDI Channels -->
                 <div class="panel">
                     <div class="panel-title">MIDI Out</div>
                     <div class="midi-config">
@@ -954,38 +943,24 @@
                                 <option value="3">Ch 4</option>
                             </select>
                         </div>
-                        <div class="midi-row">
-                            <span>Drums</span>
-                            <select class="midi-select" id="drumChannel">
-                                <option value="9" selected>Ch 10</option>
-                            </select>
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- MIDI Modal -->
     <div class="modal-overlay" id="midiModal">
         <div class="modal">
             <div class="modal-title">🎹 Connexion MIDI</div>
-            <div class="modal-text">Sélectionnez vos périphériques MIDI pour connecter votre MPK et envoyer des accords vers vos instruments.</div>
-            
+            <div class="modal-text">Sélectionnez vos périphériques MIDI</div>
             <div class="modal-select-group">
-                <label>Entrée MIDI (votre contrôleur)</label>
-                <select id="modalMidiInput">
-                    <option value="">-- Aucune entrée --</option>
-                </select>
+                <label>Entrée MIDI (contrôleur)</label>
+                <select id="modalMidiInput"><option value="">-- Aucune --</option></select>
             </div>
-            
             <div class="modal-select-group">
-                <label>Sortie MIDI (synthé externe)</label>
-                <select id="modalMidiOutput">
-                    <option value="">-- Audio interne seulement --</option>
-                </select>
+                <label>Sortie MIDI (synthé)</label>
+                <select id="modalMidiOutput"><option value="">-- Audio interne --</option></select>
             </div>
-            
             <div class="modal-buttons">
                 <button class="modal-btn secondary" id="modalCancel">Annuler</button>
                 <button class="modal-btn primary" id="modalConnect">Connecter</button>
@@ -995,20 +970,16 @@
 
     <script>
         // ============================================
-        // 🌸 CHORD MACHINE - Orchid Style
+        // 🌸 CHORD MACHINE v2
         // ============================================
         
-        // Audio Context
         let audioCtx = null;
         let masterGain = null;
-        
-        // MIDI
         let midiAccess = null;
         let midiInput = null;
         let midiOutput = null;
         let midiInitialized = false;
         
-        // State
         const state = {
             rootNote: 0,
             chordType: 'maj',
@@ -1019,69 +990,58 @@
             performanceMode: 'hold',
             bpm: 120,
             engine: 'analog',
-            reverb: 0.3,
-            chorus: 0,
-            delay: 0,
             mainVolume: 0.7,
             bassVolume: 0.5,
             chordChannel: 0,
             bassChannel: 1,
             drumChannel: 9,
-            activeNotes: new Map(),
             activeOscillators: new Map(),
+            activeInputNotes: new Set(),
             arpInterval: null,
-            arpIndex: 0,
             arpNotes: [],
-            loopState: 'stopped',
+            arpIndex: 0,
+            
+            // Loop - Orchid style
+            loopState: 'idle', // idle, countdown, recording, playing
+            loopBars: 1,
             loopData: [],
             loopStartTime: 0,
-            loopInterval: null,
-            beatPattern: null,
+            loopDuration: 0,
+            loopAnimationFrame: null,
+            loopPlaybackFrame: null,
+            countdownBeats: 0,
+            
+            // Beat
             beatInterval: null,
             beatStep: 0
         };
         
         const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-        
         const CHORD_FORMULAS = {
-            maj: [0, 4, 7],
-            min: [0, 3, 7],
-            dim: [0, 3, 6],
-            aug: [0, 4, 8],
-            sus2: [0, 2, 7],
-            sus4: [0, 5, 7],
-            power: [0, 7],
-            add9: [0, 4, 7, 14]
+            maj: [0, 4, 7], min: [0, 3, 7], dim: [0, 3, 6], aug: [0, 4, 8],
+            sus2: [0, 2, 7], sus4: [0, 5, 7], power: [0, 7], add9: [0, 4, 7, 14]
         };
-        
         const EXTENSIONS = {
-            none: [],
-            '7': [10],
-            maj7: [11],
-            '9': [10, 14],
-            '11': [10, 14, 17],
-            '13': [10, 14, 17, 21],
-            '6': [9],
-            '69': [9, 14]
+            none: [], '7': [10], maj7: [11], '9': [10, 14],
+            '11': [10, 14, 17], '13': [10, 14, 17, 21], '6': [9], '69': [9, 14]
         };
-        
         const BEAT_PATTERNS = {
             0: null,
-            1: { pattern: [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0], accent: [1,0,0,0,1,0,0,0] },
-            2: { pattern: [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1], accent: [1,0,0,0,1,0,0,0] },
-            3: { pattern: [1,0,1,1,0,1,0,1,1,0,1,1,0,1,1,0], accent: [1,0,0,1,0,0,1,0] },
-            4: { pattern: [1,0,0,1,0,1,0,0,1,0,0,1,0,1,0,1], accent: [1,0,0,0,1,0,0,0] },
-            5: { pattern: [1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0], accent: [1,0,0,0,0,0,1,0] },
-            6: { pattern: [1,0,0,1,0,1,1,0,1,0,0,1,0,1,0,1], accent: [1,0,0,0,1,0,0,0] },
-            7: { pattern: [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0], accent: [1,0,0,0,1,0,0,0] },
-            8: { pattern: [1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1], accent: [1,0,0,0,0,0,1,0] },
-            9: { pattern: [1,1,0,1,1,0,1,1,0,1,1,0,1,0,1,1], accent: [1,0,0,0,1,0,0,0] },
-            10: { pattern: [1,0,0,0,0,1,0,0,1,0,0,0,0,1,0,0], accent: [1,0,0,0,0,0,0,0] },
-            11: { pattern: [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0], accent: [1,0,0,0,0,0,0,0] }
+            1: { p: [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0], a: [1,0,0,0,1,0,0,0] },
+            2: { p: [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1], a: [1,0,0,0,1,0,0,0] },
+            3: { p: [1,0,1,1,0,1,0,1,1,0,1,1,0,1,1,0], a: [1,0,0,1,0,0,1,0] },
+            4: { p: [1,0,0,1,0,1,0,0,1,0,0,1,0,1,0,1], a: [1,0,0,0,1,0,0,0] },
+            5: { p: [1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0], a: [1,0,0,0,0,0,1,0] },
+            6: { p: [1,0,0,1,0,1,1,0,1,0,0,1,0,1,0,1], a: [1,0,0,0,1,0,0,0] },
+            7: { p: [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0], a: [1,0,0,0,1,0,0,0] },
+            8: { p: [1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1], a: [1,0,0,0,0,0,1,0] },
+            9: { p: [1,1,0,1,1,0,1,1,0,1,1,0,1,0,1,1], a: [1,0,0,0,1,0,0,0] },
+            10: { p: [1,0,0,0,0,1,0,0,1,0,0,0,0,1,0,0], a: [1,0,0,0,0,0,0,0] },
+            11: { p: [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0], a: [1,0,0,0,0,0,0,0] }
         };
         
         // ============================================
-        // AUDIO
+        // AUDIO - Smooth envelopes, no clicks
         // ============================================
         
         function initAudio() {
@@ -1092,12 +1052,21 @@
             masterGain.connect(audioCtx.destination);
         }
         
-        function playNote(midiNote, velocity = 100) {
+        function ensureAudio() {
             if (!audioCtx) initAudio();
             if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+        
+        function playNote(midiNote, velocity = 100) {
+            ensureAudio();
+            
+            // Stop if already playing
+            if (state.activeOscillators.has(midiNote)) {
+                stopNoteSoft(midiNote);
+            }
             
             const freq = 440 * Math.pow(2, (midiNote - 69) / 12);
-            const vol = (velocity / 127) * state.mainVolume * 0.15;
+            const vol = (velocity / 127) * state.mainVolume * 0.12;
             
             let oscData;
             switch (state.engine) {
@@ -1110,32 +1079,33 @@
         }
         
         function createAnalogOsc(freq, vol) {
-            const osc = audioCtx.createOscillator();
+            const osc1 = audioCtx.createOscillator();
             const osc2 = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             const filter = audioCtx.createBiquadFilter();
             
-            osc.type = 'sawtooth';
-            osc.frequency.value = freq;
+            osc1.type = 'sawtooth';
+            osc1.frequency.value = freq;
             osc2.type = 'square';
-            osc2.frequency.value = freq * 1.005;
+            osc2.frequency.value = freq * 1.003;
             
             filter.type = 'lowpass';
-            filter.frequency.value = 2000 + freq * 2;
-            filter.Q.value = 2;
+            filter.frequency.value = Math.min(2000 + freq * 2, 8000);
+            filter.Q.value = 1.5;
             
-            gain.gain.setValueAtTime(0, audioCtx.currentTime);
-            gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 0.02);
+            // Smooth attack
+            gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(vol, audioCtx.currentTime + 0.015);
             
-            osc.connect(filter);
+            osc1.connect(filter);
             osc2.connect(filter);
             filter.connect(gain);
             gain.connect(masterGain);
             
-            osc.start();
+            osc1.start();
             osc2.start();
             
-            return { osc: [osc, osc2], gain };
+            return { oscs: [osc1, osc2], gain, filter, stopped: false };
         }
         
         function createFMOsc(freq, vol) {
@@ -1148,10 +1118,10 @@
             carrier.frequency.value = freq;
             modulator.type = 'sine';
             modulator.frequency.value = freq * 2;
-            modGain.gain.value = freq * 0.5;
+            modGain.gain.value = freq * 0.4;
             
-            gain.gain.setValueAtTime(0, audioCtx.currentTime);
-            gain.gain.linearRampToValueAtTime(vol * 1.5, audioCtx.currentTime + 0.01);
+            gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(vol * 1.2, audioCtx.currentTime + 0.01);
             
             modulator.connect(modGain);
             modGain.connect(carrier.frequency);
@@ -1161,130 +1131,238 @@
             carrier.start();
             modulator.start();
             
-            return { osc: [carrier, modulator], gain };
+            return { oscs: [carrier, modulator], gain, stopped: false };
         }
         
         function createEPianoOsc(freq, vol) {
-            const osc = audioCtx.createOscillator();
+            const osc1 = audioCtx.createOscillator();
             const osc2 = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             
-            osc.type = 'sine';
-            osc.frequency.value = freq;
+            osc1.type = 'sine';
+            osc1.frequency.value = freq;
             osc2.type = 'triangle';
             osc2.frequency.value = freq * 2;
             
-            gain.gain.setValueAtTime(0, audioCtx.currentTime);
-            gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 0.005);
-            gain.gain.exponentialRampToValueAtTime(vol * 0.3, audioCtx.currentTime + 0.5);
+            const now = audioCtx.currentTime;
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(vol, now + 0.008);
+            gain.gain.setTargetAtTime(vol * 0.4, now + 0.1, 0.3);
             
-            osc.connect(gain);
+            osc1.connect(gain);
             osc2.connect(gain);
             gain.connect(masterGain);
             
-            osc.start();
+            osc1.start();
             osc2.start();
             
-            return { osc: [osc, osc2], gain };
+            return { oscs: [osc1, osc2], gain, stopped: false };
         }
         
-        function stopNote(midiNote) {
-            const oscData = state.activeOscillators.get(midiNote);
-            if (oscData) {
-                oscData.gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
-                setTimeout(() => oscData.osc.forEach(o => o.stop()), 150);
-                state.activeOscillators.delete(midiNote);
+        function stopNoteSoft(midiNote) {
+            const data = state.activeOscillators.get(midiNote);
+            if (data && !data.stopped) {
+                data.stopped = true;
+                const now = audioCtx.currentTime;
+                
+                // Smooth release - no clicks
+                data.gain.gain.cancelScheduledValues(now);
+                data.gain.gain.setValueAtTime(data.gain.gain.value, now);
+                data.gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+                
+                setTimeout(() => {
+                    try {
+                        data.oscs.forEach(o => o.stop());
+                    } catch(e) {}
+                    state.activeOscillators.delete(midiNote);
+                }, 100);
             }
         }
         
-        // Bass
-        let bassOsc = null, bassGain = null;
+        // ============================================
+        // PANIC - Stop All Notes
+        // ============================================
+        
+        function panicStopAll() {
+            // Stop all oscillators
+            state.activeOscillators.forEach((data, note) => {
+                if (!data.stopped) {
+                    data.stopped = true;
+                    try {
+                        data.gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                        data.oscs.forEach(o => o.stop());
+                    } catch(e) {}
+                }
+            });
+            state.activeOscillators.clear();
+            
+            // Stop bass
+            stopBassSoft();
+            
+            // Stop arpeggiator
+            if (state.arpInterval) {
+                clearInterval(state.arpInterval);
+                state.arpInterval = null;
+            }
+            
+            // Stop loop
+            stopLoop();
+            
+            // Stop beat
+            stopBeat();
+            
+            // Clear active input notes
+            state.activeInputNotes.clear();
+            
+            // Send MIDI All Notes Off on all channels
+            if (midiOutput) {
+                for (let ch = 0; ch < 16; ch++) {
+                    midiOutput.send([0xB0 | ch, 123, 0]); // All Notes Off
+                    midiOutput.send([0xB0 | ch, 120, 0]); // All Sound Off
+                }
+            }
+            
+            // Update UI
+            document.querySelectorAll('.vkey.active').forEach(k => k.classList.remove('active'));
+        }
+        
+        // ============================================
+        // BASS - Smooth
+        // ============================================
+        
+        let bassData = null;
         
         function playBass(note, velocity) {
-            if (!audioCtx) initAudio();
+            ensureAudio();
+            stopBassSoft();
+            
             const freq = 440 * Math.pow(2, (note - 69) / 12);
-            const vol = (velocity / 127) * state.bassVolume * 0.2;
+            const vol = (velocity / 127) * state.bassVolume * 0.15;
             
-            if (bassOsc) bassOsc.forEach(o => o.stop());
-            
-            const osc = audioCtx.createOscillator();
+            const osc1 = audioCtx.createOscillator();
             const osc2 = audioCtx.createOscillator();
-            bassGain = audioCtx.createGain();
+            const gain = audioCtx.createGain();
             
-            osc.type = 'sine';
-            osc.frequency.value = freq;
+            osc1.type = 'sine';
+            osc1.frequency.value = freq;
             osc2.type = 'triangle';
             osc2.frequency.value = freq;
             
-            bassGain.gain.setValueAtTime(0, audioCtx.currentTime);
-            bassGain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 0.02);
+            gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(vol, audioCtx.currentTime + 0.02);
             
-            osc.connect(bassGain);
-            osc2.connect(bassGain);
-            bassGain.connect(masterGain);
+            osc1.connect(gain);
+            osc2.connect(gain);
+            gain.connect(masterGain);
             
-            osc.start();
+            osc1.start();
             osc2.start();
-            bassOsc = [osc, osc2];
             
+            bassData = { oscs: [osc1, osc2], gain, note, stopped: false };
             sendMidiNoteOn(note, velocity, state.bassChannel);
         }
         
-        function stopBass() {
-            if (bassOsc && bassGain) {
-                bassGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
-                setTimeout(() => { bassOsc.forEach(o => o.stop()); bassOsc = null; }, 150);
+        function stopBassSoft() {
+            if (bassData && !bassData.stopped) {
+                bassData.stopped = true;
+                const now = audioCtx.currentTime;
+                
+                bassData.gain.gain.cancelScheduledValues(now);
+                bassData.gain.gain.setValueAtTime(bassData.gain.gain.value, now);
+                bassData.gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+                
+                sendMidiNoteOff(bassData.note, state.bassChannel);
+                
+                const oldData = bassData;
+                setTimeout(() => {
+                    try { oldData.oscs.forEach(o => o.stop()); } catch(e) {}
+                }, 100);
+                
+                bassData = null;
             }
         }
         
-        // Drums
+        // ============================================
+        // DRUMS
+        // ============================================
+        
         function playKick(vol) {
+            ensureAudio();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.1);
-            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            const now = audioCtx.currentTime;
+            
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.exponentialRampToValueAtTime(40, now + 0.1);
+            gain.gain.setValueAtTime(vol, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+            
             osc.connect(gain);
             gain.connect(masterGain);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.25);
         }
         
         function playSnare(vol) {
+            ensureAudio();
             const noise = audioCtx.createBufferSource();
-            const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.2, audioCtx.sampleRate);
+            const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.15, audioCtx.sampleRate);
             const data = buf.getChannelData(0);
             for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
             noise.buffer = buf;
+            
             const filter = audioCtx.createBiquadFilter();
             filter.type = 'highpass';
-            filter.frequency.value = 1000;
+            filter.frequency.value = 1200;
+            
             const gain = audioCtx.createGain();
-            gain.gain.setValueAtTime(vol * 0.5, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+            const now = audioCtx.currentTime;
+            gain.gain.setValueAtTime(vol * 0.4, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+            
             noise.connect(filter);
             filter.connect(gain);
             gain.connect(masterGain);
-            noise.start();
+            noise.start(now);
         }
         
         function playHihat(vol) {
+            ensureAudio();
             const noise = audioCtx.createBufferSource();
-            const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.05, audioCtx.sampleRate);
+            const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.04, audioCtx.sampleRate);
             const data = buf.getChannelData(0);
             for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
             noise.buffer = buf;
+            
             const filter = audioCtx.createBiquadFilter();
             filter.type = 'highpass';
             filter.frequency.value = 7000;
+            
             const gain = audioCtx.createGain();
-            gain.gain.setValueAtTime(vol * 0.3, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+            const now = audioCtx.currentTime;
+            gain.gain.setValueAtTime(vol * 0.25, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+            
             noise.connect(filter);
             filter.connect(gain);
             gain.connect(masterGain);
-            noise.start();
+            noise.start(now);
+        }
+        
+        function playClick(vol) {
+            ensureAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const now = audioCtx.currentTime;
+            
+            osc.frequency.value = 1000;
+            gain.gain.setValueAtTime(vol, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+            
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start(now);
+            osc.stop(now + 0.03);
         }
         
         // ============================================
@@ -1296,17 +1374,14 @@
             if (ext !== 'none') intervals = intervals.concat(EXTENSIONS[ext]);
             
             for (let i = 0; i < voicing; i++) {
-                if (intervals.length > 1) {
-                    intervals.push(intervals.shift() + 12);
-                }
+                if (intervals.length > 1) intervals.push(intervals.shift() + 12);
             }
             
             if (spread > 1) {
                 intervals = intervals.map((int, idx) => int + Math.floor(idx / 2) * 12 * (spread - 1));
             }
             
-            const baseMidi = 12 + octave * 12 + root;
-            return intervals.map(i => baseMidi + i);
+            return intervals.map(i => 12 + octave * 12 + root + i);
         }
         
         function getChordName() {
@@ -1321,7 +1396,7 @@
                 case 'power': type = '5'; break;
                 case 'add9': type = 'add9'; break;
             }
-            let ext = state.extension !== 'none' ? (state.extension === 'maj7' ? 'maj7' : state.extension) : '';
+            const ext = state.extension !== 'none' ? (state.extension === 'maj7' ? 'maj7' : state.extension) : '';
             return root + type + ext;
         }
         
@@ -1340,155 +1415,366 @@
             const chordNotes = buildChord(inputRoot, state.chordType, state.extension, state.voicing, state.spread, state.octave);
             
             state.rootNote = inputRoot;
+            state.activeInputNotes.add(inputNote);
             updateRootSelection();
             updateChordDisplay();
             
+            // Stop previous arp
             if (state.arpInterval) {
                 clearInterval(state.arpInterval);
                 state.arpInterval = null;
             }
             
-            state.activeNotes.forEach(notes => {
-                notes.forEach(n => {
-                    stopNote(n);
-                    sendMidiNoteOff(n, state.chordChannel);
-                });
-            });
-            state.activeNotes.clear();
-            
+            // Record to loop
             if (state.loopState === 'recording') {
                 state.loopData.push({
-                    type: 'chord',
                     time: Date.now() - state.loopStartTime,
                     notes: chordNotes,
                     velocity,
-                    root: inputRoot
+                    root: inputRoot,
+                    bassNote: inputRoot + (state.octave - 1) * 12 + 12
                 });
             }
             
+            // Play chord
             switch (state.performanceMode) {
-                case 'hold': playChordHold(chordNotes, velocity, inputNote); break;
-                case 'arp': playChordArp(chordNotes, velocity, inputNote); break;
-                case 'strum': playChordStrum(chordNotes, velocity, inputNote); break;
-                case 'harp': playChordHarp(chordNotes, velocity, inputNote); break;
-                case 'random': playChordRandom(chordNotes, velocity, inputNote); break;
+                case 'hold': playChordHold(chordNotes, velocity); break;
+                case 'arp': playChordArp(chordNotes, velocity); break;
+                case 'strum': playChordStrum(chordNotes, velocity); break;
+                case 'harp': playChordHarp(chordNotes, velocity); break;
+                case 'random': playChordRandom(chordNotes, velocity); break;
             }
             
-            const bassNote = inputRoot + (state.octave - 1) * 12 + 12;
-            playBass(bassNote, velocity);
+            // Bass
+            playBass(inputRoot + (state.octave - 1) * 12 + 12, velocity);
             updateVisualKeyboard(chordNotes);
         }
         
         function releaseChord(inputNote) {
-            const notes = state.activeNotes.get(inputNote);
-            if (notes) {
-                notes.forEach(n => {
-                    stopNote(n);
-                    sendMidiNoteOff(n, state.chordChannel);
-                });
-                state.activeNotes.delete(inputNote);
-            }
+            state.activeInputNotes.delete(inputNote);
+            
+            // Stop all notes for this chord
+            state.activeOscillators.forEach((data, note) => stopNoteSoft(note));
             
             if (state.arpInterval) {
                 clearInterval(state.arpInterval);
                 state.arpInterval = null;
-                state.arpNotes.forEach(n => {
-                    stopNote(n);
-                    sendMidiNoteOff(n, state.chordChannel);
-                });
             }
             
-            stopBass();
+            stopBassSoft();
             document.querySelectorAll('.vkey.active').forEach(k => k.classList.remove('active'));
         }
         
-        function playChordHold(notes, velocity, inputNote) {
+        function playChordHold(notes, velocity) {
             notes.forEach(n => {
                 playNote(n, velocity);
                 sendMidiNoteOn(n, velocity, state.chordChannel);
             });
-            state.activeNotes.set(inputNote, notes);
         }
         
-        function playChordArp(notes, velocity, inputNote) {
+        function playChordArp(notes, velocity) {
             state.arpNotes = notes;
             state.arpIndex = 0;
-            state.activeNotes.set(inputNote, []);
             
             const interval = 60000 / state.bpm / 4;
+            
             const play = () => {
+                // Stop previous
                 state.arpNotes.forEach(n => {
-                    stopNote(n);
+                    stopNoteSoft(n);
                     sendMidiNoteOff(n, state.chordChannel);
                 });
+                
                 const note = state.arpNotes[state.arpIndex];
                 playNote(note, velocity);
                 sendMidiNoteOn(note, velocity, state.chordChannel);
+                
                 document.querySelectorAll('.vkey.active').forEach(k => k.classList.remove('active'));
                 const vkey = document.querySelector(`.vkey[data-note="${note % 12 + 48}"]`);
                 if (vkey) vkey.classList.add('active');
+                
                 state.arpIndex = (state.arpIndex + 1) % state.arpNotes.length;
             };
+            
             play();
             state.arpInterval = setInterval(play, interval);
         }
         
-        function playChordStrum(notes, velocity, inputNote) {
-            state.activeNotes.set(inputNote, notes);
+        function playChordStrum(notes, velocity) {
             notes.forEach((n, i) => {
                 setTimeout(() => {
                     playNote(n, velocity);
                     sendMidiNoteOn(n, velocity, state.chordChannel);
-                }, i * 30);
+                }, i * 25);
             });
         }
         
-        function playChordHarp(notes, velocity, inputNote) {
-            state.activeNotes.set(inputNote, notes);
+        function playChordHarp(notes, velocity) {
             const harpNotes = [...notes, ...notes.slice().reverse().slice(1, -1)];
             const interval = 60000 / state.bpm / 8;
+            
             harpNotes.forEach((n, i) => {
                 setTimeout(() => {
                     playNote(n, velocity * 0.8);
                     sendMidiNoteOn(n, velocity, state.chordChannel);
                     setTimeout(() => {
-                        stopNote(n);
+                        stopNoteSoft(n);
                         sendMidiNoteOff(n, state.chordChannel);
-                    }, interval * 0.9);
+                    }, interval * 0.85);
                 }, i * interval);
             });
         }
         
-        function playChordRandom(notes, velocity, inputNote) {
+        function playChordRandom(notes, velocity) {
             state.arpNotes = notes;
-            state.activeNotes.set(inputNote, []);
             const interval = 60000 / state.bpm / 4;
+            
             const play = () => {
                 state.arpNotes.forEach(n => {
-                    stopNote(n);
+                    stopNoteSoft(n);
                     sendMidiNoteOff(n, state.chordChannel);
                 });
                 const note = state.arpNotes[Math.floor(Math.random() * state.arpNotes.length)];
                 playNote(note, velocity);
                 sendMidiNoteOn(note, velocity, state.chordChannel);
             };
+            
             play();
             state.arpInterval = setInterval(play, interval);
+        }
+        
+        // ============================================
+        // LOOP - Orchid Style
+        // ============================================
+        
+        function getBarDuration() {
+            return (60000 / state.bpm) * 4; // 4 beats per bar
+        }
+        
+        function startLoop() {
+            if (state.loopState !== 'idle') {
+                stopLoop();
+                return;
+            }
+            
+            // Start countdown (1 bar)
+            state.loopState = 'countdown';
+            state.countdownBeats = 4;
+            state.loopDuration = getBarDuration() * state.loopBars;
+            
+            const ring = document.getElementById('loopRing');
+            const progress = document.getElementById('loopProgress');
+            const icon = document.getElementById('loopIcon');
+            const text = document.getElementById('loopText');
+            
+            ring.classList.add('countdown');
+            ring.classList.remove('recording');
+            
+            const beatInterval = 60000 / state.bpm;
+            let beatCount = 0;
+            const countdownStart = Date.now();
+            
+            // Countdown animation and clicks
+            const countdownTick = () => {
+                if (state.loopState !== 'countdown') return;
+                
+                const elapsed = Date.now() - countdownStart;
+                const totalCountdown = beatInterval * 4;
+                const progressPct = elapsed / totalCountdown;
+                
+                progress.style.strokeDashoffset = 264 - (progressPct * 264);
+                
+                const currentBeat = Math.floor(elapsed / beatInterval);
+                if (currentBeat > beatCount && currentBeat <= 4) {
+                    beatCount = currentBeat;
+                    playClick(0.3);
+                    icon.textContent = 4 - currentBeat || '⏺';
+                    text.textContent = currentBeat < 4 ? 'Ready' : 'REC';
+                }
+                
+                if (elapsed >= totalCountdown) {
+                    // Start recording
+                    startRecording();
+                } else {
+                    state.loopAnimationFrame = requestAnimationFrame(countdownTick);
+                }
+            };
+            
+            icon.textContent = '4';
+            text.textContent = 'Ready';
+            playClick(0.3);
+            state.loopAnimationFrame = requestAnimationFrame(countdownTick);
+        }
+        
+        function startRecording() {
+            state.loopState = 'recording';
+            state.loopData = [];
+            state.loopStartTime = Date.now();
+            
+            const ring = document.getElementById('loopRing');
+            const progress = document.getElementById('loopProgress');
+            const icon = document.getElementById('loopIcon');
+            const text = document.getElementById('loopText');
+            
+            ring.classList.remove('countdown');
+            ring.classList.add('recording');
+            icon.textContent = '⏺';
+            text.textContent = 'REC';
+            
+            const recordingTick = () => {
+                if (state.loopState !== 'recording') return;
+                
+                const elapsed = Date.now() - state.loopStartTime;
+                const progressPct = Math.min(elapsed / state.loopDuration, 1);
+                
+                progress.style.strokeDashoffset = 264 - (progressPct * 264);
+                
+                if (elapsed >= state.loopDuration) {
+                    // Recording done, start playback
+                    startPlayback();
+                } else {
+                    state.loopAnimationFrame = requestAnimationFrame(recordingTick);
+                }
+            };
+            
+            state.loopAnimationFrame = requestAnimationFrame(recordingTick);
+        }
+        
+        function startPlayback() {
+            state.loopState = 'playing';
+            
+            const ring = document.getElementById('loopRing');
+            const progress = document.getElementById('loopProgress');
+            const icon = document.getElementById('loopIcon');
+            const text = document.getElementById('loopText');
+            
+            ring.classList.remove('recording', 'countdown');
+            icon.textContent = '▶';
+            text.textContent = 'Play';
+            
+            let playbackStart = Date.now();
+            let lastEventIndex = -1;
+            
+            const playbackTick = () => {
+                if (state.loopState !== 'playing') return;
+                
+                const elapsed = (Date.now() - playbackStart) % state.loopDuration;
+                const progressPct = elapsed / state.loopDuration;
+                
+                progress.style.strokeDashoffset = 264 - (progressPct * 264);
+                
+                // Reset when loop restarts
+                if (elapsed < 50 && lastEventIndex !== -1) {
+                    lastEventIndex = -1;
+                }
+                
+                // Play events
+                state.loopData.forEach((event, idx) => {
+                    if (idx > lastEventIndex && elapsed >= event.time && elapsed < event.time + 50) {
+                        lastEventIndex = idx;
+                        
+                        // Update display
+                        state.rootNote = event.root;
+                        updateRootSelection();
+                        updateChordDisplay();
+                        
+                        // Play notes
+                        event.notes.forEach(n => {
+                            playNote(n, event.velocity);
+                            sendMidiNoteOn(n, event.velocity, state.chordChannel);
+                        });
+                        
+                        // Play bass
+                        playBass(event.bassNote, event.velocity);
+                        
+                        // Visual
+                        updateVisualKeyboard(event.notes);
+                        
+                        // Release after short time
+                        setTimeout(() => {
+                            event.notes.forEach(n => {
+                                stopNoteSoft(n);
+                                sendMidiNoteOff(n, state.chordChannel);
+                            });
+                            stopBassSoft();
+                            document.querySelectorAll('.vkey.active').forEach(k => k.classList.remove('active'));
+                        }, 250);
+                    }
+                });
+                
+                state.loopPlaybackFrame = requestAnimationFrame(playbackTick);
+            };
+            
+            state.loopPlaybackFrame = requestAnimationFrame(playbackTick);
+        }
+        
+        function stopLoop() {
+            state.loopState = 'idle';
+            
+            if (state.loopAnimationFrame) {
+                cancelAnimationFrame(state.loopAnimationFrame);
+                state.loopAnimationFrame = null;
+            }
+            if (state.loopPlaybackFrame) {
+                cancelAnimationFrame(state.loopPlaybackFrame);
+                state.loopPlaybackFrame = null;
+            }
+            
+            const ring = document.getElementById('loopRing');
+            const progress = document.getElementById('loopProgress');
+            const icon = document.getElementById('loopIcon');
+            const text = document.getElementById('loopText');
+            
+            ring.classList.remove('recording', 'countdown');
+            progress.style.strokeDashoffset = 264;
+            icon.textContent = '⏺';
+            text.textContent = 'Loop';
+        }
+        
+        // ============================================
+        // BEAT MACHINE
+        // ============================================
+        
+        function startBeat(patternId) {
+            stopBeat();
+            const pattern = BEAT_PATTERNS[patternId];
+            if (!pattern) return;
+            
+            state.beatStep = 0;
+            const interval = 60000 / state.bpm / 4;
+            
+            state.beatInterval = setInterval(() => {
+                const idx = state.beatStep % pattern.p.length;
+                if (pattern.p[idx]) {
+                    const accent = pattern.a[idx % pattern.a.length];
+                    if (accent) playKick(0.25);
+                    else playHihat(0.2);
+                    if (idx === 4 || idx === 12) playSnare(0.22);
+                }
+                state.beatStep++;
+            }, interval);
+        }
+        
+        function stopBeat() {
+            if (state.beatInterval) {
+                clearInterval(state.beatInterval);
+                state.beatInterval = null;
+            }
         }
         
         // ============================================
         // MIDI
         // ============================================
         
-        async function requestMIDI() {
+        async function initMIDI() {
             try {
                 midiAccess = await navigator.requestMIDIAccess({ sysex: false });
                 midiInitialized = true;
                 populateMIDIDevices();
+                autoConnectMPK();
                 return true;
             } catch (err) {
                 console.error('MIDI Error:', err);
-                alert('Impossible d\'accéder au MIDI. Vérifiez que votre navigateur supporte Web MIDI.');
                 return false;
             }
         }
@@ -1497,8 +1783,8 @@
             const inputSelect = document.getElementById('modalMidiInput');
             const outputSelect = document.getElementById('modalMidiOutput');
             
-            inputSelect.innerHTML = '<option value="">-- Aucune entrée --</option>';
-            outputSelect.innerHTML = '<option value="">-- Audio interne seulement --</option>';
+            inputSelect.innerHTML = '<option value="">-- Aucune --</option>';
+            outputSelect.innerHTML = '<option value="">-- Audio interne --</option>';
             
             midiAccess.inputs.forEach((input, id) => {
                 const opt = document.createElement('option');
@@ -1515,14 +1801,25 @@
             });
         }
         
+        function autoConnectMPK() {
+            // Auto-connect to MPK mini
+            midiAccess.inputs.forEach((input, id) => {
+                const name = input.name.toLowerCase();
+                if (name.includes('mpk') || name.includes('mini')) {
+                    connectMIDI(id, null);
+                    document.getElementById('modalMidiInput').value = id;
+                }
+            });
+        }
+        
         function connectMIDI(inputId, outputId) {
             if (midiInput) midiInput.onmidimessage = null;
             
             if (inputId && midiAccess) {
                 midiInput = midiAccess.inputs.get(inputId);
-                if (midiInput) {
-                    midiInput.onmidimessage = handleMIDIMessage;
-                }
+                if (midiInput) midiInput.onmidimessage = handleMIDIMessage;
+            } else {
+                midiInput = null;
             }
             
             midiOutput = outputId ? midiAccess.outputs.get(outputId) : null;
@@ -1534,7 +1831,7 @@
             if (midiInput) {
                 btn.classList.add('connected');
                 dot.classList.add('on');
-                status.textContent = midiInput.name.substring(0, 15);
+                status.textContent = midiInput.name.substring(0, 12);
             } else {
                 btn.classList.remove('connected');
                 dot.classList.remove('on');
@@ -1548,7 +1845,7 @@
             
             const dot = document.getElementById('statusDot');
             dot.classList.add('active');
-            setTimeout(() => dot.classList.remove('active'), 100);
+            setTimeout(() => dot.classList.remove('active'), 80);
             
             if (command === 9 && velocity > 0) {
                 triggerChord(note, velocity);
@@ -1569,118 +1866,6 @@
         
         function sendMidiNoteOff(note, channel) {
             if (midiOutput) midiOutput.send([0x80 | channel, note, 0]);
-        }
-        
-        // ============================================
-        // BEAT MACHINE
-        // ============================================
-        
-        function startBeat(patternId) {
-            stopBeat();
-            const pattern = BEAT_PATTERNS[patternId];
-            if (!pattern) return;
-            
-            state.beatPattern = pattern;
-            state.beatStep = 0;
-            const interval = 60000 / state.bpm / 4;
-            
-            state.beatInterval = setInterval(() => {
-                const idx = state.beatStep % pattern.pattern.length;
-                if (pattern.pattern[idx]) {
-                    const accent = pattern.accent[idx % pattern.accent.length];
-                    const vel = accent ? 100 : 70;
-                    if (accent) {
-                        playKick(vel / 127 * 0.3);
-                        sendMidiNoteOn(36, vel, state.drumChannel);
-                        setTimeout(() => sendMidiNoteOff(36, state.drumChannel), 50);
-                    } else {
-                        playHihat(vel / 127 * 0.3);
-                        sendMidiNoteOn(42, vel, state.drumChannel);
-                        setTimeout(() => sendMidiNoteOff(42, state.drumChannel), 50);
-                    }
-                    if (idx === 4 || idx === 12) {
-                        playSnare(0.25);
-                        sendMidiNoteOn(38, 90, state.drumChannel);
-                        setTimeout(() => sendMidiNoteOff(38, state.drumChannel), 50);
-                    }
-                }
-                state.beatStep++;
-            }, interval);
-        }
-        
-        function stopBeat() {
-            if (state.beatInterval) {
-                clearInterval(state.beatInterval);
-                state.beatInterval = null;
-            }
-        }
-        
-        // ============================================
-        // LOOP
-        // ============================================
-        
-        function toggleLoop() {
-            const btn = document.getElementById('loopBtn');
-            const icon = document.getElementById('loopIcon');
-            const text = document.getElementById('loopText');
-            
-            switch (state.loopState) {
-                case 'stopped':
-                    state.loopState = 'recording';
-                    state.loopData = [];
-                    state.loopStartTime = Date.now();
-                    btn.classList.add('recording');
-                    icon.textContent = '⏹️';
-                    text.textContent = 'REC';
-                    break;
-                case 'recording':
-                    state.loopState = 'playing';
-                    btn.classList.remove('recording');
-                    btn.classList.add('playing');
-                    icon.textContent = '⏸️';
-                    text.textContent = 'Play';
-                    playLoop();
-                    break;
-                case 'playing':
-                    state.loopState = 'stopped';
-                    btn.classList.remove('playing');
-                    icon.textContent = '⏺️';
-                    text.textContent = 'Loop';
-                    if (state.loopInterval) {
-                        clearInterval(state.loopInterval);
-                        state.loopInterval = null;
-                    }
-                    break;
-            }
-        }
-        
-        function playLoop() {
-            if (state.loopData.length === 0) {
-                state.loopState = 'stopped';
-                return;
-            }
-            
-            const loopLength = state.loopData[state.loopData.length - 1].time + 500;
-            let startTime = Date.now();
-            
-            state.loopInterval = setInterval(() => {
-                const elapsed = (Date.now() - startTime) % loopLength;
-                state.loopData.forEach(event => {
-                    if (Math.abs(event.time - elapsed) < 20 && event.type === 'chord') {
-                        state.rootNote = event.root;
-                        updateRootSelection();
-                        updateChordDisplay();
-                        event.notes.forEach(n => {
-                            playNote(n, event.velocity);
-                            sendMidiNoteOn(n, event.velocity, state.chordChannel);
-                            setTimeout(() => {
-                                stopNote(n);
-                                sendMidiNoteOff(n, state.chordChannel);
-                            }, 300);
-                        });
-                    }
-                });
-            }, 10);
         }
         
         // ============================================
@@ -1723,21 +1908,14 @@
             const knob = document.getElementById(knobId);
             let isDragging = false, startY = 0, startValue = 0;
             
-            const start = (y) => {
-                isDragging = true;
-                startY = y;
-                startValue = state[stateKey];
-            };
-            
+            const start = (y) => { isDragging = true; startY = y; startValue = state[stateKey]; };
             const move = (y) => {
                 if (!isDragging) return;
-                const delta = (startY - y) / 100;
-                let newValue = Math.round(startValue + delta * (max - min));
-                state[stateKey] = Math.max(min, Math.min(max, newValue));
+                const delta = (startY - y) / 80;
+                state[stateKey] = Math.round(Math.max(min, Math.min(max, startValue + delta * (max - min))));
                 updateFn();
                 updateChordDisplay();
             };
-            
             const end = () => { isDragging = false; };
             
             knob.addEventListener('mousedown', e => { e.preventDefault(); start(e.clientY); });
@@ -1749,49 +1927,38 @@
         }
         
         function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.log('Fullscreen error:', err);
-                });
-            } else {
-                document.exitFullscreen();
-            }
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+            else document.exitFullscreen();
         }
         
-        function showMidiModal() {
-            document.getElementById('midiModal').classList.add('show');
-        }
-        
-        function hideMidiModal() {
-            document.getElementById('midiModal').classList.remove('show');
-        }
+        function showMidiModal() { document.getElementById('midiModal').classList.add('show'); }
+        function hideMidiModal() { document.getElementById('midiModal').classList.remove('show'); }
         
         // ============================================
-        // INIT
+        // SETUP
         // ============================================
         
         function setupEventListeners() {
-            // MIDI Button
+            // Panic button
+            document.getElementById('panicBtn').addEventListener('click', panicStopAll);
+            
+            // MIDI button
             document.getElementById('midiBtn').addEventListener('click', async () => {
-                if (!midiInitialized) {
-                    const success = await requestMIDI();
-                    if (success) showMidiModal();
-                } else {
-                    populateMIDIDevices();
-                    showMidiModal();
-                }
+                if (!midiInitialized) await initMIDI();
+                else populateMIDIDevices();
+                showMidiModal();
             });
             
             // Modal
             document.getElementById('modalCancel').addEventListener('click', hideMidiModal);
             document.getElementById('modalConnect').addEventListener('click', () => {
-                const inputId = document.getElementById('modalMidiInput').value;
-                const outputId = document.getElementById('modalMidiOutput').value;
-                connectMIDI(inputId, outputId);
+                connectMIDI(
+                    document.getElementById('modalMidiInput').value,
+                    document.getElementById('modalMidiOutput').value
+                );
                 hideMidiModal();
             });
-            
-            document.getElementById('midiModal').addEventListener('click', (e) => {
+            document.getElementById('midiModal').addEventListener('click', e => {
                 if (e.target.id === 'midiModal') hideMidiModal();
             });
             
@@ -1828,7 +1995,7 @@
                 });
             });
             
-            // Performance modes
+            // Performance
             document.querySelectorAll('.perf-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     document.querySelectorAll('.perf-btn').forEach(b => b.classList.remove('active'));
@@ -1846,60 +2013,62 @@
                 });
             });
             
-            // Beats
+            // Beat
             document.querySelectorAll('.beat-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     document.querySelectorAll('.beat-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
-                    const beatId = parseInt(btn.dataset.beat);
-                    beatId === 0 ? stopBeat() : startBeat(beatId);
+                    parseInt(btn.dataset.beat) === 0 ? stopBeat() : startBeat(parseInt(btn.dataset.beat));
                 });
             });
             
             // BPM
-            document.getElementById('bpmSlider').addEventListener('input', (e) => {
+            document.getElementById('bpmSlider').addEventListener('input', e => {
                 state.bpm = parseInt(e.target.value);
                 document.getElementById('bpmDisplay').textContent = state.bpm;
                 if (state.beatInterval) {
-                    const activeBtn = document.querySelector('.beat-btn.active');
-                    if (activeBtn && activeBtn.dataset.beat !== '0') {
-                        startBeat(parseInt(activeBtn.dataset.beat));
-                    }
+                    const active = document.querySelector('.beat-btn.active');
+                    if (active && active.dataset.beat !== '0') startBeat(parseInt(active.dataset.beat));
                 }
             });
             
             // Loop
-            document.getElementById('loopBtn').addEventListener('click', toggleLoop);
+            document.getElementById('loopRing').addEventListener('click', startLoop);
+            
+            // Loop bars
+            document.querySelectorAll('.bar-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.bar-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    state.loopBars = parseInt(btn.dataset.bars);
+                });
+            });
             
             // Volumes
-            document.getElementById('mainVolume').addEventListener('input', (e) => {
+            document.getElementById('mainVolume').addEventListener('input', e => {
                 state.mainVolume = parseInt(e.target.value) / 100;
                 if (masterGain) masterGain.gain.value = state.mainVolume;
             });
-            
-            document.getElementById('bassVolume').addEventListener('input', (e) => {
+            document.getElementById('bassVolume').addEventListener('input', e => {
                 state.bassVolume = parseInt(e.target.value) / 100;
             });
             
             // Channels
-            document.getElementById('chordChannel').addEventListener('change', (e) => {
+            document.getElementById('chordChannel').addEventListener('change', e => {
                 state.chordChannel = parseInt(e.target.value);
             });
-            
-            document.getElementById('bassChannel').addEventListener('change', (e) => {
+            document.getElementById('bassChannel').addEventListener('change', e => {
                 state.bassChannel = parseInt(e.target.value);
             });
             
             // Visual keyboard
             document.querySelectorAll('.vkey').forEach(key => {
-                const trigger = () => triggerChord(parseInt(key.dataset.note), 100);
-                const release = () => releaseChord(parseInt(key.dataset.note));
-                
-                key.addEventListener('mousedown', trigger);
-                key.addEventListener('mouseup', release);
-                key.addEventListener('mouseleave', release);
-                key.addEventListener('touchstart', (e) => { e.preventDefault(); trigger(); });
-                key.addEventListener('touchend', (e) => { e.preventDefault(); release(); });
+                const note = parseInt(key.dataset.note);
+                key.addEventListener('mousedown', () => triggerChord(note, 100));
+                key.addEventListener('mouseup', () => releaseChord(note));
+                key.addEventListener('mouseleave', () => { if (state.activeInputNotes.has(note)) releaseChord(note); });
+                key.addEventListener('touchstart', e => { e.preventDefault(); triggerChord(note, 100); });
+                key.addEventListener('touchend', e => { e.preventDefault(); releaseChord(note); });
             });
             
             // Knobs
@@ -1907,22 +2076,25 @@
             setupKnob('spreadKnob', 1, 3, 'spread', updateSpreadKnob);
             setupKnob('octaveKnob', 2, 7, 'octave', updateOctaveKnob);
             
-            // Keyboard shortcuts
+            // Keyboard
             const keyMap = { a:48, w:49, s:50, e:51, d:52, f:53, t:54, g:55, y:56, h:57, u:58, j:59, k:60 };
-            document.addEventListener('keydown', (e) => {
-                if (keyMap[e.key] && !e.repeat) triggerChord(keyMap[e.key], 100);
-            });
-            document.addEventListener('keyup', (e) => {
-                if (keyMap[e.key]) releaseChord(keyMap[e.key]);
-            });
+            document.addEventListener('keydown', e => { if (keyMap[e.key] && !e.repeat) triggerChord(keyMap[e.key], 100); });
+            document.addEventListener('keyup', e => { if (keyMap[e.key]) releaseChord(keyMap[e.key]); });
         }
         
-        document.addEventListener('DOMContentLoaded', () => {
+        // ============================================
+        // INIT
+        // ============================================
+        
+        document.addEventListener('DOMContentLoaded', async () => {
             setupEventListeners();
             updateChordDisplay();
             updateVoicingKnob();
             updateSpreadKnob();
             updateOctaveKnob();
+            
+            // Auto-init MIDI
+            await initMIDI();
         });
     </script>
 </body>
