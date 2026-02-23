@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DUEL SCÉNIQUE</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --p1:#C41E3A;--p1g:#ff3355;--p1d:rgba(196,30,58,.15);
+  --p2:#1565C0;--p2g:#3d8bff;--p2d:rgba(21,101,192,.15);
+  --gold:#FFD700;--goldd:rgba(255,215,0,.08);
+  --bg:#060608;--surf:#0e0e16;--txt:#e8e0d0;--txtd:#524a40;
+  --serif:'Playfair Display',serif;--mono:'Share Tech Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:var(--mono);display:flex;flex-direction:column;}
+
+header{padding:.45rem 1rem .3rem;text-align:center;flex-shrink:0;position:relative;z-index:1;}
+.title{font-family:var(--serif);font-size:clamp(1.3rem,2.5vw,1.9rem);font-weight:900;letter-spacing:.2em;
+  background:linear-gradient(135deg,var(--p1),var(--gold),var(--p2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.subtitle{font-size:.45rem;letter-spacing:.3em;color:var(--txtd);margin-top:.1rem;}
+.hline{height:1px;background:linear-gradient(90deg,transparent,var(--p1),var(--gold),var(--p2),transparent);margin:.3rem auto 0;max-width:500px;}
+
+.modes{display:flex;gap:.3rem;padding:.3rem .75rem;justify-content:center;flex-shrink:0;z-index:1;position:relative;}
+.mode-btn{font-family:var(--serif);font-style:italic;font-size:.6rem;padding:.28rem .6rem;
+  background:var(--surf);border:1px solid #1a1a22;color:var(--txtd);cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;gap:.3rem;}
+.mode-btn .lbl{font-size:.4rem;letter-spacing:.15em;font-style:normal;font-family:var(--mono);display:block;opacity:.7;}
+.mode-btn.active.m-duel{border-color:var(--p1);color:var(--p1g);background:var(--p1d);}
+.mode-btn.active.m-symbiose{border-color:var(--gold);color:var(--gold);background:var(--goldd);}
+.mode-btn.active.m-narrateur{border-color:#b388ff;color:#b388ff;background:rgba(156,106,255,.08);}
+.mode-btn.active.m-chaos{border-color:#00e5ff;color:#80ffea;background:rgba(0,229,255,.05);}
+.mode-desc{text-align:center;padding:.1rem 1rem .25rem;font-size:.5rem;color:var(--txtd);
+  font-family:var(--serif);font-style:italic;flex-shrink:0;z-index:1;position:relative;}
+
+/* MAIN STAGE */
+.stage{display:grid;grid-template-columns:1fr 160px 1fr;gap:.5rem;padding:0 .6rem .35rem;
+  flex:1;min-height:0;overflow:hidden;position:relative;z-index:1;}
+
+/* PLAYER PANEL */
+.player{background:var(--surf);border:1px solid #151520;padding:.55rem;
+  display:flex;flex-direction:column;gap:.4rem;overflow:hidden;position:relative;}
+.player::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.p1::before{background:linear-gradient(90deg,transparent,var(--p1),transparent);}
+.p2::before{background:linear-gradient(90deg,transparent,var(--p2),transparent);}
+
+.phdr{display:flex;align-items:center;gap:.5rem;}
+.pnum{font-family:var(--serif);font-size:1.5rem;font-weight:900;line-height:1;}
+.p1 .pnum{color:var(--p1);}
+.p2 .pnum{color:var(--p2);}
+.pinfo{flex:1;min-width:0;}
+.pname{font-size:.5rem;letter-spacing:.18em;text-transform:uppercase;color:var(--txtd);}
+.pdev{font-size:.42rem;color:var(--txtd);opacity:.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sdot{width:7px;height:7px;border-radius:50%;background:#1f1f2a;transition:all .3s;flex-shrink:0;}
+.sdot.on{background:#00e676;box-shadow:0 0 6px #00e676;}
+
+/* CIRCLE OF FIFTHS CANVAS */
+.circle-wrap{position:relative;width:100%;flex-shrink:0;}
+.circle-wrap canvas{display:block;width:100%;aspect-ratio:1;}
+
+/* WAVEFORM */
+.wfdisp{height:36px;background:#07070f;border:1px solid #121220;flex-shrink:0;}
+.wfdisp canvas{width:100%;height:100%;display:block;}
+
+/* PARAMS */
+.params{display:grid;grid-template-columns:repeat(3,1fr);gap:.3rem;}
+.param{background:#08080f;border:1px solid #111;padding:.3rem .35rem;text-align:center;}
+.pn{font-size:.4rem;letter-spacing:.12em;color:var(--txtd);text-transform:uppercase;margin-bottom:.12rem;}
+.pv{font-size:.8rem;font-weight:bold;transition:color .15s;}
+.p1 .pv{color:var(--p1g);}
+.p2 .pv{color:var(--p2g);}
+
+/* BUTTONS */
+.btns{display:flex;flex-wrap:wrap;gap:.18rem;}
+.bi{width:17px;height:17px;border-radius:50%;background:#0d0d18;border:1px solid #1a1a26;
+  display:flex;align-items:center;justify-content:center;font-size:.38rem;color:var(--txtd);transition:all .05s;}
+.p1 .bi.on{background:rgba(196,30,58,.2);border-color:var(--p1);color:var(--p1g);box-shadow:0 0 5px rgba(196,30,58,.4);}
+.p2 .bi.on{background:rgba(21,101,192,.2);border-color:var(--p2);color:var(--p2g);box-shadow:0 0 5px rgba(21,101,192,.4);}
+
+/* Octave buttons */
+.oct-row{display:flex;align-items:center;gap:.35rem;font-size:.45rem;color:var(--txtd);}
+.oct-btn{background:#08080f;border:1px solid #1a1a22;color:var(--txtd);font-family:var(--mono);
+  font-size:.65rem;padding:.1rem .4rem;cursor:pointer;line-height:1;transition:all .15s;}
+.oct-btn:hover{border-color:var(--gold);color:var(--gold);}
+.oct-val{color:var(--txt);min-width:20px;text-align:center;}
+
+/* CENTER */
+.center{display:flex;flex-direction:column;gap:.4rem;align-items:center;}
+.ctrlbl{font-size:.4rem;letter-spacing:.22em;text-transform:uppercase;color:var(--txtd);}
+.tmeter{width:100%;flex:1;background:var(--surf);border:1px solid #151520;
+  display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+  padding:.6rem .4rem;position:relative;overflow:hidden;}
+.tmlbl{font-size:.42rem;letter-spacing:.18em;text-transform:uppercase;color:var(--txtd);}
+.tmval{font-family:var(--serif);font-size:2.2rem;font-weight:900;line-height:1;transition:color .25s;}
+.tmbarcont{width:100%;height:90px;display:flex;align-items:flex-end;justify-content:center;position:relative;}
+.tmbar{width:10px;background:linear-gradient(to top,var(--p2),var(--gold),var(--p1));border-radius:5px;transition:height .08s ease;min-height:4px;}
+.tmword{font-family:var(--serif);font-style:italic;font-size:.62rem;color:var(--txtd);text-align:center;transition:all .4s;min-height:2em;line-height:1.4;}
+.intbox{width:100%;background:var(--surf);border:1px solid #151520;padding:.45rem .4rem;text-align:center;}
+.intlbl{font-size:.4rem;letter-spacing:.18em;text-transform:uppercase;color:var(--txtd);margin-bottom:.25rem;}
+.intval{font-family:var(--serif);font-style:italic;font-size:.72rem;color:var(--gold);}
+.intname{font-size:.45rem;color:var(--txtd);margin-top:.1rem;}
+
+/* CONTROLS */
+.ctrls{display:flex;gap:.35rem;padding:0 .6rem .35rem;justify-content:center;flex-wrap:wrap;
+  position:relative;z-index:1;flex-shrink:0;}
+.cg{display:flex;align-items:center;gap:.35rem;background:var(--surf);border:1px solid #151520;padding:.28rem .5rem;}
+.cl{font-size:.45rem;letter-spacing:.15em;text-transform:uppercase;color:var(--txtd);}
+select{background:#080810;border:1px solid #1a1a22;color:var(--txt);font-family:var(--mono);font-size:.58rem;padding:.12rem .25rem;cursor:pointer;}
+input[type=range]{accent-color:var(--gold);width:65px;cursor:pointer;}
+.cbtn{background:#08080f;border:1px solid #1a1a22;color:var(--txtd);font-family:var(--mono);
+  font-size:.52rem;padding:.18rem .5rem;cursor:pointer;letter-spacing:.08em;transition:all .2s;}
+.cbtn:hover{border-color:var(--gold);color:var(--gold);}
+
+.sbar{display:flex;gap:.6rem;padding:.25rem .75rem;background:#080810;border-top:1px solid #0f0f18;
+  font-size:.45rem;color:var(--txtd);letter-spacing:.08em;justify-content:center;flex-shrink:0;z-index:1;}
+
+/* OVERLAY */
+.ovl{position:fixed;inset:0;background:rgba(5,5,7,.96);z-index:100;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.1rem;
+  text-align:center;padding:2rem;backdrop-filter:blur(4px);}
+.ovl.hidden{display:none;}
+.ovltitle{font-family:var(--serif);font-size:1.9rem;font-weight:700;
+  background:linear-gradient(135deg,var(--p1),var(--gold),var(--p2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.ovlsub{font-size:.6rem;letter-spacing:.12em;color:var(--txtd);max-width:380px;line-height:2;}
+.ovlgps{display:flex;gap:1.4rem;}
+.gpslot{padding:.75rem 1.1rem;border:1px solid #1a1a22;min-width:125px;}
+.gpnum{font-family:var(--serif);font-size:2rem;font-weight:900;margin-bottom:.3rem;}
+.gpslot.p1s .gpnum{color:var(--p1);}
+.gpslot.p2s .gpnum{color:var(--p2);}
+.gpslotlbl{font-size:.48rem;letter-spacing:.18em;color:var(--txtd);}
+.gpstatus{font-size:.55rem;margin-top:.35rem;}
+.gpstatus.ok{color:#00e676;}
+.ovldismiss{background:transparent;border:1px solid var(--gold);color:var(--gold);
+  font-family:var(--serif);font-size:.8rem;font-style:italic;padding:.45rem 1.6rem;
+  cursor:pointer;letter-spacing:.1em;transition:all .3s;}
+.ovldismiss:hover:not(:disabled){background:rgba(255,215,0,.1);}
+.ovldismiss:disabled{opacity:.35;cursor:default;}
+.ovlskip{font-size:.48rem;color:var(--txtd);cursor:pointer;text-decoration:underline;letter-spacing:.08em;}
+.ovlskip:hover{color:var(--txt);}
+</style>
+</head>
+<body>
+
+<div class="ovl" id="overlay">
+  <div class="ovltitle">DUEL SCÉNIQUE</div>
+  <div class="ovlsub">Branchez vos manches à balai puis appuyez sur un bouton de chaque pour les enregistrer</div>
+  <div class="ovlgps">
+    <div class="gpslot p1s">
+      <div class="gpnum">I</div>
+      <div class="gpslotlbl">JOUEUR 1</div>
+      <div class="gpstatus" id="gs0">En attente...</div>
+    </div>
+    <div class="gpslot p2s">
+      <div class="gpnum">II</div>
+      <div class="gpslotlbl">JOUEUR 2</div>
+      <div class="gpstatus" id="gs1">En attente...</div>
+    </div>
+  </div>
+  <button class="ovldismiss" id="ovldismiss" disabled>Lever le Rideau ▶</button>
+  <span class="ovlskip" id="ovlskip">Continuer sans joystick (démo)</span>
+</div>
+
+<header>
+  <div class="title">DUEL SCÉNIQUE</div>
+  <div class="subtitle">Cercle des Quintes — Théâtre Mécanique · Deux manches, une scène</div>
+  <div class="hline"></div>
+</header>
+
+<div class="modes">
+  <button class="mode-btn m-duel active" data-mode="duel">⚔️ <span>Duel<span class="lbl">Conflit · Tension</span></span></button>
+  <button class="mode-btn m-symbiose" data-mode="symbiose">♥ <span>Symbiose<span class="lbl">Amour · Harmonie</span></span></button>
+  <button class="mode-btn m-narrateur" data-mode="narrateur">📖 <span>Narrateur<span class="lbl">Fond · Accent</span></span></button>
+  <button class="mode-btn m-chaos" data-mode="chaos">🌀 <span>Chaos<span class="lbl">Absurde · Imprévu</span></span></button>
+</div>
+<div class="mode-desc" id="mdesc">Deux voix indépendantes. La dissonance crée le drame, l'harmonie la résolution.</div>
+
+<div class="stage">
+
+  <!-- PLAYER 1 -->
+  <div class="player p1">
+    <div class="phdr">
+      <div class="pnum">I</div>
+      <div class="pinfo">
+        <div class="pname">Joueur 1</div>
+        <div class="pdev" id="p1dev">Non connecté</div>
+      </div>
+      <div class="sdot" id="p1sdot"></div>
+    </div>
+    <div class="circle-wrap"><canvas id="c1"></canvas></div>
+    <div class="oct-row">
+      <span>Octave</span>
+      <button class="oct-btn" onclick="changeOct(0,-1)">−</button>
+      <span class="oct-val" id="p1oct">4</span>
+      <button class="oct-btn" onclick="changeOct(0,+1)">+</button>
+    </div>
+    <div class="wfdisp"><canvas id="p1wf"></canvas></div>
+    <div class="params">
+      <div class="param"><div class="pn">Note</div><div class="pv" id="p1note">—</div></div>
+      <div class="param"><div class="pn">Hz</div><div class="pv" id="p1hz">—</div></div>
+      <div class="param"><div class="pn">Vol</div><div class="pv" id="p1vol">—</div></div>
+    </div>
+    <div class="btns" id="p1btns"></div>
+  </div>
+
+  <!-- CENTER -->
+  <div class="center">
+    <div class="ctrlbl">SCÈNE</div>
+    <div class="tmeter">
+      <div class="tmlbl" id="tmlbl">TENSION</div>
+      <div class="tmval" id="tmval">—</div>
+      <div class="tmbarcont"><div class="tmbar" id="tmbar" style="height:4px"></div></div>
+      <div class="tmword" id="tmword">...</div>
+    </div>
+    <div class="intbox">
+      <div class="intlbl">Intervalle</div>
+      <div class="intval" id="intval">—</div>
+      <div class="intname" id="intname">—</div>
+    </div>
+  </div>
+
+  <!-- PLAYER 2 -->
+  <div class="player p2">
+    <div class="phdr">
+      <div class="pnum">II</div>
+      <div class="pinfo">
+        <div class="pname">Joueur 2</div>
+        <div class="pdev" id="p2dev">Non connecté</div>
+      </div>
+      <div class="sdot" id="p2sdot"></div>
+    </div>
+    <div class="circle-wrap"><canvas id="c2"></canvas></div>
+    <div class="oct-row">
+      <span>Octave</span>
+      <button class="oct-btn" onclick="changeOct(1,-1)">−</button>
+      <span class="oct-val" id="p2oct">4</span>
+      <button class="oct-btn" onclick="changeOct(1,+1)">+</button>
+    </div>
+    <div class="wfdisp"><canvas id="p2wf"></canvas></div>
+    <div class="params">
+      <div class="param"><div class="pn">Note</div><div class="pv" id="p2note">—</div></div>
+      <div class="param"><div class="pn">Hz</div><div class="pv" id="p2hz">—</div></div>
+      <div class="param"><div class="pn">Vol</div><div class="pv" id="p2vol">—</div></div>
+    </div>
+    <div class="btns" id="p2btns"></div>
+  </div>
+
+</div>
+
+<div class="ctrls">
+  <div class="cg">
+    <span class="cl">Seuil activ.</span>
+    <input type="range" min="0.05" max="0.5" step="0.01" value="0.12" id="thresh">
+  </div>
+  <div class="cg">
+    <span class="cl">Volume</span>
+    <input type="range" min="0" max="100" value="65" id="vol">
+  </div>
+  <div class="cg">
+    <button class="cbtn" id="audiobtn">▶ Démarrer Audio</button>
+  </div>
+</div>
+
+<div class="sbar">
+  <span id="sg1">🎮 P1: —</span>·
+  <span id="sg2">🎮 P2: —</span>·
+  <span id="sm">Mode: Duel</span>·
+  <span id="sa">Audio: Inactif</span>
+</div>
+
+<script>
+// ============================================================
+// CERCLE DES QUINTES — Mapping
+// C à 0° (12h), rotation horaire, 30° par note
+// Ordre des quintes : C G D A E B F# Db Ab Eb Bb F
+// ============================================================
+const COF = ['C','G','D','A','E','B','F#','D♭','A♭','E♭','B♭','F'];
+const COF_SEMITONES = [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5];
+// MIDI semitone offset from C for each COF position
+// C=0,G=7,D=2,A=9,E=4,B=11,F#=6,Db=1,Ab=8,Eb=3,Bb=10,F=5
+
+const SECTOR_DEG = 30;   // degrees per note
+const HALF_SEC   = 15;   // half-sector
+
+const INTERVAL_NAMES = {
+  0:'Unisson',1:'2nde min.',2:'2nde maj.',3:'3ce min.',4:'3ce maj.',
+  5:'Quarte',6:'Triton',7:'Quinte',8:'6te min.',9:'6te maj.',
+  10:'7ème min.',11:'7ème maj.',12:'Octave'
+};
+
+const WORDS = {
+  duel:   ['Silence...','Frémissement','Désaccord','Friction','Conflit','Crise!','⚡ RUPTURE!'],
+  symbiose:['Séparés','Contact','Dialogue','Harmonie','Unisson','♥ Fusion','✨ Symbiose!'],
+  narrateur:['Silence','Murmure','Ambiance','Atmosphère','Intensité','Climax','🎭 Épique!'],
+  chaos:  ['Entropie','Turbulence','Désordre','Confusion','Maelstrom','🌀 Chaos','💥 Anarchie!']
+};
+const DESCS = {
+  duel:'Deux voix indépendantes. La dissonance crée le drame, l\'harmonie la résolution.',
+  symbiose:'P2 harmonise une tierce au-dessus de P1. Rapprochez-vous pour la résolution.',
+  narrateur:'P1 = fond atmosphérique (doux). P2 = accents ponctuels (actif). Fond et personnage.',
+  chaos:'Modulation croisée : l\'angle de P1 altère le filtre de P2 et vice-versa. Grand n\'importe quoi!'
+};
+
+// Colors per COF position (warm=sharp side, cool=flat side)
+const COF_COLORS = [
+  '#FFD700','#f4a026','#e8602a','#d42d3e','#b01fb5','#6b3fd4',
+  '#2a4dd4','#1a7fd4','#1aa8c8','#1ab88a','#5cc740','#a8d028'
+];
+
+// State
+let mode = 'duel';
+let masterVol = 0.65;
+let threshold = 0.12;
+let octaves = [4, 4];
+let gpIdxs = [null, null];
+let prevBtns = [[], []];
+let pState = [
+  {noteIdx:0, freq:261.63, vol:0, active:false},
+  {noteIdx:7, freq:392.00, vol:0, active:false}
+];
+let audioOn = false;
+let actx = null;
+let loopRunning = false;
+
+// Audio per player
+let ap = [null, null];
+
+function midiToFreq(midi){ return 440 * Math.pow(2,(midi-69)/12); }
+
+function noteIdxToFreq(idx, oct){
+  const semi = COF_SEMITONES[idx];
+  const midi = oct * 12 + semi;
+  return midiToFreq(midi);
+}
+
+// Convert joystick X,Y → angle in degrees [0..360), 0=up, clockwise
+function xyToAngle(x, y){
+  // atan2(x, -y) : x=right, y=down in gamepad coords
+  let rad = Math.atan2(x, -y);
+  let deg = rad * 180 / Math.PI;
+  if(deg < 0) deg += 360;
+  return deg;
+}
+
+// Convert joystick X,Y → magnitude [0..1]
+function xyToMag(x, y){ return Math.min(1, Math.sqrt(x*x + y*y)); }
+
+// Convert angle → COF sector index [0..11]
+function angleToNoteIdx(deg){
+  // C is at 0°, sectors are centered on multiples of 30°
+  // sector i spans [i*30 - 15, i*30 + 15]
+  // = (deg + 15) / 30 floored mod 12
+  return Math.floor(((deg + 15) % 360) / 30);
+}
+
+// ============================================================
+// AUDIO
+// ============================================================
+function initAudio(){
+  if(actx) return;
+  actx = new (window.AudioContext||window.webkitAudioContext)();
+  const master = actx.createGain();
+  master.gain.value = masterVol;
+  master.connect(actx.destination);
+
+  for(let i=0;i<2;i++){
+    const an  = actx.createAnalyser(); an.fftSize = 256;
+    const osc = actx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = i===0 ? 261.63 : 392.00;
+    const filt = actx.createBiquadFilter();
+    filt.type = 'lowpass'; filt.frequency.value = 4000; filt.Q.value = 1.2;
+    const gain = actx.createGain(); gain.gain.value = 0;
+    const delay = actx.createDelay(2); delay.delayTime.value = 0.36;
+    const dg   = actx.createGain(); dg.gain.value = 0;
+
+    osc.connect(filt); filt.connect(gain);
+    gain.connect(an); an.connect(master);
+    gain.connect(delay); delay.connect(dg); dg.connect(master);
+    osc.start();
+
+    ap[i] = {osc, filt, gain, delay, dg, an, wave:'sine', delayOn:false};
+  }
+  audioOn = true;
+  document.getElementById('sa').textContent = 'Audio: Actif ✓';
+  document.getElementById('audiobtn').textContent = '⏹ Audio Actif';
+}
+
+// ============================================================
+// GAMEPAD
+// ============================================================
+window.addEventListener('gamepadconnected', e=>{
+  const slot = gpIdxs.filter(x=>x!==null).length;
+  if(slot < 2){
+    gpIdxs[slot] = e.gamepad.index;
+    prevBtns[slot] = new Array(e.gamepad.buttons.length).fill(false);
+    connectUI(slot, e.gamepad);
+    checkBothConnected();
+  }
+});
+window.addEventListener('gamepaddisconnected', e=>{
+  gpIdxs = gpIdxs.map(x=> x===e.gamepad.index ? null : x);
+});
+
+function connectUI(slot, gp){
+  const p = slot+1;
+  document.getElementById(`p${p}dev`).textContent = gp.id.substring(0,35);
+  document.getElementById(`p${p}sdot`).classList.add('on');
+  document.getElementById(`sg${p}`).textContent = `🎮 P${p}: ${gp.id.substring(0,20)}`;
+  document.getElementById(`gs${slot}`).textContent = '✓ Connecté';
+  document.getElementById(`gs${slot}`).classList.add('ok');
+  const bc = document.getElementById(`p${p}btns`); bc.innerHTML='';
+  for(let b=0;b<Math.min(gp.buttons.length,12);b++){
+    const d=document.createElement('div');d.className='bi';d.id=`p${p}b${b}`;d.textContent=b+1;bc.appendChild(d);
+  }
+}
+
+function checkBothConnected(){
+  if(gpIdxs[0]!==null && gpIdxs[1]!==null)
+    document.getElementById('ovldismiss').disabled = false;
+  else if(gpIdxs[0]!==null)
+    document.getElementById('ovldismiss').disabled = false;
+}
+
+// Check already-connected at load
+(()=>{
+  let i=0;
+  for(const gp of navigator.getGamepads()){
+    if(gp && i<2){ gpIdxs[i]=gp.index; prevBtns[i]=new Array(gp.buttons.length).fill(false); connectUI(i,gp); i++; }
+  }
+  checkBothConnected();
+})();
+
+// ============================================================
+// MAIN LOOP
+// ============================================================
+function loop(){
+  const gps = navigator.getGamepads();
+  for(let si=0;si<2;si++){
+    const gpIdx = gpIdxs[si];
+    if(gpIdx===null) continue;
+    const gp = gps[gpIdx]; if(!gp) continue;
+    const p = si+1;
+
+    const ax = gp.axes[0]??0;
+    const ay = gp.axes[1]??0;
+    // Throttle: axis 3, pulled back = loud (-1=full,+1=silent for E3D)
+    const rawT = gp.axes[3]??1;
+    const vol = Math.max(0, Math.min(1, (1-rawT)/2));
+    const twist = gp.axes[2]??0; // filter
+
+    const mag = xyToMag(ax, ay);
+    const active = mag >= threshold;
+
+    let noteIdx = pState[si].noteIdx; // sticky — keeps last note when below threshold
+    let angle = 0;
+    if(active){
+      angle = xyToAngle(ax, ay);
+      noteIdx = angleToNoteIdx(angle);
+      pState[si].noteIdx = noteIdx;
+    }
+
+    pState[si].vol = active ? vol : 0;
+    pState[si].active = active;
+    pState[si].angle = active ? angle : (pState[si].angle||0);
+
+    let freq = noteIdxToFreq(noteIdx, octaves[si]);
+
+    // === Mode modifications ===
+    if(mode==='symbiose' && si===1){
+      // P2 follows P1 at a major third (4 semitones up)
+      const p1semi = COF_SEMITONES[pState[0].noteIdx];
+      const thirdSemi = (p1semi + 4) % 12;
+      freq = midiToFreq(octaves[1]*12 + thirdSemi);
+    } else if(mode==='narrateur'){
+      if(si===0){
+        // Pad: quiet, narrow
+        pState[0].vol *= 0.5;
+      } else {
+        // Accent: only sound with significant movement
+        pState[1].vol = mag > 0.35 ? pState[1].vol : pState[1].vol * 0.04;
+      }
+    } else if(mode==='chaos'){
+      // Cross-modulate filter
+      if(audioOn && ap[si]){
+        const otherMag = pState[1-si].active ? xyToMag(gps[gpIdxs[1-si]]?.axes[0]??0, gps[gpIdxs[1-si]]?.axes[1]??0) : 0;
+        ap[si].filt.frequency.setTargetAtTime(200 + otherMag*7000, actx.currentTime, 0.1);
+      }
+    }
+
+    pState[si].freq = freq;
+
+    // Audio update
+    if(audioOn && ap[si]){
+      const t = actx.currentTime;
+      const targetVol = pState[si].vol * masterVol;
+      // Filter from twist (independent of chaos mode)
+      if(mode!=='chaos'){
+        ap[si].filt.frequency.setTargetAtTime(300 + ((twist+1)/2)*7000, t, 0.08);
+      }
+      ap[si].osc.frequency.setTargetAtTime(Math.max(20,Math.min(5000,freq)), t, 0.04);
+      ap[si].gain.gain.setTargetAtTime(targetVol, t, 0.04);
+    }
+
+    // Buttons
+    for(let b=0;b<Math.min(gp.buttons.length,12);b++){
+      const pressed = gp.buttons[b].pressed;
+      if(pressed !== prevBtns[si][b]){
+        document.getElementById(`p${p}b${b}`)?.classList.toggle('on', pressed);
+        if(pressed) onBtn(si, b);
+      }
+      prevBtns[si][b] = pressed;
+    }
+
+    // UI
+    document.getElementById(`p${p}note`).textContent = COF[noteIdx];
+    document.getElementById(`p${p}hz`).textContent   = Math.round(freq);
+    document.getElementById(`p${p}vol`).textContent  = active ? Math.round(vol*100)+'%' : '—';
+  }
+
+  updateCenter();
+  drawCircle(0); drawCircle(1);
+  drawWF(0); drawWF(1);
+  requestAnimationFrame(loop);
+}
+
+function onBtn(si, b){
+  const waves = ['sine','triangle','sawtooth','square'];
+  if(b < 4 && audioOn && ap[si]){
+    ap[si].osc.type = waves[b];
+    ap[si].wave = waves[b];
+  }
+  if(b===4 && audioOn && ap[si]){
+    const cur = ap[si].gain.gain.value;
+    ap[si].gain.gain.setTargetAtTime(cur > 0.01 ? 0 : 0.4, actx.currentTime, 0.08);
+  }
+  if(b===5 && audioOn && ap[si]){
+    ap[si].delayOn = !ap[si].delayOn;
+    ap[si].dg.gain.setTargetAtTime(ap[si].delayOn ? 0.35 : 0, actx.currentTime, 0.1);
+  }
+}
+
+function changeOct(si, delta){
+  octaves[si] = Math.max(2, Math.min(7, octaves[si]+delta));
+  document.getElementById(`p${si+1}oct`).textContent = octaves[si];
+}
+
+// ============================================================
+// DRAW CIRCLE OF FIFTHS
+// ============================================================
+function drawCircle(si){
+  const canvas = document.getElementById(`c${si+1}`);
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  const cx = W/2, cy = H/2;
+  const R = Math.min(W,H)/2 - 4;
+  const Ri = R * 0.38;
+  const color = si===0 ? '#C41E3A' : '#1565C0';
+
+  const activeSector = pState[si].noteIdx;
+  const isActive = pState[si].active;
+  const angle = pState[si].angle || 0;
+  const vol = pState[si].vol;
+
+  // Draw 12 sectors
+  for(let i=0;i<12;i++){
+    const startDeg = i*30 - 15 - 90; // -90 to put 0° at top
+    const endDeg   = startDeg + 30;
+    const startRad = startDeg * Math.PI/180;
+    const endRad   = endDeg   * Math.PI/180;
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, R, startRad, endRad);
+    ctx.closePath();
+
+    if(i === activeSector){
+      const alpha = isActive ? (0.25 + vol*0.5) : 0.15;
+      ctx.fillStyle = COF_COLORS[i] + Math.round(alpha*255).toString(16).padStart(2,'0');
+    } else {
+      ctx.fillStyle = 'rgba(10,10,18,0.7)';
+    }
+    ctx.fill();
+    ctx.strokeStyle = '#1a1a26';
+    ctx.lineWidth = 0.7;
+    ctx.stroke();
+
+    // Note label
+    const midRad = (startDeg + 15) * Math.PI/180;
+    const labelR = R * 0.73;
+    const lx = cx + Math.cos(midRad)*labelR;
+    const ly = cy + Math.sin(midRad)*labelR;
+    ctx.font = i===activeSector ? `bold ${R*0.12}px 'Playfair Display',serif` : `${R*0.1}px 'Playfair Display',serif`;
+    ctx.fillStyle = i===activeSector ? COF_COLORS[i] : '#3a3a4a';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(COF[i], lx, ly);
+  }
+
+  // Inner circle background
+  ctx.beginPath();
+  ctx.arc(cx, cy, Ri, 0, Math.PI*2);
+  ctx.fillStyle = '#06060c';
+  ctx.fill();
+  ctx.strokeStyle = '#1a1a26';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Crosshairs
+  ctx.strokeStyle = '#111120';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(cx, cy-Ri); ctx.lineTo(cx, cy+Ri); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx-Ri, cy); ctx.lineTo(cx+Ri, cy); ctx.stroke();
+
+  // Joystick line
+  if(isActive){
+    const jRad = (angle - 90) * Math.PI/180;
+    const jLen = Ri * 0.8;
+    const jx = cx + Math.cos(jRad)*jLen;
+    const jy = cy + Math.sin(jRad)*jLen;
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(jx, jy);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    // Tip
+    ctx.beginPath();
+    ctx.arc(jx, jy, 4, 0, Math.PI*2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  // Center dot
+  ctx.beginPath();
+  ctx.arc(cx, cy, 4, 0, Math.PI*2);
+  ctx.fillStyle = isActive ? color : '#2a2a3a';
+  ctx.fill();
+
+  // Active note name in center
+  ctx.font = `bold ${R*0.14}px 'Playfair Display',serif`;
+  ctx.fillStyle = isActive ? COF_COLORS[activeSector] : '#2a2a3a';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(COF[activeSector], cx, cy - R*0.04);
+  ctx.font = `${R*0.07}px ${'"Share Tech Mono",monospace'}`;
+  ctx.fillStyle = '#3a3a50';
+  ctx.fillText(`Oct.${octaves[si]}`, cx, cy + R*0.11);
+}
+
+// ============================================================
+// WAVEFORM
+// ============================================================
+function drawWF(si){
+  const c = document.getElementById(`p${si+1}wf`);
+  const ctx = c.getContext('2d');
+  const w = c.clientWidth, h = c.clientHeight;
+  c.width=w; c.height=h;
+  ctx.clearRect(0,0,w,h);
+  if(!audioOn || !ap[si]) return;
+  const buf = ap[si].an.frequencyBinCount;
+  const d = new Uint8Array(buf);
+  ap[si].an.getByteTimeDomainData(d);
+  ctx.strokeStyle = si===0 ? '#C41E3A' : '#1565C0';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  const sw = w/buf;
+  for(let i=0;i<buf;i++){
+    const v = d[i]/128-1;
+    const y = v*h/3+h/2;
+    i===0 ? ctx.moveTo(0,y) : ctx.lineTo(i*sw,y);
+  }
+  ctx.stroke();
+}
+
+// ============================================================
+// CENTER TENSION METER
+// ============================================================
+function calcTension(){
+  const s0 = COF_SEMITONES[pState[0].noteIdx];
+  const s1 = COF_SEMITONES[pState[1].noteIdx];
+  let interval = Math.abs(s0-s1) % 12;
+  if(interval > 6) interval = 12-interval;
+
+  // Consonance map: unison/octave=0, fifth=1, fourth=2, thirds=3, sixths=3, seconds=4, triton=5
+  const tension = [0,4,3,2,2,3,5,1,3,2,3,4]; // per semitone interval
+  const t = tension[interval] / 5; // normalize 0..1
+  return {t, interval, semitones:Math.abs(s0-s1)%12};
+}
+
+function updateCenter(){
+  const {t, interval, semitones} = calcTension();
+  const pct = Math.round(t*100);
+
+  const bar  = document.getElementById('tmbar');
+  const val  = document.getElementById('tmval');
+  const word = document.getElementById('tmword');
+
+  bar.style.height = Math.max(4, t*100)+'px';
+
+  const r = Math.round(t*196+(1-t)*21);
+  const g = Math.round((1-t)*101+t*30);
+  const b = Math.round((1-t)*192+t*58);
+  val.style.color = `rgb(${r},${g},${b})`;
+
+  const display = mode==='symbiose' ? (100-pct) : pct;
+  val.textContent = display;
+
+  const ws = WORDS[mode]||WORDS.duel;
+  const wi = Math.min(Math.floor(t*ws.length), ws.length-1);
+  word.textContent = mode==='symbiose' ? ws[ws.length-1-wi] : ws[wi];
+
+  const lbls = {duel:'TENSION',symbiose:'COHÉSION',narrateur:'INTENSITÉ',chaos:'ENTROPIE'};
+  document.getElementById('tmlbl').textContent = lbls[mode]||'TENSION';
+
+  // Interval display
+  const iname = INTERVAL_NAMES[semitones] || INTERVAL_NAMES[12-semitones] || '—';
+  const dist = Math.abs(pState[0].noteIdx - pState[1].noteIdx);
+  const cofDist = Math.min(dist, 12-dist);
+  document.getElementById('intval').textContent = iname;
+  document.getElementById('intname').textContent = `${cofDist} pos. dans le cercle`;
+}
+
+// ============================================================
+// UI EVENTS
+// ============================================================
+document.querySelectorAll('.mode-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    mode = btn.dataset.mode;
+    document.getElementById('mdesc').textContent = DESCS[mode];
+    document.getElementById('sm').textContent = `Mode: ${mode}`;
+  });
+});
+
+document.getElementById('vol').addEventListener('input',e=>{
+  masterVol = e.target.value/100;
+});
+document.getElementById('thresh').addEventListener('input',e=>{
+  threshold = parseFloat(e.target.value);
+});
+
+function startAll(){
+  initAudio();
+  document.getElementById('overlay').classList.add('hidden');
+  if(!loopRunning){ loopRunning=true; requestAnimationFrame(loop); }
+}
+
+document.getElementById('audiobtn').addEventListener('click',startAll);
+document.getElementById('ovldismiss').addEventListener('click',startAll);
+document.getElementById('ovlskip').addEventListener('click',startAll);
+</script>
+</body>
+</html>
