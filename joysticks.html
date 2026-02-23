@@ -84,6 +84,14 @@ header{
 .tone-select:disabled{opacity:.3;cursor:not-allowed;}
 .tone-num{font-size:.42rem;color:var(--txtd);margin-top:.1rem;}
 
+/* Per-player MIDI out */
+.p-midi-row{display:flex;align-items:center;gap:.35rem;margin-top:.32rem;padding-top:.32rem;border-top:1px solid var(--brd);}
+.p-midi-dot{width:7px;height:7px;border-radius:50%;background:#1a1a2a;flex-shrink:0;transition:all .3s;}
+.p-midi-dot.on{background:#00E676;box-shadow:0 0 7px #00E676;}
+.p-midi-label{font-size:.4rem;letter-spacing:.14em;text-transform:uppercase;color:var(--txtd);white-space:nowrap;}
+.p-midi-select{flex:1;background:#04040e;border:1px solid var(--brd);color:var(--txt);font-family:var(--mono);
+  font-size:.5rem;padding:.18rem .25rem;cursor:pointer;min-width:0;}
+
 /* CIRCLE AREA — takes remaining space */
 .circle-area{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;
   padding:.5rem;background:var(--bg);position:relative;}
@@ -264,6 +272,11 @@ input[type=range]{accent-color:var(--gold);width:65px;cursor:pointer;}
       <div class="tone-label">Timbre CTK-3200</div>
       <select class="tone-select" id="tone0" disabled><option>Chargement des 414 timbres...</option></select>
       <div class="tone-num" id="tonenum0">—</div>
+      <div class="p-midi-row">
+        <div class="p-midi-dot" id="p1mididot"></div>
+        <span class="p-midi-label">Sortie MIDI</span>
+        <select class="p-midi-select" id="midiout0"><option value="">— Aucun —</option></select>
+      </div>
     </div>
 
     <div class="circle-area">
@@ -290,10 +303,6 @@ input[type=range]{accent-color:var(--gold);width:65px;cursor:pointer;}
 
   <!-- ── CENTRE ── -->
   <div class="center-col">
-    <div class="midi-section">
-      <div class="c-label" style="margin-bottom:.2rem;">Sortie MIDI</div>
-      <select class="midi-out-sel" id="midioutsel2"><option value="">— Aucun —</option></select>
-    </div>
 
     <div class="tension-section">
       <div class="t-label" id="tmlbl">TENSION</div>
@@ -334,6 +343,11 @@ input[type=range]{accent-color:var(--gold);width:65px;cursor:pointer;}
       <div class="tone-label">Timbre CTK-3200</div>
       <select class="tone-select" id="tone1" disabled><option>Chargement des 414 timbres...</option></select>
       <div class="tone-num" id="tonenum1">—</div>
+      <div class="p-midi-row">
+        <div class="p-midi-dot" id="p2mididot"></div>
+        <span class="p-midi-label">Sortie MIDI</span>
+        <select class="p-midi-select" id="midiout1"><option value="">— Aucun —</option></select>
+      </div>
     </div>
 
     <div class="circle-area">
@@ -432,37 +446,38 @@ let pState=[
   {noteIdx:0,midiNote:-1,active:false,sustain:false,vol:0,angle:270},
   {noteIdx:7,midiNote:-1,active:false,sustain:false,vol:0,angle:270}
 ];
-let midiAccess=null, midiOut=null;
+let midiAccess=null, midiOuts=[null,null];
 
 // ──────────────────────────────────────────────────
 // MIDI UTILS
 // ──────────────────────────────────────────────────
 function midiNN(cofIdx,oct){ return Math.max(0,Math.min(127,oct*12+COF_SEMI[cofIdx]+globalTrans)); }
-function sendNoteOn(ch,n,v=100){ if(midiOut&&n>=0&&n<=127) midiOut.send([0x90|ch,n,v]); }
-function sendNoteOff(ch,n)     { if(midiOut&&n>=0&&n<=127) midiOut.send([0x80|ch,n,0]); }
-function sendCC(ch,cc,v)       { if(midiOut) midiOut.send([0xB0|ch,cc,Math.max(0,Math.min(127,Math.round(v)))]); }
+function sendNoteOn(si,n,v=100){ const o=midiOuts[si]; if(o&&n>=0&&n<=127) o.send([0x90|si,n,v]); }
+function sendNoteOff(si,n)     { const o=midiOuts[si]; if(o&&n>=0&&n<=127) o.send([0x80|si,n,0]); }
+function sendCC(si,cc,v)       { const o=midiOuts[si]; if(o) o.send([0xB0|si,cc,Math.max(0,Math.min(127,Math.round(v)))]); }
 
 function sendProgramChange(si){
-  if(!midiOut) return;
+  const o=midiOuts[si];
+  if(!o) return;
   const sel=document.getElementById(`tone${si}`);
   if(!sel||!sel.value) return;
   try{
     const t=JSON.parse(sel.value);
     const ch=si;
-    midiOut.send([0xB0|ch,0x00,t.msb??0]);
-    midiOut.send([0xB0|ch,0x20,0x00]);
-    midiOut.send([0xC0|ch,t.prog??0]);
+    o.send([0xB0|ch,0x00,t.msb??0]);
+    o.send([0xB0|ch,0x20,0x00]);
+    o.send([0xC0|ch,t.prog??0]);
     document.getElementById(`tonenum${si}`).textContent=`#${t.num} · Bank:${t.msb??0} · PC:${t.prog}`;
   }catch(e){}
 }
 
 function midiPanic(){
-  if(!midiOut) return;
-  for(let ch=0;ch<2;ch++){
-    midiOut.send([0xB0|ch,120,0]);
-    midiOut.send([0xB0|ch,123,0]);
-    pState[ch].midiNote=-1;
-  }
+  midiOuts.forEach((o,si)=>{
+    if(!o) return;
+    o.send([0xB0|si,120,0]);
+    o.send([0xB0|si,123,0]);
+    pState[si].midiNote=-1;
+  });
 }
 
 // ──────────────────────────────────────────────────
@@ -480,37 +495,47 @@ async function initMIDI(){
 
 function populateMidiOutputs(){
   const outputs=Array.from(midiAccess?.outputs?.values()||[]);
-  ['midioutsel','midioutsel2'].forEach(id=>{
-    const sel=document.getElementById(id);
+  // Also populate overlay selector
+  const ovlSel=document.getElementById('midioutsel');
+  const ovlCur=ovlSel?.value;
+  if(ovlSel){
+    ovlSel.innerHTML='<option value="">— Tous identiques —</option>';
+    outputs.forEach(out=>{ const o=document.createElement('option'); o.value=out.id; o.textContent=out.name; if(out.id===ovlCur) o.selected=true; ovlSel.appendChild(o); });
+  }
+  // Per-player selectors
+  [0,1].forEach(si=>{
+    const sel=document.getElementById(`midiout${si}`);
+    if(!sel) return;
     const cur=sel.value;
     sel.innerHTML='<option value="">— Aucun —</option>';
     outputs.forEach(out=>{
-      const o=document.createElement('option');
-      o.value=out.id; o.textContent=out.name;
+      const o=document.createElement('option'); o.value=out.id; o.textContent=out.name;
       if(out.id===cur) o.selected=true;
       sel.appendChild(o);
     });
-    if(!sel.value){
+    // Auto-select CTK if nothing chosen yet
+    if(!midiOuts[si]){
       const ctk=outputs.find(o=>o.name.toLowerCase().includes('ctk')||o.name.toLowerCase().includes('casio'));
-      if(ctk){ sel.value=ctk.id; }
+      if(ctk){ sel.value=ctk.id; selectPlayerMidi(si,ctk.id); }
     }
   });
-  if(!midiOut){
-    const ctk=outputs.find(o=>o.name.toLowerCase().includes('ctk')||o.name.toLowerCase().includes('casio'));
-    if(ctk) selectMidiOut(ctk.id);
-  }
+  updateMidiStatusBar();
 }
 
-function selectMidiOut(id){
-  midiOut=midiAccess?.outputs?.get(id)||null;
-  ['midioutsel','midioutsel2'].forEach(sid=>{
-    const s=document.getElementById(sid);
-    if(s&&id) s.value=id;
-  });
-  const label=midiOut?midiOut.name.substring(0,22):'—';
-  document.getElementById('smidi').textContent=`MIDI: ${label}`;
-  setMidiStatus(midiOut?`${midiOut.name.substring(0,18)}`:'Non connecté',!!midiOut);
-  if(midiOut){ sendProgramChange(0); sendProgramChange(1); }
+function selectPlayerMidi(si,id){
+  midiOuts[si]=midiAccess?.outputs?.get(id)||null;
+  const dot=document.getElementById(`p${si+1}mididot`);
+  if(dot) dot.classList.toggle('on',!!midiOuts[si]);
+  updateMidiStatusBar();
+  if(midiOuts[si]) sendProgramChange(si);
+}
+
+function updateMidiStatusBar(){
+  const names=midiOuts.map((o,i)=>o?`P${i+1}:${o.name.substring(0,14)}`:`P${i+1}:—`);
+  document.getElementById('smidi').textContent=`MIDI — ${names.join(' / ')}`;
+  // Header indicator: on if at least one connected
+  const anyOn=midiOuts.some(o=>o!==null);
+  setMidiStatus(anyOn?'Connecté':'Non connecté',anyOn);
 }
 
 function setMidiStatus(msg,ok){
@@ -651,18 +676,18 @@ function loop(){
     if(active){
       const v=mode==='narrateur'&&si===0?Math.round(vol127*.55):vol127;
       if(!pState[si].active){
-        if(prevNote>=0) sendNoteOff(ch,prevNote);
-        sendNoteOn(ch,newMidi,v>0?v:80);
+        if(prevNote>=0) sendNoteOff(si,prevNote);
+        sendNoteOn(si,newMidi,v>0?v:80);
         pState[si].midiNote=newMidi;
       } else if(newMidi!==prevNote||targetIdx!==pState[si].noteIdx){
-        if(prevNote>=0) sendNoteOff(ch,prevNote);
-        sendNoteOn(ch,newMidi,v>0?v:80);
+        if(prevNote>=0) sendNoteOff(si,prevNote);
+        sendNoteOn(si,newMidi,v>0?v:80);
         pState[si].midiNote=newMidi;
       }
-      sendCC(ch,7,v);
+      sendCC(si,7,v);
     } else {
       if(pState[si].active&&!pState[si].sustain){
-        if(prevNote>=0) sendNoteOff(ch,prevNote);
+        if(prevNote>=0) sendNoteOff(si,prevNote);
         pState[si].midiNote=-1;
       }
     }
@@ -690,11 +715,11 @@ function onBtn(si,b,ch){
   if(b===1) changeOct(si,+1);
   if(b===2){
     pState[si].sustain=!pState[si].sustain;
-    sendCC(ch,64,pState[si].sustain?127:0);
+    sendCC(si,64,pState[si].sustain?127:0);
     document.getElementById(`p${si+1}b${b}`)?.classList.toggle('on',pState[si].sustain);
   }
-  if(b===3){ if(pState[si].midiNote>=0){ sendNoteOff(ch,pState[si].midiNote); pState[si].midiNote=-1; } }
-  if(b===4){ sendCC(ch,120,0); sendCC(ch,123,0); pState[si].midiNote=-1; }
+  if(b===3){ if(pState[si].midiNote>=0){ sendNoteOff(si,pState[si].midiNote); pState[si].midiNote=-1; } }
+  if(b===4){ sendCC(si,120,0); sendCC(si,123,0); pState[si].midiNote=-1; }
 }
 
 function changeOct(si,d){ octaves[si]=Math.max(1,Math.min(8,octaves[si]+d)); document.getElementById(`p${si+1}oct`).textContent=octaves[si]; }
@@ -924,10 +949,14 @@ document.querySelectorAll('.mode-btn').forEach(btn=>{
   });
 });
 
-['midioutsel','midioutsel2'].forEach(id=>{
-  document.getElementById(id).addEventListener('change',e=>{
-    selectMidiOut(e.target.value);
-  });
+// Per-player MIDI selectors
+[0,1].forEach(si=>{
+  document.getElementById(`midiout${si}`)?.addEventListener('change',e=>selectPlayerMidi(si,e.target.value));
+});
+// Overlay "apply to both" selector
+document.getElementById('midioutsel')?.addEventListener('change',e=>{
+  if(!e.target.value) return;
+  [0,1].forEach(si=>{ document.getElementById(`midiout${si}`).value=e.target.value; selectPlayerMidi(si,e.target.value); });
 });
 
 document.getElementById('thresh').addEventListener('input',e=>{
