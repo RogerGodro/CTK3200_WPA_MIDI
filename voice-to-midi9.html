@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="description" content="CTK-3200 V8 REVISED - Full Launchpad MK2 Integration">
+    <meta name="description" content="PSR-E473 V8 - Full Launchpad MK2 Integration">
     <meta name="theme-color" content="#0a0a0f">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="CTK V8">
+    <meta name="apple-mobile-web-app-title" content="PSR-E473 V8">
     <meta name="format-detection" content="telephone=no">
-    <title>CTK-3200 V8 REVISED - LAUNCHPAD MK2</title>
+    <title>PSR-E473 V8 - LAUNCHPAD MK2</title>
     <style>
         * {
             margin: 0;
@@ -1186,7 +1186,7 @@
     <div class="app-container">
         <!-- Header -->
         <header class="header">
-            <h1 class="logo">CTK V8 REVISED</h1>
+            <h1 class="logo">PSR-E473 V8</h1>
             
             <div class="status-group">
                 <div class="status-item">
@@ -1217,8 +1217,8 @@
             
             <div class="midi-status">
                 <div class="midi-device">
-                    <span class="midi-led" id="ctkLed"></span>
-                    <span>CTK-3200</span>
+                    <span class="midi-led" id="psrLed"></span>
+                    <span>PSR-E473</span>
                 </div>
                 <div class="midi-device">
                     <span class="midi-led" id="lpLed"></span>
@@ -3684,17 +3684,18 @@
             const inputs = Array.from(midiAccess.inputs.values());
             const outputs = Array.from(midiAccess.outputs.values());
             
-            // CTK-3200
-            const ctkOut = outputs.find(device => 
-                device.name.includes('CTK') || 
-                device.name.includes('CASIO') ||
-                device.name.includes('3200')
+            // PSR-E473
+            const psrOut = outputs.find(device => 
+                device.name.includes('PSR') || 
+                device.name.includes('E473') ||
+                device.name.includes('Yamaha') ||
+                device.name.includes('YAMAHA')
             );
             
-            if (ctkOut) {
-                state.midiOutCTK = ctkOut;
-                document.getElementById('ctkLed').classList.add('active');
-                showMessage(`Connected: ${ctkOut.name}`);
+            if (psrOut) {
+                state.midiOutCTK = psrOut;
+                document.getElementById('psrLed').classList.add('active');
+                showMessage(`Connected: ${psrOut.name}`);
             }
             
             // Launchpad MK2
@@ -3724,7 +3725,7 @@
                 showMessage(`Connected: ${lpOut.name}`);
             }
             
-            if (!ctkOut && !lpOut) {
+            if (!psrOut && !lpOut) {
                 showMessage('No MIDI devices found');
             }
         }
