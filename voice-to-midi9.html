@@ -1176,11 +1176,133 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
         }
+
+        /* ---- Device Selector Modal ---- */
+        .midi-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.75);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+        .midi-modal-overlay.visible {
+            display: flex;
+        }
+        .midi-modal {
+            background: var(--bg-medium);
+            border: 2px solid var(--primary);
+            border-radius: 16px;
+            padding: 28px 32px;
+            min-width: 380px;
+            max-width: 520px;
+            box-shadow: 0 0 40px rgba(0,255,136,0.2);
+        }
+        .midi-modal h2 {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .midi-modal p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 18px;
+        }
+        .midi-modal-section {
+            margin-bottom: 18px;
+        }
+        .midi-modal-section label {
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+        }
+        .midi-modal-select {
+            width: 100%;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            border: 1px solid var(--bg-lighter);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+            cursor: pointer;
+        }
+        .midi-modal-select:focus {
+            border-color: var(--primary);
+        }
+        .midi-modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        .midi-modal-btn {
+            padding: 9px 22px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.15s;
+        }
+        .midi-modal-btn.primary {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: var(--bg-dark);
+        }
+        .midi-modal-btn.primary:hover { opacity: 0.85; }
+        .midi-modal-btn.secondary {
+            background: var(--bg-lighter);
+            color: var(--text-secondary);
+            border: 1px solid var(--bg-lighter);
+        }
+        .midi-modal-btn.secondary:hover { border-color: var(--text-secondary); }
     </style>
 </head>
 <body>
     <div class="loading" id="loading">
         <div class="spinner"></div>
+    </div>
+
+    <!-- Device Selector Modal -->
+    <div class="midi-modal-overlay" id="midiModalOverlay">
+        <div class="midi-modal">
+            <h2>🎹 Sélectionner les appareils MIDI</h2>
+            <p>Le PSR-E473 n'a pas été détecté automatiquement. Choisis manuellement les ports MIDI ci-dessous.</p>
+
+            <div class="midi-modal-section">
+                <label>Sortie MIDI — PSR-E473 (clavier)</label>
+                <select id="psrOutSelect" class="midi-modal-select">
+                    <option value="">— Aucun —</option>
+                </select>
+            </div>
+
+            <div class="midi-modal-section">
+                <label>Sortie MIDI — Launchpad MK2</label>
+                <select id="lpOutSelect" class="midi-modal-select">
+                    <option value="">— Aucun —</option>
+                </select>
+            </div>
+
+            <div class="midi-modal-section">
+                <label>Entrée MIDI — Launchpad MK2</label>
+                <select id="lpInSelect" class="midi-modal-select">
+                    <option value="">— Aucun —</option>
+                </select>
+            </div>
+
+            <div class="midi-modal-actions">
+                <button class="midi-modal-btn secondary" onclick="closeMidiModal()">Annuler</button>
+                <button class="midi-modal-btn primary" onclick="applyMidiSelection()">Connecter</button>
+            </div>
+        </div>
     </div>
 
     <div class="app-container">
@@ -1217,8 +1339,8 @@
             
             <div class="midi-status">
                 <div class="midi-device">
-                    <span class="midi-led" id="psrLed"></span>
-                    <span>PSR-E473</span>
+                    <span class="midi-led" id="ctkLed"></span>
+                    <span id="psrDeviceLabel">PSR-E473</span>
                 </div>
                 <div class="midi-device">
                     <span class="midi-led" id="lpLed"></span>
@@ -3670,68 +3792,150 @@
         // MIDI HANDLING
         // ==========================================
         
+        // Store midiAccess globally for re-use in modal apply
+        let _midiAccess = null;
+
         function connectMIDI() {
             if (navigator.requestMIDIAccess) {
                 navigator.requestMIDIAccess()
                     .then(onMIDISuccess, onMIDIFailure);
             } else {
-                showMessage('WebMIDI not supported in this browser');
+                showMessage('WebMIDI non supporté dans ce navigateur');
             }
         }
 
         function onMIDISuccess(midiAccess) {
-            // Find devices
-            const inputs = Array.from(midiAccess.inputs.values());
+            _midiAccess = midiAccess;
+
+            const inputs  = Array.from(midiAccess.inputs.values());
             const outputs = Array.from(midiAccess.outputs.values());
-            
-            // PSR-E473
-            const psrOut = outputs.find(device => 
-                device.name.includes('PSR') || 
-                device.name.includes('E473') ||
-                device.name.includes('Yamaha') ||
-                device.name.includes('YAMAHA')
+
+            // --- Auto-detect PSR-E473 / Yamaha ---
+            const psrOut = outputs.find(d =>
+                /PSR|E473|Yamaha|YAMAHA|yamaha/i.test(d.name)
             );
-            
+
+            // --- Auto-detect Launchpad MK2 ---
+            const lpOut = outputs.find(d =>
+                /Launchpad|MK2|MIDIOUT2/i.test(d.name)
+            );
+            const lpIn = inputs.find(d =>
+                /Launchpad|MK2|MIDIIN2/i.test(d.name)
+            );
+
+            let anyConnected = false;
+
             if (psrOut) {
                 state.midiOutCTK = psrOut;
-                document.getElementById('psrLed').classList.add('active');
-                showMessage(`Connected: ${psrOut.name}`);
+                document.getElementById('ctkLed').classList.add('active');
+                document.getElementById('psrDeviceLabel').textContent = psrOut.name.substring(0, 16);
+                showMessage(`Connecté : ${psrOut.name}`);
+                anyConnected = true;
             }
-            
-            // Launchpad MK2
-            const lpOut = outputs.find(device => 
-                device.name.includes('Launchpad') || 
-                device.name.includes('MK2') ||
-                device.name.includes('MIDIOUT2')
-            );
-            
-            const lpIn = inputs.find(device => 
-                device.name.includes('Launchpad') || 
-                device.name.includes('MK2') ||
-                device.name.includes('MIDIIN2')
-            );
-            
+
             if (lpOut && lpIn) {
                 state.midiOutLP = lpOut;
-                state.midiInLP = lpIn;
+                state.midiInLP  = lpIn;
                 document.getElementById('lpLed').classList.add('active');
-                
-                // Setup input handler
                 lpIn.onmidimessage = handleLaunchpadMIDI;
-                
-                // Initialize Launchpad
                 initializeLaunchpad();
-                
-                showMessage(`Connected: ${lpOut.name}`);
+                if (!psrOut) showMessage(`Connecté : ${lpOut.name}`);
+                anyConnected = true;
             }
-            
-            if (!psrOut && !lpOut) {
-                showMessage('No MIDI devices found');
+
+            // If PSR not found auto, open manual selector
+            if (!psrOut) {
+                openMidiModal(inputs, outputs);
+            }
+
+            if (!anyConnected && !psrOut && !lpOut) {
+                showMessage('Aucun appareil MIDI détecté');
             }
         }
 
         function onMIDIFailure() {
-            showMessage('Failed to access MIDI devices');
+            showMessage('Impossible d\'accéder aux appareils MIDI');
+        }
+
+        function openMidiModal(inputs, outputs) {
+            const psrSel = document.getElementById('psrOutSelect');
+            const lpOutSel = document.getElementById('lpOutSelect');
+            const lpInSel  = document.getElementById('lpInSelect');
+
+            // Clear + fill PSR output list
+            psrSel.innerHTML = '<option value="">— Aucun —</option>';
+            outputs.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.id;
+                opt.textContent = d.name;
+                // Pre-select if already connected
+                if (state.midiOutCTK && state.midiOutCTK.id === d.id) opt.selected = true;
+                psrSel.appendChild(opt);
+            });
+
+            // Clear + fill Launchpad output list
+            lpOutSel.innerHTML = '<option value="">— Aucun —</option>';
+            outputs.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.id;
+                opt.textContent = d.name;
+                if (state.midiOutLP && state.midiOutLP.id === d.id) opt.selected = true;
+                // Pre-select if looks like Launchpad
+                else if (/Launchpad|MK2/i.test(d.name)) opt.selected = true;
+                lpOutSel.appendChild(opt);
+            });
+
+            // Clear + fill Launchpad input list
+            lpInSel.innerHTML = '<option value="">— Aucun —</option>';
+            inputs.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.id;
+                opt.textContent = d.name;
+                if (state.midiInLP && state.midiInLP.id === d.id) opt.selected = true;
+                else if (/Launchpad|MK2/i.test(d.name)) opt.selected = true;
+                lpInSel.appendChild(opt);
+            });
+
+            document.getElementById('midiModalOverlay').classList.add('visible');
+        }
+
+        function closeMidiModal() {
+            document.getElementById('midiModalOverlay').classList.remove('visible');
+        }
+
+        function applyMidiSelection() {
+            if (!_midiAccess) return;
+
+            const outputs = Array.from(_midiAccess.outputs.values());
+            const inputs  = Array.from(_midiAccess.inputs.values());
+
+            const psrId   = document.getElementById('psrOutSelect').value;
+            const lpOutId = document.getElementById('lpOutSelect').value;
+            const lpInId  = document.getElementById('lpInSelect').value;
+
+            if (psrId) {
+                const dev = outputs.find(d => d.id === psrId);
+                if (dev) {
+                    state.midiOutCTK = dev;
+                    document.getElementById('ctkLed').classList.add('active');
+                    document.getElementById('psrDeviceLabel').textContent = dev.name.substring(0, 16);
+                    showMessage(`PSR connecté : ${dev.name}`);
+                }
+            }
+
+            if (lpOutId && lpInId) {
+                const devOut = outputs.find(d => d.id === lpOutId);
+                const devIn  = inputs.find(d  => d.id === lpInId);
+                if (devOut && devIn) {
+                    state.midiOutLP = devOut;
+                    state.midiInLP  = devIn;
+                    document.getElementById('lpLed').classList.add('active');
+                    devIn.onmidimessage = handleLaunchpadMIDI;
+                    initializeLaunchpad();
+                }
+            }
+
+            closeMidiModal();
         }
 
         function initializeLaunchpad() {
