@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IR Remote → Launchpad MK2</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+:root {
+  --bg: #080c0f;
+  --panel: #0e1318;
+  --border: #1e2830;
+  --accent: #00d4ff;
+  --amber: #ffaa00;
+  --green: #00ff88;
+  --red: #ff3355;
+  --muted: #2a3540;
+  --text: #8ba8b8;
+  --text-bright: #cce8f0;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  background-image: 
+    radial-gradient(ellipse at 20% 20%, rgba(0,80,120,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(0,150,100,0.08) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(0,212,255,0.015) 40px, rgba(0,212,255,0.015) 41px),
+    repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(0,212,255,0.015) 40px, rgba(0,212,255,0.015) 41px);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 20px 40px;
+  gap: 18px;
+}
+
+/* HEADER */
+.header {
+  text-align: center;
+  position: relative;
+}
+.header h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.15em;
+  font-weight: 900;
+  letter-spacing: 0.3em;
+  color: var(--accent);
+  text-transform: uppercase;
+  text-shadow: 0 0 20px rgba(0,212,255,0.5), 0 0 60px rgba(0,212,255,0.2);
+}
+.header .sub {
+  font-size: 0.7em;
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  margin-top: 4px;
+}
+
+/* STATUS BAR */
+.status-bar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.chip {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 5px 12px;
+  font-size: 0.72em;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  position: relative;
+  overflow: hidden;
+}
+.chip::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 2px;
+}
+.chip.ok::before  { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.chip.err::before { background: var(--red);   box-shadow: 0 0 8px var(--red); }
+.chip.idle::before{ background: var(--muted); }
+
+.chip-label { color: var(--muted); font-size: 0.9em; }
+.chip-val   { color: var(--text-bright); }
+.chip.ok  .chip-val { color: var(--green); }
+.chip.err .chip-val { color: var(--red); }
+
+/* CONTROLS */
+.controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
+.btn {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 7px 16px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.78em;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.12s;
+  position: relative;
+  overflow: hidden;
+}
+.btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0,212,255,0.05);
+  box-shadow: 0 0 12px rgba(0,212,255,0.1);
+}
+.btn.primary {
+  border-color: rgba(0,212,255,0.5);
+  color: var(--accent);
+}
+.btn:active { transform: scale(0.97); }
+
+/* MAIN LAYOUT */
+.main {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* MK2 FRAME */
+.mk2-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.mk2-label {
+  font-size: 0.65em;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.mk2-frame {
+  background: #04080b;
+  border: 2px solid #1a2530;
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: 
+    0 0 0 1px #0a1520,
+    0 4px 40px rgba(0,0,0,0.8),
+    inset 0 1px 0 rgba(255,255,255,0.03);
+  position: relative;
+}
+.mk2-frame::after {
+  content: 'LAUNCHPAD MK2';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.5em;
+  letter-spacing: 0.3em;
+  color: #1a2530;
+  white-space: nowrap;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+}
+.pad {
+  width: 38px;
+  height: 38px;
+  border-radius: 4px;
+  background: #060c10;
+  border: 1px solid #0e1820;
+  transition: background 0.07s, box-shadow 0.07s;
+  position: relative;
+}
+.pad.lit {
+  border-color: transparent;
+}
+/* Rounded square inner glow */
+.pad.lit::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 2px;
+  background: inherit;
+  filter: blur(4px);
+  opacity: 0.6;
+}
+
+/* SIDEBAR */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 220px;
+}
+
+/* KEY DISPLAY */
+.key-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 14px 16px;
+  position: relative;
+}
+.key-panel::before {
+  content: 'TOUCHE REÇUE';
+  position: absolute;
+  top: -1px; left: 12px;
+  transform: translateY(-50%);
+  font-size: 0.6em;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  background: var(--panel);
+  padding: 0 6px;
+}
+.key-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.3em;
+  font-weight: 700;
+  color: var(--amber);
+  text-shadow: 0 0 15px rgba(255,170,0,0.5);
+  text-align: center;
+  min-height: 1.4em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.05em;
+}
+.key-raw {
+  text-align: center;
+  font-size: 0.65em;
+  color: var(--muted);
+  margin-top: 4px;
+  letter-spacing: 0.05em;
+}
+
+/* COLOR LEGEND */
+.legend {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px 16px;
+  font-size: 0.68em;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  position: relative;
+}
+.legend::before {
+  content: 'CODES COULEUR';
+  position: absolute;
+  top: -1px; left: 12px;
+  transform: translateY(-50%);
+  font-size: 0.85em;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  background: var(--panel);
+  padding: 0 6px;
+}
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+.swatch {
+  width: 10px; height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* LOG */
+.log-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 12px;
+  font-size: 0.68em;
+  color: var(--muted);
+  line-height: 1.7;
+  min-height: 80px;
+  max-height: 110px;
+  overflow-y: auto;
+  position: relative;
+}
+.log-panel::before {
+  content: 'LOG';
+  position: absolute;
+  top: -1px; left: 12px;
+  transform: translateY(-50%);
+  font-size: 0.85em;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  background: var(--panel);
+  padding: 0 6px;
+}
+.log-panel .log-line { color: #3a5060; }
+.log-panel .log-line.ok { color: var(--green); opacity: 0.7; }
+.log-panel .log-line.key { color: var(--amber); opacity: 0.8; }
+.log-panel .log-line.err { color: var(--red); opacity: 0.7; }
+
+/* HINT */
+.hint {
+  font-size: 0.65em;
+  color: #1e2e38;
+  text-align: center;
+  letter-spacing: 0.04em;
+  line-height: 1.8;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>IR Remote → MK2</h1>
+  <div class="sub">récepteur usb &nbsp;/&nbsp; web midi &nbsp;/&nbsp; led grid</div>
+</div>
+
+<div class="status-bar">
+  <div class="chip idle" id="chip-midi">
+    <span class="chip-label">MIDI</span>
+    <span class="chip-val" id="lbl-midi">inactif</span>
+  </div>
+  <div class="chip idle" id="chip-lp">
+    <span class="chip-label">MK2</span>
+    <span class="chip-val" id="lbl-lp">non trouvé</span>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn primary" onclick="connectMIDI()">⚡ CONNECTER MIDI</button>
+  <button class="btn" onclick="runTest()">▶ TEST SÉQUENCE</button>
+  <button class="btn" onclick="clearAll()">◼ ÉTEINDRE</button>
+</div>
+
+<div class="main">
+  <!-- MK2 Grid -->
+  <div class="mk2-wrap">
+    <div class="mk2-label">affichage led 8×8</div>
+    <div class="mk2-frame">
+      <div class="grid" id="grid"></div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="key-panel">
+      <div class="key-value" id="key-val">—</div>
+      <div class="key-raw" id="key-raw">&nbsp;</div>
+    </div>
+
+    <div class="legend">
+      <div style="height:6px"></div>
+      <div class="legend-row"><div class="swatch" style="background:#ffcc00"></div> Chiffres 0–9</div>
+      <div class="legend-row"><div class="swatch" style="background:#0090ff"></div> Flèches ↑↓←→</div>
+      <div class="legend-row"><div class="swatch" style="background:#00ff44"></div> Enter / OK</div>
+      <div class="legend-row"><div class="swatch" style="background:#ff2244"></div> Escape / X</div>
+      <div class="legend-row"><div class="swatch" style="background:#ff7700"></div> Volume ± / Mute</div>
+      <div class="legend-row"><div class="swatch" style="background:#cc44ff"></div> Retour / PgUp/Dn</div>
+    </div>
+
+    <div class="log-panel" id="log"></div>
+  </div>
+</div>
+
+<div class="hint">
+  Cliquer dans la fenêtre pour activer la capture clavier<br>
+  La télécommande IR USB envoie des events clavier (HID keyboard)
+</div>
+
+<script>
+// ============================================================
+// POLICES BITMAP 8×8
+// bitmap[rangée][colonne] — rangée 0 = haut, col 0 = gauche
+// Caractères 4-wide dans cols 1-4, 7 rangées (0-6)
+// ============================================================
+const FONT = {
+  '0': [
+    [0,1,1,1,1,0,0,0],
+    [0,1,0,0,1,0,0,0],
+    [0,1,0,0,1,0,0,0],
+    [0,1,0,0,1,0,0,0],
+    [0,1,0,0,1,0,0,0],
+    [0,1,0,0,1,0,0,0],
+    [0,1,1,1,1,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  '1': [
+    [0,0,0,1,0,0,0,0],
+    [0,0,1,1,0,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,1,1,1,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  '2': [
+    [0,1,1,1,1,0,0,0],
+    [0,0,0,0,1,0,0,0],
+    [0,0,0,0,1,0,0,0],
+    [0,1,1,1,1,0,0,0],
+    [0,1,0,0,0,0,0,0],
+    [0,1,0,0,0,0,0,0],
+    [0,1,1,1,1,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  '3': [
+    [0,1,1,1,1,0,0,0],
+    [0,0,0,0,1,0,0,0],
+    [0,0,0,0,1,0,0,0],
+    [0,0,1,1,1,0,0,0],
+    [0,0,0,0,1,0,0,0],
+    [0,0,0,0,1,0,0,0],
+    [0,1,1,1,1,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  '4': [
+    [0,1,0,0,1,0,0,0],
+    [0,1,0,0,1,0,0,0],
+    [0,1,0,0,1,0,0,0],
+    [0,1,1,1,1,0,0,0],
+    [0,0,0,0,1,0,0,0],
+    [0,0,0,0,1,0,0,0],
+    [0,0,0,0,1,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  '5': [
+    [0,1,1,1,1,0,0,0],
+    [0,1,0,0,0,0,0,0],
+    [0,1,0,0,0,0,0,0],
+    [0,1,1,1,1,0,0,0],
+    [0,0,0,0,1,0,0,0],
+    [0,0,0,0,1,0,0,0],
+    [0,1,1,1,1,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  '6': [
+    [0,1,1,1,1,0,0,0],
+    [0,1,0,0,0,0,0,0],
+    [0,1,0,0,0,0,0,0],
+    [0,1,1,1,1,0,0,0],
+    [0,1,0,0,1,0,0,0],
+    [0,1,0,0,1,0,0,0],
+    [0,1,1,1,1,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  '7': [
+    [0,1,1,1,1,0,0,0],
+    [0,0,0,0,1,0,0,0],
+    [0,0,0,0,1,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,1,0,0,0,0,0],
+    [0,0,1,0,0,0,0,0],
+    [0,0,1,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  '8': [
+    [0,1,1,1,1,0,0,0],
+    [0,1,0,0,1,0,0,0],
+    [0,1,0,0,1,0,0,0],
+    [0,1,1,1,1,0,0,0],
+    [0,1,0,0,1,0,0,0],
+    [0,1,0,0,1,0,0,0],
+    [0,1,1,1,1,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  '9': [
+    [0,1,1,1,1,0,0,0],
+    [0,1,0,0,1,0,0,0],
+    [0,1,0,0,1,0,0,0],
+    [0,1,1,1,1,0,0,0],
+    [0,0,0,0,1,0,0,0],
+    [0,0,0,0,1,0,0,0],
+    [0,1,1,1,1,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  'ArrowUp': [
+    [0,0,0,1,0,0,0,0],
+    [0,0,1,1,1,0,0,0],
+    [0,1,1,1,1,1,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  'ArrowDown': [
+    [0,0,0,1,0,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,1,1,1,1,1,0,0],
+    [0,0,1,1,1,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  'ArrowLeft': [
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,1,0,0,0,0,0],
+    [0,1,1,1,1,1,0,0],
+    [0,0,1,0,0,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  'ArrowRight': [
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,0,0,1,0,0,0],
+    [0,1,1,1,1,1,0,0],
+    [0,0,0,0,1,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  'Enter': [  // ✓
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,1,0,0],
+    [0,0,0,0,1,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,1,0,1,0,0,0,0],
+    [0,0,1,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  'Escape': [  // ✕
+    [0,0,0,0,0,0,0,0],
+    [0,1,0,0,0,1,0,0],
+    [0,0,1,0,1,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,1,0,1,0,0,0],
+    [0,1,0,0,0,1,0,0],
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  'Backspace': [  // ← retour
+    [0,0,0,0,0,0,0,0],
+    [0,0,1,0,0,0,0,0],
+    [0,1,0,0,0,0,0,0],
+    [0,1,1,1,1,0,0,0],
+    [0,1,0,0,0,0,0,0],
+    [0,0,1,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  'AudioVolumeUp': [  // +
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,1,1,1,1,1,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  'AudioVolumeDown': [  // −
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+    [0,1,1,1,1,1,0,0],
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  'AudioVolumeMute': [  // M
+    [0,1,0,0,0,1,0,0],
+    [0,1,1,0,1,1,0,0],
+    [0,1,0,1,0,1,0,0],
+    [0,1,0,0,0,1,0,0],
+    [0,1,0,0,0,1,0,0],
+    [0,1,0,0,0,1,0,0],
+    [0,1,0,0,0,1,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  'PageUp': [  // ⌃
+    [0,0,0,1,0,0,0,0],
+    [0,0,1,0,1,0,0,0],
+    [0,1,0,0,0,1,0,0],
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,1,0,1,0,0,0],
+    [0,1,0,0,0,1,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  'PageDown': [  // ⌄
+    [0,1,0,0,0,1,0,0],
+    [0,0,1,0,1,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+    [0,1,0,0,0,1,0,0],
+    [0,0,1,0,1,0,0,0],
+    [0,0,0,1,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+};
+
+// Couleurs [r, g, b] — valeurs 0-63 (MK2)
+// Pour CSS : multiplier par 4
+const COLORS = {
+  digit:   [63, 50,  0],   // ambre-jaune
+  arrow:   [ 0, 35, 63],   // bleu vif
+  enter:   [ 0, 63, 17],   // vert
+  escape:  [63,  0, 20],   // rouge
+  volume:  [63, 30,  0],   // orange
+  default: [50,  0, 63],   // violet
+};
+
+function getColor(key) {
+  if ('0123456789'.includes(key))  return COLORS.digit;
+  if (key.startsWith('Arrow'))     return COLORS.arrow;
+  if (key === 'Enter')             return COLORS.enter;
+  if (key === 'Escape')            return COLORS.escape;
+  if (key.includes('Volume') || key === 'AudioVolumeMute') return COLORS.volume;
+  return COLORS.default;
+}
+
+// ============================================================
+// WEB MIDI
+// ============================================================
+let midi = null;
+let lpOut = null;
+
+async function connectMIDI() {
+  if (!navigator.requestMIDIAccess) {
+    log('Web MIDI non supporté (utiliser Chrome)', 'err');
+    return;
+  }
+  try {
+    midi = await navigator.requestMIDIAccess({ sysex: true });
+    setChip('midi', 'ok', 'actif');
+    log('Accès MIDI accordé', 'ok');
+    scanPorts();
+    midi.onstatechange = scanPorts;
+  } catch(e) {
+    setChip('midi', 'err', 'refusé');
+    log('MIDI refusé: ' + e.message, 'err');
+  }
+}
+
+function scanPorts() {
+  lpOut = null;
+  const outputs = [...midi.outputs.values()];
+  for (const o of outputs) {
+    if (o.name.toLowerCase().includes('launchpad')) {
+      lpOut = o; break;
+    }
+  }
+  if (lpOut) {
+    setChip('lp', 'ok', lpOut.name.replace(/Launchpad /i, ''));
+    log('Launchpad: ' + lpOut.name, 'ok');
+    clearAll();
+  } else {
+    setChip('lp', 'idle', 'non trouvé');
+    const names = outputs.map(o => o.name).join(', ');
+    log('Sorties: ' + (names || 'aucune'));
+  }
+}
+
+function setChip(id, state, txt) {
+  const c = document.getElementById('chip-' + id);
+  c.className = 'chip ' + state;
+  document.getElementById('lbl-' + id).textContent = txt;
+}
+
+// note MK2 → (8-rangée)*10 + (col+1)
+// rangée 0=haut → MK2 rangée 8 (notes 81-88)
+// rangée 7=bas  → MK2 rangée 1 (notes 11-18)
+function mkNote(row, col) { return (8 - row) * 10 + (col + 1); }
+
+function ledOff(note) {
+  if (lpOut) lpOut.send([0x90, note, 0]);
+}
+function ledRGB(note, r, g, b) {
+  if (lpOut) lpOut.send([0xF0,0x00,0x20,0x29,0x02,0x18,0x0B, note, r, g, b, 0xF7]);
+}
+
+function clearAll() {
+  for (let r = 0; r < 8; r++)
+    for (let c = 0; c < 8; c++)
+      ledOff(mkNote(r, c));
+  document.querySelectorAll('.pad').forEach(p => {
+    p.className = 'pad';
+    p.style.background = '';
+    p.style.boxShadow = '';
+  });
+}
+
+function displayChar(key) {
+  const bitmap = FONT[key];
+  if (!bitmap) return;
+
+  const [cr, cg, cb] = getColor(key);
+  const cssColor = `rgb(${cr*4}, ${cg*4}, ${cb*4})`;
+  const pads = document.querySelectorAll('.pad');
+
+  clearAll();
+
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      if (bitmap[r][c]) {
+        const idx = r * 8 + c;
+        const pad = pads[idx];
+        pad.className = 'pad lit';
+        pad.style.background = cssColor;
+        pad.style.boxShadow = `0 0 8px ${cssColor}, 0 0 20px ${cssColor}40`;
+        ledRGB(mkNote(r, c), cr, cg, cb);
+      }
+    }
+  }
+}
+
+// ============================================================
+// CLAVIER / IR REMOTE
+// ============================================================
+const CODE_MAP = {
+  'Digit0':'0',  'Numpad0':'0',
+  'Digit1':'1',  'Numpad1':'1',
+  'Digit2':'2',  'Numpad2':'2',
+  'Digit3':'3',  'Numpad3':'3',
+  'Digit4':'4',  'Numpad4':'4',
+  'Digit5':'5',  'Numpad5':'5',
+  'Digit6':'6',  'Numpad6':'6',
+  'Digit7':'7',  'Numpad7':'7',
+  'Digit8':'8',  'Numpad8':'8',
+  'Digit9':'9',  'Numpad9':'9',
+  'ArrowUp':    'ArrowUp',
+  'ArrowDown':  'ArrowDown',
+  'ArrowLeft':  'ArrowLeft',
+  'ArrowRight': 'ArrowRight',
+  'Enter':      'Enter',
+  'NumpadEnter':'Enter',
+  'Escape':     'Escape',
+  'Backspace':  'Backspace',
+  'PageUp':     'PageUp',
+  'PageDown':   'PageDown',
+};
+const KEY_MAP = {
+  'AudioVolumeUp':   'AudioVolumeUp',
+  'AudioVolumeDown': 'AudioVolumeDown',
+  'AudioVolumeMute': 'AudioVolumeMute',
+};
+
+let lastKey = null;
+let lastKeyTime = 0;
+const DEBOUNCE_MS = 160;  // anti-répétition signal IR
+
+document.addEventListener('keydown', e => {
+  const mapped = CODE_MAP[e.code] || KEY_MAP[e.key];
+  if (!mapped) {
+    // Log les touches non mappées pour aider au debug
+    if (e.key !== 'F5' && e.key !== 'Tab') {
+      log(`non mappé: code=${e.code} key=${e.key}`);
+    }
+    return;
+  }
+
+  e.preventDefault();
+
+  const now = Date.now();
+  if (mapped === lastKey && now - lastKeyTime < DEBOUNCE_MS) return;
+  lastKey = mapped;
+  lastKeyTime = now;
+
+  document.getElementById('key-val').textContent = mapped;
+  document.getElementById('key-raw').textContent = e.code || e.key;
+  log(`▶ ${mapped}  (${e.code || e.key})`, 'key');
+  displayChar(mapped);
+});
+
+// ============================================================
+// TEST AUTOMATIQUE
+// ============================================================
+let testTimer = null;
+function runTest() {
+  if (testTimer) { clearInterval(testTimer); testTimer = null; clearAll(); return; }
+  const seq = ['0','1','2','3','4','5','6','7','8','9',
+               'ArrowUp','ArrowDown','ArrowLeft','ArrowRight',
+               'Enter','Escape','AudioVolumeUp','AudioVolumeDown','Backspace'];
+  let i = 0;
+  testTimer = setInterval(() => {
+    if (i >= seq.length) {
+      clearInterval(testTimer);
+      testTimer = null;
+      clearAll();
+      document.getElementById('key-val').textContent = '—';
+      document.getElementById('key-raw').textContent = '';
+      return;
+    }
+    const k = seq[i++];
+    document.getElementById('key-val').textContent = k;
+    document.getElementById('key-raw').textContent = '(test)';
+    displayChar(k);
+  }, 550);
+}
+
+// ============================================================
+// LOG
+// ============================================================
+const MAX_LOG = 12;
+const logLines = [];
+function log(msg, type = '') {
+  logLines.unshift({ msg, type });
+  if (logLines.length > MAX_LOG) logLines.pop();
+  const el = document.getElementById('log');
+  el.innerHTML = logLines.map(l =>
+    `<div class="log-line ${l.type}">${l.msg}</div>`
+  ).join('');
+}
+
+// ============================================================
+// INIT GRILLE ÉCRAN
+// ============================================================
+(function initGrid() {
+  const g = document.getElementById('grid');
+  for (let i = 0; i < 64; i++) {
+    const d = document.createElement('div');
+    d.className = 'pad';
+    g.appendChild(d);
+  }
+  log('Prêt — cliquer ici puis utiliser la télécommande');
+})();
+</script>
+</body>
+</html>
