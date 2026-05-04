@@ -574,7 +574,7 @@ function getColor(key) {
   if ('0123456789'.includes(key) || key === '10') return digitColorRGB;
   if (key.startsWith('Arrow'))                          return [0, 36, 63];
   if (key === 'Enter')                                  return [0, 63, 0];   // vert max
-  if (key === 'Escape' || key === 'Clear')              return [63, 0, 20];
+  if (key === 'Escape' || key === 'Clear')              return [63, 0, 0];
   if (key === 'Backspace')                              return [28, 0, 63];
   if (key.startsWith('AudioVolume') || key === 'AudioVolumeMute') return [63, 28, 0];
   if (key === 'ChannelUp' || key === 'ChannelDown')     return [25, 0, 63];
