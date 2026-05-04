@@ -6,7 +6,7 @@
 <title>IR Remote → Launchpad MK2</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
-:root{--bg:#080c0f;--panel:#0e1318;--border:#1e2830;--accent:#00d4ff;--amber:#ffaa00;--green:#00ff88;--red:#ff3355;--muted:#2a3540;--text:#8ba8b8;--bright:#cce8f0}
+:root{--bg:#080c0f;--panel:#0e1318;--border:#1e2830;--accent:#00d4ff;--green:#00ff88;--red:#ff3355;--muted:#2a3540;--text:#8ba8b8;--bright:#cce8f0}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);background-image:radial-gradient(ellipse at 20% 20%,rgba(0,80,120,.15) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(0,150,100,.08) 0%,transparent 50%),repeating-linear-gradient(0deg,transparent,transparent 40px,rgba(0,212,255,.015) 40px,rgba(0,212,255,.015) 41px),repeating-linear-gradient(90deg,transparent,transparent 40px,rgba(0,212,255,.015) 40px,rgba(0,212,255,.015) 41px);color:var(--text);font-family:'Share Tech Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:22px 16px 40px;gap:12px}
 .header{text-align:center}
@@ -29,8 +29,8 @@ body{background:var(--bg);background-image:radial-gradient(ellipse at 20% 20%,rg
 .color-row{display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:7px 14px;flex-wrap:wrap;justify-content:center}
 .color-lbl{font-size:.6em;letter-spacing:.18em;color:var(--muted);white-space:nowrap}
 .swatches{display:flex;gap:5px}
-.sw{width:20px;height:20px;border-radius:3px;cursor:pointer;border:2px solid transparent;transition:all .12s;flex-shrink:0}
-.sw:hover{transform:scale(1.2)}
+.sw{width:20px;height:20px;border-radius:3px;cursor:pointer;border:2px solid transparent;transition:all .12s;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.sw:hover{transform:scale(1.15)}
 .sw.selected{border-color:#fff;box-shadow:0 0 8px rgba(255,255,255,.35)}
 #cpick{width:30px;height:24px;border:1px solid var(--border);border-radius:3px;cursor:pointer;padding:1px 2px;background:transparent}
 /* MAIN */
@@ -47,7 +47,7 @@ body{background:var(--bg);background-image:radial-gradient(ellipse at 20% 20%,rg
 .sidebar{display:flex;flex-direction:column;gap:9px;min-width:210px}
 .key-panel{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:12px 14px;position:relative}
 .key-panel::before{content:'TOUCHE REÇUE';position:absolute;top:-1px;left:12px;transform:translateY(-50%);font-size:.56em;letter-spacing:.2em;color:var(--muted);background:var(--panel);padding:0 6px}
-.key-value{font-family:'Orbitron',sans-serif;font-size:1.15em;font-weight:700;color:var(--amber);text-align:center;min-height:1.4em;display:flex;align-items:center;justify-content:center;letter-spacing:.05em;transition:color .1s}
+.key-value{font-family:'Orbitron',sans-serif;font-size:1.15em;font-weight:700;text-align:center;min-height:1.4em;display:flex;align-items:center;justify-content:center;letter-spacing:.05em;transition:color .1s;color:#ffaa00}
 .key-raw{text-align:center;font-size:.6em;color:var(--muted);margin-top:4px;letter-spacing:.04em}
 .legend{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:9px 13px;font-size:.63em;display:flex;flex-direction:column;gap:4px;position:relative}
 .legend::before{content:'CODES COULEUR';position:absolute;top:-1px;left:12px;transform:translateY(-50%);font-size:.82em;letter-spacing:.18em;color:var(--muted);background:var(--panel);padding:0 6px}
@@ -55,12 +55,14 @@ body{background:var(--bg);background-image:radial-gradient(ellipse at 20% 20%,rg
 .ldot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
 .log-panel{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:7px 10px;font-size:.62em;color:var(--muted);line-height:1.7;min-height:65px;max-height:95px;overflow-y:auto;position:relative}
 .log-panel::before{content:'LOG';position:absolute;top:-1px;left:12px;transform:translateY(-50%);font-size:.85em;letter-spacing:.2em;color:var(--muted);background:var(--panel);padding:0 6px}
-.ll{color:#273540}.ll.ok{color:var(--green);opacity:.7}.ll.key{color:var(--amber);opacity:.85}.ll.err{color:var(--red);opacity:.7}
+.ll{color:#273540}.ll.ok{color:var(--green);opacity:.7}.ll.key{color:#ffaa00;opacity:.85}.ll.err{color:var(--red);opacity:.7}
 .hint{font-size:.6em;color:#1e2e38;text-align:center;letter-spacing:.04em;line-height:1.9}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--muted);border-radius:2px}
+/* Focus trap visible */
+body:focus{outline:none}
 </style>
 </head>
-<body>
+<body tabindex="-1">
 
 <div class="header">
   <h1>IR Remote → MK2</h1>
@@ -81,14 +83,14 @@ body{background:var(--bg);background-image:radial-gradient(ellipse at 20% 20%,rg
 <div class="color-row">
   <span class="color-lbl">COULEUR CHIFFRES</span>
   <div class="swatches" id="swatches">
-    <div class="sw selected" style="background:#ffcc00" data-hex="#ffcc00"></div>
-    <div class="sw" style="background:#ff6600" data-hex="#ff6600"></div>
-    <div class="sw" style="background:#ff0044" data-hex="#ff0044"></div>
-    <div class="sw" style="background:#00ff88" data-hex="#00ff88"></div>
-    <div class="sw" style="background:#00ccff" data-hex="#00ccff"></div>
-    <div class="sw" style="background:#aa44ff" data-hex="#aa44ff"></div>
-    <div class="sw" style="background:#ff44bb" data-hex="#ff44bb"></div>
-    <div class="sw" style="background:#ffffff" data-hex="#ffffff"></div>
+    <div class="sw selected" style="background:#ffcc00" data-r="63" data-g="50" data-b="0"></div>
+    <div class="sw" style="background:#ff6600" data-r="63" data-g="25" data-b="0"></div>
+    <div class="sw" style="background:#ff0044" data-r="63" data-g="0"  data-b="17"></div>
+    <div class="sw" style="background:#00ff88" data-r="0"  data-g="63" data-b="34"></div>
+    <div class="sw" style="background:#00ccff" data-r="0"  data-g="50" data-b="63"></div>
+    <div class="sw" style="background:#aa44ff" data-r="42" data-g="17" data-b="63"></div>
+    <div class="sw" style="background:#ff44bb" data-r="63" data-g="17" data-b="47"></div>
+    <div class="sw" style="background:#ffffff" data-r="63" data-g="63" data-b="63"></div>
   </div>
   <input type="color" id="cpick" value="#ffcc00" title="Couleur personnalisée">
 </div>
@@ -98,115 +100,494 @@ body{background:var(--bg);background-image:radial-gradient(ellipse at 20% 20%,rg
     <div class="mk2-label">AFFICHAGE LED 8×8</div>
     <div class="mk2-frame"><div class="grid" id="grid"></div></div>
   </div>
-
   <div class="sidebar">
     <div class="key-panel">
       <div class="key-value" id="key-val">—</div>
       <div class="key-raw" id="key-raw">&nbsp;</div>
     </div>
-
     <div class="legend">
       <div style="height:4px"></div>
       <div class="leg-row"><div class="ldot" id="digit-dot" style="background:#ffcc00"></div>Chiffres 0–9, 10</div>
       <div class="leg-row"><div class="ldot" style="background:#0090ff"></div>Flèches ↑↓←→</div>
-      <div class="leg-row"><div class="ldot" style="background:#00ff44"></div>Enter / OK</div>
+      <div class="leg-row"><div class="ldot" style="background:#00ff00"></div>Enter / OK</div>
       <div class="leg-row"><div class="ldot" style="background:#ff2244"></div>Escape / Clear</div>
       <div class="leg-row"><div class="ldot" style="background:#ff7700"></div>Volume ± / Mute</div>
       <div class="leg-row"><div class="ldot" style="background:#00ccbb"></div>Transport ▶⏸⏹⏭</div>
-      <div class="leg-row"><div class="ldot" style="background:#7722ff"></div>Canal / Back / PgUp</div>
+      <div class="leg-row"><div class="ldot" style="background:#7722ff"></div>Canal / Back</div>
       <div class="leg-row"><div class="ldot" style="background:#aaff00"></div>* et #</div>
     </div>
-
     <div class="log-panel" id="log"></div>
   </div>
 </div>
 
 <div class="hint">
-  Cliquer ici pour activer la capture clavier &nbsp;|&nbsp; Back ne quitte plus le navigateur<br>
-  Séquence 1 → 0 affiche "10" &nbsp;|&nbsp; touches non mappées apparaissent dans le log
+  Cliquer ici pour activer la capture &nbsp;|&nbsp; Back bloqué via History API<br>
+  1 → 0 = "10" &nbsp;|&nbsp; touches inconnues apparaissent dans le log
 </div>
 
 <script>
-// ─────────────────────────────────────────────────────────────
-// POLICES BITMAP 8×8
-// bitmap[rangée][col] — rangée 0=haut, col 0=gauche
-// Chiffres centrés aux colonnes 2-5 (décalé +1 vs v1)
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// TRAP BACK NAVIGATEUR — History API
+// Chaque fois que Back est appuyé, on réinjecte un état
+// pour que la page ne parte jamais
+// ═══════════════════════════════════════════════════════════════
+history.pushState({ir:1}, '');
+window.addEventListener('popstate', () => {
+  history.pushState({ir:1}, '');
+  log('◀ Back bloqué (history)');
+});
+
+// ═══════════════════════════════════════════════════════════════
+// BITMAPS 8×8 — traits 2 pixels, tout centré
+// bitmap[rangée][colonne] — rangée 0 = haut, col 0 = gauche
+// ═══════════════════════════════════════════════════════════════
 const FONT = {
 
-  // ── CHIFFRES (cols 2-5) ────────────────────────────────────
-  '0':[[0,0,1,1,1,1,0,0],[0,0,1,0,0,1,0,0],[0,0,1,0,0,1,0,0],[0,0,1,0,0,1,0,0],[0,0,1,0,0,1,0,0],[0,0,1,0,0,1,0,0],[0,0,1,1,1,1,0,0],[0,0,0,0,0,0,0,0]],
-  '1':[[0,0,0,0,1,0,0,0],[0,0,0,1,1,0,0,0],[0,0,0,0,1,0,0,0],[0,0,0,0,1,0,0,0],[0,0,0,0,1,0,0,0],[0,0,0,0,1,0,0,0],[0,0,0,1,1,1,0,0],[0,0,0,0,0,0,0,0]],
-  '2':[[0,0,1,1,1,1,0,0],[0,0,0,0,0,1,0,0],[0,0,0,0,0,1,0,0],[0,0,1,1,1,1,0,0],[0,0,1,0,0,0,0,0],[0,0,1,0,0,0,0,0],[0,0,1,1,1,1,0,0],[0,0,0,0,0,0,0,0]],
-  '3':[[0,0,1,1,1,1,0,0],[0,0,0,0,0,1,0,0],[0,0,0,0,0,1,0,0],[0,0,0,1,1,1,0,0],[0,0,0,0,0,1,0,0],[0,0,0,0,0,1,0,0],[0,0,1,1,1,1,0,0],[0,0,0,0,0,0,0,0]],
-  '4':[[0,0,1,0,0,1,0,0],[0,0,1,0,0,1,0,0],[0,0,1,0,0,1,0,0],[0,0,1,1,1,1,0,0],[0,0,0,0,0,1,0,0],[0,0,0,0,0,1,0,0],[0,0,0,0,0,1,0,0],[0,0,0,0,0,0,0,0]],
-  '5':[[0,0,1,1,1,1,0,0],[0,0,1,0,0,0,0,0],[0,0,1,0,0,0,0,0],[0,0,1,1,1,1,0,0],[0,0,0,0,0,1,0,0],[0,0,0,0,0,1,0,0],[0,0,1,1,1,1,0,0],[0,0,0,0,0,0,0,0]],
-  '6':[[0,0,1,1,1,1,0,0],[0,0,1,0,0,0,0,0],[0,0,1,0,0,0,0,0],[0,0,1,1,1,1,0,0],[0,0,1,0,0,1,0,0],[0,0,1,0,0,1,0,0],[0,0,1,1,1,1,0,0],[0,0,0,0,0,0,0,0]],
-  '7':[[0,0,1,1,1,1,0,0],[0,0,0,0,0,1,0,0],[0,0,0,0,0,1,0,0],[0,0,0,0,1,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,0,0,0,0,0]],
-  '8':[[0,0,1,1,1,1,0,0],[0,0,1,0,0,1,0,0],[0,0,1,0,0,1,0,0],[0,0,1,1,1,1,0,0],[0,0,1,0,0,1,0,0],[0,0,1,0,0,1,0,0],[0,0,1,1,1,1,0,0],[0,0,0,0,0,0,0,0]],
-  '9':[[0,0,1,1,1,1,0,0],[0,0,1,0,0,1,0,0],[0,0,1,0,0,1,0,0],[0,0,1,1,1,1,0,0],[0,0,0,0,0,1,0,0],[0,0,0,0,0,1,0,0],[0,0,1,1,1,1,0,0],[0,0,0,0,0,0,0,0]],
+  // ── CHIFFRES (6 large, cols 1-6, trait 2px) ─────────────────
+  '0':[
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  '1':[
+    [0,0,0,1,1,0,0,0],
+    [0,0,1,1,1,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,1,1,1,1,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  '2':[
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,0,0,1,1,0],
+    [0,0,0,0,0,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,0,0,0,0,0],
+    [0,1,1,0,0,0,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  '3':[
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,0,0,1,1,0],
+    [0,0,0,0,0,1,1,0],
+    [0,0,1,1,1,1,1,0],
+    [0,0,0,0,0,1,1,0],
+    [0,0,0,0,0,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  '4':[
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,0,0,1,1,0],
+    [0,0,0,0,0,1,1,0],
+    [0,0,0,0,0,1,1,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  '5':[
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,0,0,0,0,0],
+    [0,1,1,0,0,0,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,0,0,1,1,0],
+    [0,0,0,0,0,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  '6':[
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,0,0,0,0,0],
+    [0,1,1,0,0,0,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  '7':[
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,0,0,1,1,0],
+    [0,0,0,0,1,1,0,0],
+    [0,0,0,0,1,1,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  '8':[
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  '9':[
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,0,0,1,1,0],
+    [0,0,0,0,0,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,0,0,0,0,0],
+  ],
 
-  // ── "10" — mini "1" cols 0-2, mini "0" cols 5-7 ──────────
-  '10':[[0,1,0,0,0,1,1,1],[1,1,0,0,0,1,0,1],[0,1,0,0,0,1,0,1],[0,1,0,0,0,1,0,1],[0,1,0,0,0,1,0,1],[0,1,0,0,0,1,0,1],[1,1,1,0,0,1,1,1],[0,0,0,0,0,0,0,0]],
+  // ── "10" — mini "1" cols 0-2 + mini "0" cols 4-7 ───────────
+  '10':[
+    [0,1,1,0,1,1,1,1],
+    [1,1,1,0,1,0,0,1],
+    [0,1,1,0,1,0,0,1],
+    [0,1,1,0,1,0,0,1],
+    [0,1,1,0,1,0,0,1],
+    [0,1,1,0,1,0,0,1],
+    [1,1,1,0,1,1,1,1],
+    [0,0,0,0,0,0,0,0],
+  ],
 
-  // ── NAVIGATION ────────────────────────────────────────────
-  'ArrowUp':   [[0,0,0,1,0,0,0,0],[0,0,1,1,1,0,0,0],[0,1,1,1,1,1,0,0],[0,0,0,1,0,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,0,0,0,0,0]],
-  'ArrowDown': [[0,0,0,1,0,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,1,0,0,0,0],[0,1,1,1,1,1,0,0],[0,0,1,1,1,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,0,0,0,0,0]],
-  'ArrowLeft': [[0,0,0,0,0,0,0,0],[0,0,0,1,0,0,0,0],[0,0,1,0,0,0,0,0],[0,1,1,1,1,1,0,0],[0,0,1,0,0,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
-  'ArrowRight':[[0,0,0,0,0,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,0,1,0,0,0],[0,1,1,1,1,1,0,0],[0,0,0,0,1,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
-  'Enter':     [[0,0,0,0,0,0,0,0],[0,0,0,0,0,1,0,0],[0,0,0,0,1,0,0,0],[0,0,0,1,0,0,0,0],[0,1,0,1,0,0,0,0],[0,0,1,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
-  'Escape':    [[0,0,0,0,0,0,0,0],[0,1,0,0,0,1,0,0],[0,0,1,0,1,0,0,0],[0,0,0,1,0,0,0,0],[0,0,1,0,1,0,0,0],[0,1,0,0,0,1,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
-  'Backspace': [[0,0,0,0,0,0,0,0],[0,0,0,1,0,0,0,0],[0,0,1,0,0,0,0,0],[0,0,1,1,1,1,0,0],[0,0,1,0,0,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
-  'Clear':     [[0,0,1,1,1,0,0,0],[0,1,0,0,0,0,0,0],[0,1,0,0,0,0,0,0],[0,1,0,0,0,0,0,0],[0,1,0,0,0,0,0,0],[0,1,0,0,0,0,0,0],[0,0,1,1,1,0,0,0],[0,0,0,0,0,0,0,0]],
-  'PageUp':    [[0,1,1,1,1,1,0,0],[0,0,0,1,0,0,0,0],[0,0,1,1,1,0,0,0],[0,1,0,1,0,1,0,0],[0,0,0,1,0,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
-  'PageDown':  [[0,0,0,0,0,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,1,0,0,0,0],[0,1,0,1,0,1,0,0],[0,0,1,1,1,0,0,0],[0,0,0,1,0,0,0,0],[0,1,1,1,1,1,0,0],[0,0,0,0,0,0,0,0]],
+  // ── NAVIGATION — trait 2px, pointe 3 niveaux ────────────────
+  'ArrowUp':[
+    [0,0,0,1,1,0,0,0],
+    [0,0,1,1,1,1,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  'ArrowDown':[
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,1,1,1,1,0,0],
+    [0,0,0,1,1,0,0,0],
+  ],
+  'ArrowLeft':[
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,1,1,0,0,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,1,1,0,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  'ArrowRight':[
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,0,1,1,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,0,1,1,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
 
-  // ── VOLUME / CANAL ────────────────────────────────────────
-  'AudioVolumeUp':   [[0,0,0,0,0,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,1,0,0,0,0],[0,1,1,1,1,1,0,0],[0,0,0,1,0,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
-  'AudioVolumeDown': [[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,1,1,1,1,1,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
-  'AudioVolumeMute': [[0,0,1,0,1,0,0,0],[0,1,1,0,0,1,0,0],[0,1,1,1,0,0,0,0],[0,1,1,1,0,0,0,0],[0,1,1,0,0,1,0,0],[0,0,1,0,1,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
-  'ChannelUp':   [[0,0,0,1,0,0,0,0],[0,0,1,1,1,0,0,0],[0,1,0,1,0,1,0,0],[0,0,0,0,0,0,0,0],[0,0,0,1,0,0,0,0],[0,0,1,1,1,0,0,0],[0,1,0,1,0,1,0,0],[0,0,0,0,0,0,0,0]],
-  'ChannelDown': [[0,1,0,1,0,1,0,0],[0,0,1,1,1,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,0,0,0,0,0],[0,1,0,1,0,1,0,0],[0,0,1,1,1,0,0,0],[0,0,0,1,0,0,0,0],[0,0,0,0,0,0,0,0]],
+  // ── ENTER — crochet ✓ gras 2px ───────────────────────────────
+  'Enter':[
+    [0,0,0,0,0,1,1,0],
+    [0,0,0,0,1,1,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,1,1,1,0,0,0],
+    [0,1,1,1,0,0,0,0],
+    [1,1,1,0,0,0,0,0],
+    [0,1,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
 
-  // ── TRANSPORT ─────────────────────────────────────────────
-  'MediaPlayPause':     [[0,0,0,0,0,0,0,0],[0,0,1,0,0,0,0,0],[0,0,1,1,0,0,0,0],[0,0,1,1,1,0,0,0],[0,0,1,1,0,0,0,0],[0,0,1,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
-  'MediaPause':         [[0,0,0,0,0,0,0,0],[0,0,1,0,1,0,0,0],[0,0,1,0,1,0,0,0],[0,0,1,0,1,0,0,0],[0,0,1,0,1,0,0,0],[0,0,1,0,1,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
-  'MediaStop':          [[0,0,0,0,0,0,0,0],[0,0,1,1,1,0,0,0],[0,0,1,1,1,0,0,0],[0,0,1,1,1,0,0,0],[0,0,1,1,1,0,0,0],[0,0,1,1,1,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
-  'MediaFastForward':   [[0,0,0,0,0,0,0,0],[0,1,0,1,0,0,0,0],[0,1,1,1,1,0,0,0],[0,1,1,1,1,1,0,0],[0,1,1,1,1,0,0,0],[0,1,0,1,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
-  'MediaRewind':        [[0,0,0,0,0,0,0,0],[0,0,0,1,0,1,0,0],[0,0,1,1,1,1,0,0],[0,1,1,1,1,1,0,0],[0,0,1,1,1,1,0,0],[0,0,0,1,0,1,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
-  'MediaTrackNext':     [[0,0,0,0,0,0,0,0],[0,0,1,0,1,0,0,0],[0,0,1,1,1,0,0,0],[0,0,1,1,1,1,0,0],[0,0,1,1,1,0,0,0],[0,0,1,0,1,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
-  'MediaTrackPrevious': [[0,0,0,0,0,0,0,0],[0,0,1,0,1,0,0,0],[0,0,1,1,1,0,0,0],[0,1,1,1,1,0,0,0],[0,0,1,1,1,0,0,0],[0,0,1,0,1,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
-  'MediaRecord':        [[0,0,0,0,0,0,0,0],[0,0,1,1,1,0,0,0],[0,1,1,1,1,1,0,0],[0,1,1,1,1,1,0,0],[0,1,1,1,1,1,0,0],[0,0,1,1,1,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
+  // ── ESCAPE — X gras 2px ──────────────────────────────────────
+  'Escape':[
+    [0,0,0,0,0,0,0,0],
+    [1,1,0,0,0,1,1,0],
+    [0,1,1,0,1,1,0,0],
+    [0,0,1,1,1,0,0,0],
+    [0,0,1,1,1,0,0,0],
+    [0,1,1,0,1,1,0,0],
+    [1,1,0,0,0,1,1,0],
+    [0,0,0,0,0,0,0,0],
+  ],
 
-  // ── SYMBOLES ──────────────────────────────────────────────
-  '*':   [[0,0,0,0,0,0,0,0],[0,0,1,0,1,0,0,0],[0,0,0,1,0,0,0,0],[0,1,1,1,1,1,0,0],[0,0,0,1,0,0,0,0],[0,0,1,0,1,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
-  '#':   [[0,0,0,0,0,0,0,0],[0,0,1,0,1,0,0,0],[0,1,1,1,1,1,0,0],[0,0,1,0,1,0,0,0],[0,1,1,1,1,1,0,0],[0,0,1,0,1,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
-  'Power':[[0,0,0,1,0,0,0,0],[0,0,1,0,1,0,0,0],[0,1,1,0,1,1,0,0],[0,1,0,0,0,1,0,0],[0,1,0,0,0,1,0,0],[0,0,1,1,1,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]],
+  // ── BACK — flèche gauche ◄ ────────────────────────────────────
+  'Backspace':[
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,1,1,0,0,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,1,1,0,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+
+  // ── CLEAR — C gras ───────────────────────────────────────────
+  'Clear':[
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,0,0,0,0,0],
+    [0,1,1,0,0,0,0,0],
+    [0,1,1,0,0,0,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+
+  // ── PAGE UP — flèche ↑ + barre ───────────────────────────────
+  'PageUp':[
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,1,1,1,1,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+
+  // ── PAGE DOWN — flèche ↓ + barre ─────────────────────────────
+  'PageDown':[
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,1,1,1,1,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+
+  // ── VOLUME + ─────────────────────────────────────────────────
+  'AudioVolumeUp':[
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+
+  // ── VOLUME − ─────────────────────────────────────────────────
+  'AudioVolumeDown':[
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+
+  // ── MUTE — haut-parleur barré ────────────────────────────────
+  'AudioVolumeMute':[
+    [0,0,0,0,0,0,0,0],
+    [0,0,1,0,0,1,0,0],
+    [0,1,1,0,1,0,0,0],
+    [1,1,1,0,0,0,0,0],
+    [1,1,1,0,0,0,0,0],
+    [0,1,1,0,1,0,0,0],
+    [0,0,1,0,0,1,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+
+  // ── CHANNEL UP — double ↑ ────────────────────────────────────
+  'ChannelUp':[
+    [0,0,0,1,1,0,0,0],
+    [0,0,1,1,1,1,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,1,1,1,1,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+
+  // ── CHANNEL DOWN — double ↓ ──────────────────────────────────
+  'ChannelDown':[
+    [0,1,1,1,1,1,1,0],
+    [0,0,1,1,1,1,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,0,0,0,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,1,1,1,1,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+
+  // ── PLAY ▶ ───────────────────────────────────────────────────
+  'MediaPlayPause':[
+    [0,0,0,0,0,0,0,0],
+    [0,1,1,0,0,0,0,0],
+    [0,1,1,1,1,0,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,0,0,0],
+    [0,1,1,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+
+  // ── PAUSE ⏸ (deux barres 2px) ────────────────────────────────
+  'MediaPause':[
+    [0,0,0,0,0,0,0,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+
+  // ── STOP ⏹ (carré 6×6) ───────────────────────────────────────
+  'MediaStop':[
+    [0,0,0,0,0,0,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+
+  // ── FAST FORWARD ▶▶ ──────────────────────────────────────────
+  'MediaFastForward':[
+    [0,0,0,0,0,0,0,0],
+    [0,1,0,0,1,0,0,0],
+    [0,1,1,0,1,1,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,0,1,1,0,0],
+    [0,1,0,0,1,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+
+  // ── REWIND ◀◀ ────────────────────────────────────────────────
+  'MediaRewind':[
+    [0,0,0,0,0,0,0,0],
+    [0,0,0,1,0,0,1,0],
+    [0,0,1,1,0,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,1,1,0,1,1,0],
+    [0,0,0,1,0,0,1,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+
+  // ── NEXT TRACK ⏭ (▶ + barre) ─────────────────────────────────
+  'MediaTrackNext':[
+    [0,0,0,0,0,0,0,0],
+    [0,1,0,0,1,1,0,0],
+    [0,1,1,0,1,1,0,0],
+    [0,1,1,1,1,1,0,0],
+    [0,1,1,1,1,1,0,0],
+    [0,1,1,0,1,1,0,0],
+    [0,1,0,0,1,1,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+
+  // ── PREV TRACK ⏮ (barre + ◀) ─────────────────────────────────
+  'MediaTrackPrevious':[
+    [0,0,0,0,0,0,0,0],
+    [0,0,1,1,0,0,1,0],
+    [0,0,1,1,0,1,1,0],
+    [0,0,1,1,1,1,1,0],
+    [0,0,1,1,1,1,1,0],
+    [0,0,1,1,0,1,1,0],
+    [0,0,1,1,0,0,1,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+
+  // ── RECORD ● (cercle plein) ───────────────────────────────────
+  'MediaRecord':[
+    [0,0,0,0,0,0,0,0],
+    [0,0,1,1,1,1,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,1,1,1,1,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+
+  // ── ASTERISQUE * ─────────────────────────────────────────────
+  '*':[
+    [0,0,0,0,0,0,0,0],
+    [0,1,0,1,1,0,1,0],
+    [0,0,1,1,1,1,0,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,1,1,1,1,0,0],
+    [0,1,0,1,1,0,1,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+
+  // ── DIÈSE # ──────────────────────────────────────────────────
+  '#':[
+    [0,0,0,0,0,0,0,0],
+    [0,0,1,1,0,1,1,0],
+    [0,0,1,1,0,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,0],
+    [0,0,1,1,0,1,1,0],
+    [0,0,1,1,0,1,1,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+
+  // ── POWER ⏻ ──────────────────────────────────────────────────
+  'Power':[
+    [0,0,0,1,1,0,0,0],
+    [0,0,1,1,1,1,0,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,1,1,0,0,1,1,0],
+    [0,0,1,1,1,1,0,0],
+    [0,0,0,1,1,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
 };
 
-// ─────────────────────────────────────────────────────────────
-// COULEURS [r, g, b] — 0-63 (MK2)
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// COULEURS — [r, g, b] (0-63 pour MK2 SysEx RGB)
+// ═══════════════════════════════════════════════════════════════
+// Valeurs pré-calculées pour éviter l'arrondi hex→/4
 let digitColorRGB = [63, 50, 0]; // ambre-jaune par défaut
 
 function getColor(key) {
   if ('0123456789'.includes(key) || key === '10') return digitColorRGB;
-  if (key.startsWith('Arrow'))                 return [0, 35, 63];
-  if (key === 'Enter')                         return [0, 63, 17];
-  if (key === 'Escape' || key === 'Clear')     return [63, 0, 20];
-  if (key === 'Backspace')                     return [30, 0, 63];
-  if (key.includes('Volume') || key.includes('Mute')) return [63, 30, 0];
-  if (key === 'ChannelUp' || key === 'ChannelDown')   return [25, 0, 63];
-  if (key === 'PageUp'    || key === 'PageDown')       return [25, 0, 63];
-  if (key.startsWith('Media'))                 return [0, 50, 50];
-  if (key === 'Power')                         return [63, 0, 40];
-  if (key === '*' || key === '#')              return [40, 63, 0];
+  if (key.startsWith('Arrow'))                          return [0, 36, 63];
+  if (key === 'Enter')                                  return [0, 63, 0];   // vert max
+  if (key === 'Escape' || key === 'Clear')              return [63, 0, 20];
+  if (key === 'Backspace')                              return [28, 0, 63];
+  if (key.startsWith('AudioVolume') || key === 'AudioVolumeMute') return [63, 28, 0];
+  if (key === 'ChannelUp' || key === 'ChannelDown')     return [25, 0, 63];
+  if (key === 'PageUp'    || key === 'PageDown')        return [25, 0, 63];
+  if (key.startsWith('Media'))                          return [0, 50, 50];
+  if (key === 'Power')                                  return [63, 0, 40];
+  if (key === '*' || key === '#')                       return [40, 63, 0];
   return [30, 0, 63];
 }
 
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 // WEB MIDI
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 let midi = null, lpOut = null;
 
 async function connectMIDI() {
@@ -222,75 +603,100 @@ async function connectMIDI() {
     log('MIDI refusé: '+e.message,'err');
   }
 }
-
 function scanPorts() {
   lpOut = null;
-  const outputs = [...midi.outputs.values()];
-  for (const o of outputs) {
-    if (o.name.toLowerCase().includes('launchpad')) { lpOut = o; break; }
-  }
+  const outs = [...midi.outputs.values()];
+  for (const o of outs) if (o.name.toLowerCase().includes('launchpad')) { lpOut = o; break; }
   if (lpOut) {
     setChip('lp','ok', lpOut.name.replace(/Launchpad /i,''));
     log('Launchpad: '+lpOut.name,'ok');
     clearAll();
   } else {
     setChip('lp','idle','non trouvé');
-    log('Sorties: '+(outputs.map(o=>o.name).join(', ')||'aucune'));
+    log('Sorties: '+(outs.map(o=>o.name).join(', ')||'aucune'));
   }
 }
+function setChip(id,s,t){ document.getElementById('chip-'+id).className='chip '+s; document.getElementById('lbl-'+id).textContent=t; }
 
-function setChip(id, state, txt) {
-  document.getElementById('chip-'+id).className = 'chip '+state;
-  document.getElementById('lbl-'+id).textContent = txt;
-}
-
-function mkNote(row, col) { return (8-row)*10+(col+1); }
-function ledOff(n)        { if (lpOut) lpOut.send([0x90,n,0]); }
-function ledRGB(n,r,g,b)  { if (lpOut) lpOut.send([0xF0,0x00,0x20,0x29,0x02,0x18,0x0B,n,r,g,b,0xF7]); }
+function mkNote(row,col){ return (8-row)*10+(col+1); }
+function ledOff(n)       { if(lpOut) lpOut.send([0x90,n,0]); }
+function ledRGB(n,r,g,b) { if(lpOut) lpOut.send([0xF0,0x00,0x20,0x29,0x02,0x18,0x0B,n,r,g,b,0xF7]); }
 
 function clearAll() {
-  for (let r=0;r<8;r++) for (let c=0;c<8;c++) ledOff(mkNote(r,c));
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++) ledOff(mkNote(r,c));
   document.querySelectorAll('.pad').forEach(p=>{ p.className='pad'; p.style.background=''; p.style.boxShadow=''; });
 }
 
 function displayChar(key) {
-  const bm = FONT[key]; if (!bm) return;
+  const bm = FONT[key]; if(!bm) return;
   const [cr,cg,cb] = getColor(key);
   const css = `rgb(${cr*4},${cg*4},${cb*4})`;
   const pads = document.querySelectorAll('.pad');
   clearAll();
-  for (let r=0;r<8;r++) for (let c=0;c<8;c++) if (bm[r][c]) {
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++) if(bm[r][c]) {
     const p = pads[r*8+c];
-    p.className = 'pad lit';
-    p.style.background = css;
-    p.style.boxShadow = `0 0 8px ${css},0 0 20px ${css}40`;
+    p.className='pad lit';
+    p.style.background=css;
+    p.style.boxShadow=`0 0 8px ${css},0 0 20px ${css}40`;
     ledRGB(mkNote(r,c),cr,cg,cb);
   }
 }
 
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 // SÉLECTEUR DE COULEUR
-// ─────────────────────────────────────────────────────────────
-function setDigitColor(hex, syncPicker=true) {
+// Utilise data-r/g/b (valeurs MK2 0-63) directement → pas de conversion hex→float→arrondi
+// ═══════════════════════════════════════════════════════════════
+function setDigitColorRGB(r63, g63, b63, hexForSwatch) {
+  digitColorRGB = [r63, g63, b63];
+
+  // Mise à jour du dot de légende
+  const css = `rgb(${r63*4},${g63*4},${b63*4})`;
+  document.getElementById('digit-dot').style.background = css;
+
+  // Sélection visuelle swatch
+  document.querySelectorAll('.sw').forEach(s =>
+    s.classList.toggle('selected', s.dataset.hex === hexForSwatch)
+  );
+
+  // Si un chiffre est affiché, le raffraîchir SANS toucher aux autres affichages
+  if (lastDisplayed && (FONT[lastDisplayed] !== undefined) &&
+      ('0123456789'.includes(lastDisplayed) || lastDisplayed === '10')) {
+    displayChar(lastDisplayed);
+  }
+  // Redonner le focus au document pour que les touches IR continuent de fonctionner
+  refocusDoc();
+}
+
+function refocusDoc() {
+  // Petit délai pour laisser le browser traiter le clic en cours
+  setTimeout(() => { document.body.focus(); }, 50);
+}
+
+// Swatches : valeurs directement en MK2 (0-63)
+document.querySelectorAll('.sw').forEach(s => {
+  s.addEventListener('mousedown', e => e.preventDefault()); // empêche le focus steal
+  s.addEventListener('click', e => {
+    e.preventDefault();
+    setDigitColorRGB(+s.dataset.r, +s.dataset.g, +s.dataset.b, s.style.background);
+  });
+});
+
+// Color picker natif : conversion hex → 0-63
+document.getElementById('cpick').addEventListener('input', e => {
+  const hex = e.target.value;
   const r = parseInt(hex.slice(1,3),16);
   const g = parseInt(hex.slice(3,5),16);
   const b = parseInt(hex.slice(5,7),16);
-  digitColorRGB = [Math.round(r/4), Math.round(g/4), Math.round(b/4)];
-  document.querySelectorAll('.sw').forEach(s => s.classList.toggle('selected', s.dataset.hex===hex));
-  if (syncPicker) document.getElementById('cpick').value = hex;
-  document.getElementById('digit-dot').style.background = hex;
-  if (lastDisplayed && ('0123456789'.includes(lastDisplayed)||lastDisplayed==='10'))
-    displayChar(lastDisplayed);
-}
-document.querySelectorAll('.sw').forEach(s=>s.addEventListener('click',()=>setDigitColor(s.dataset.hex)));
-document.getElementById('cpick').addEventListener('input', e => {
-  setDigitColor(e.target.value, false);
-  document.querySelectorAll('.sw').forEach(s=>s.classList.remove('selected'));
+  const r63 = Math.min(63, Math.round(r/4.04)); // 255→63 exact
+  const g63 = Math.min(63, Math.round(g/4.04));
+  const b63 = Math.min(63, Math.round(b/4.04));
+  setDigitColorRGB(r63, g63, b63, null);
 });
+document.getElementById('cpick').addEventListener('change', () => refocusDoc());
 
-// ─────────────────────────────────────────────────────────────
-// MAPPING CLAVIER — HP Media Center eHome
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// MAPPING HP MEDIA CENTER
+// ═══════════════════════════════════════════════════════════════
 const CODE_MAP = {
   'Digit0':'0','Numpad0':'0','Digit1':'1','Numpad1':'1','Digit2':'2','Numpad2':'2',
   'Digit3':'3','Numpad3':'3','Digit4':'4','Numpad4':'4','Digit5':'5','Numpad5':'5',
@@ -300,14 +706,12 @@ const CODE_MAP = {
   'ArrowUp':'ArrowUp','ArrowDown':'ArrowDown','ArrowLeft':'ArrowLeft','ArrowRight':'ArrowRight',
   'Enter':'Enter','NumpadEnter':'Enter',
   'Escape':'Escape',
-  'Backspace':'Backspace',   // Back button
-  'BrowserBack':'Backspace', // Back button (variante HID)
-  'Delete':'Clear',          // Clear button
-  'PageUp':'ChannelUp',      // Ch+ sur certains remotes
-  'PageDown':'ChannelDown',  // Ch-
+  'Backspace':'Backspace','BrowserBack':'Backspace',
+  'Delete':'Clear',
+  'PageUp':'ChannelUp','PageDown':'ChannelDown',
 };
 const KEY_MAP = {
-  '#':'#', '*':'*',
+  '#':'#','*':'*',
   'BrowserBack':'Backspace',
   'AudioVolumeUp':'AudioVolumeUp','AudioVolumeDown':'AudioVolumeDown',
   'AudioVolumeMute':'AudioVolumeMute','VolumeMute':'AudioVolumeMute',
@@ -321,112 +725,96 @@ const KEY_MAP = {
   'Power':'Power','PowerOff':'Power',
 };
 
-// Touches dont on bloque TOUJOURS le défaut navigateur
+// Touches dont on bloque toujours le comportement navigateur
 const ALWAYS_PREVENT = new Set([
   'Backspace','BrowserBack','ArrowUp','ArrowDown','ArrowLeft','ArrowRight',
-  'PageUp','PageDown','Delete','Space',
+  'PageUp','PageDown','Delete','Space','F1',
 ]);
 
-// ─────────────────────────────────────────────────────────────
-// ÉTAT "10" ET ANTI-RÉPÉTITION IR
-// ─────────────────────────────────────────────────────────────
+// ── État "10" ───────────────────────────────────────────────
 let tenWait=false, tenTimer=null, lastDisplayed=null;
 let lastIRKey=null, lastIRTime=0;
-const DEBOUNCE_MS=160;
+const DEBOUNCE_MS = 150;
 
 document.addEventListener('keydown', e => {
-  // Bloquer navigation navigateur (Back, flèches, etc.)
-  if (ALWAYS_PREVENT.has(e.code)||ALWAYS_PREVENT.has(e.key)) e.preventDefault();
+  if(ALWAYS_PREVENT.has(e.code)||ALWAYS_PREVENT.has(e.key)) e.preventDefault();
 
   const mapped = CODE_MAP[e.code] || KEY_MAP[e.key];
-
-  if (!mapped) {
+  if(!mapped) {
     const skip=new Set(['F5','F11','F12','Tab','CapsLock','ShiftLeft','ShiftRight',
-      'ControlLeft','ControlRight','AltLeft','AltRight','MetaLeft','MetaRight']);
-    if (!skip.has(e.key)&&!skip.has(e.code))
+      'ControlLeft','ControlRight','AltLeft','AltRight','MetaLeft','MetaRight','Unidentified']);
+    if(!skip.has(e.key)&&!skip.has(e.code))
       log(`non mappé → code="${e.code}"  key="${e.key}"`);
     return;
   }
-
   e.preventDefault();
 
-  // Debounce anti-répétition IR
-  const now = Date.now();
-  if (mapped===lastIRKey && now-lastIRTime<DEBOUNCE_MS) return;
+  const now=Date.now();
+  if(mapped===lastIRKey && now-lastIRTime<DEBOUNCE_MS) return;
   lastIRKey=mapped; lastIRTime=now;
 
   // Séquence "10"
-  if (mapped==='0' && tenWait) {
-    clearTimeout(tenTimer); tenWait=false;
-    trigger('10','1 → 0'); return;
-  }
-  if (tenWait && mapped!=='0') { clearTimeout(tenTimer); tenWait=false; }
-  if (mapped==='1') {
-    tenWait=true;
-    tenTimer=setTimeout(()=>{ tenWait=false; },1500);
-  }
+  if(mapped==='0' && tenWait){ clearTimeout(tenTimer); tenWait=false; trigger('10','1→0'); return; }
+  if(tenWait && mapped!=='0'){ clearTimeout(tenTimer); tenWait=false; }
+  if(mapped==='1'){ tenWait=true; tenTimer=setTimeout(()=>{tenWait=false;},1500); }
 
   trigger(mapped, e.code||e.key);
 });
 
 function trigger(key, raw) {
-  lastDisplayed=key;
-  const [cr,cg,cb]=getColor(key);
-  const css=`rgb(${cr*4},${cg*4},${cb*4})`;
-  const kv=document.getElementById('key-val');
-  kv.textContent=key;
-  kv.style.color=css;
-  kv.style.textShadow=`0 0 15px ${css}88`;
-  document.getElementById('key-raw').textContent=raw||'';
+  lastDisplayed = key;
+  const [cr,cg,cb] = getColor(key);
+  const css = `rgb(${cr*4},${cg*4},${cb*4})`;
+  const kv = document.getElementById('key-val');
+  kv.textContent = key;
+  kv.style.color = css;
+  kv.style.textShadow = `0 0 15px ${css}88`;
+  document.getElementById('key-raw').textContent = raw||'';
   log(`▶ ${key}  ${raw?'('+raw+')':''}`, 'key');
   displayChar(key);
 }
 
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 // TEST AUTO
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 let testTid=null;
 function runTest() {
-  if (testTid) { clearInterval(testTid); testTid=null; clearAll(); return; }
-  const seq=['0','1','2','3','4','5','6','7','8','9','10',
-    'ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Enter','Escape',
-    'AudioVolumeUp','AudioVolumeDown','AudioVolumeMute',
+  if(testTid){ clearInterval(testTid); testTid=null; clearAll(); return; }
+  const seq=[
+    '0','1','2','3','4','5','6','7','8','9','10',
+    'ArrowUp','ArrowDown','ArrowLeft','ArrowRight',
+    'Enter','Escape','AudioVolumeUp','AudioVolumeDown','AudioVolumeMute',
     'MediaPlayPause','MediaPause','MediaStop',
     'MediaFastForward','MediaRewind','MediaTrackNext','MediaTrackPrevious',
-    'MediaRecord','ChannelUp','ChannelDown','Backspace','Clear','*','#','Power'];
+    'MediaRecord','ChannelUp','ChannelDown','Backspace','Clear','*','#','Power'
+  ];
   let i=0;
   testTid=setInterval(()=>{
-    if (i>=seq.length){ clearInterval(testTid); testTid=null; clearAll();
+    if(i>=seq.length){ clearInterval(testTid); testTid=null; clearAll();
       document.getElementById('key-val').textContent='—';
       document.getElementById('key-raw').textContent=''; return; }
-    const k=seq[i++];
-    lastDisplayed=k;
-    const [cr,cg,cb]=getColor(k);
-    const css=`rgb(${cr*4},${cg*4},${cb*4})`;
-    const kv=document.getElementById('key-val');
-    kv.textContent=k; kv.style.color=css; kv.style.textShadow=`0 0 15px ${css}88`;
-    document.getElementById('key-raw').textContent='(test)';
-    displayChar(k);
-  },500);
+    trigger(seq[i++],'test');
+  },480);
 }
 
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 // LOG
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 const logLines=[];
 function log(msg,type='') {
   logLines.unshift({msg,type});
-  if (logLines.length>14) logLines.pop();
+  if(logLines.length>15) logLines.pop();
   document.getElementById('log').innerHTML=logLines.map(l=>`<div class="ll ${l.type}">${l.msg}</div>`).join('');
 }
 
-// ─────────────────────────────────────────────────────────────
-// INIT GRILLE ÉCRAN
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
 (function(){
   const g=document.getElementById('grid');
-  for(let i=0;i<64;i++){const d=document.createElement('div');d.className='pad';g.appendChild(d);}
-  log('Prêt — cliquer ici, puis utiliser la télécommande');
+  for(let i=0;i<64;i++){ const d=document.createElement('div'); d.className='pad'; g.appendChild(d); }
+  document.body.focus();
+  log('Prêt — cliquer ici puis utiliser la télécommande');
 })();
 </script>
 </body>
