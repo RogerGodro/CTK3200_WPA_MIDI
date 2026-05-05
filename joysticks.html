@@ -198,8 +198,8 @@ input[type=range]{accent-color:var(--gold);width:65px;cursor:pointer;}
 <!-- ═══ OVERLAY ═══════════════════════════════════════════════ -->
 <div class="ovl" id="overlay">
   <div class="ovl-title">DUEL SCÉNIQUE</div>
-  <div class="ovl-tag">Cercle des Quintes · MIDI · PSR-E473</div>
-  <div class="ovl-sub">Branchez le PSR-E473 et vos manches à balai<br>Choisissez la sortie MIDI · Levez le rideau</div>
+  <div class="ovl-tag">Cercle des Quintes · MIDI · CTK-3200</div>
+  <div class="ovl-sub">Branchez le CTK-3200 et vos manches à balai<br>Choisissez la sortie MIDI · Levez le rideau</div>
 
   <div class="ovl-midi">
     <div class="midi-dot" id="mididot"></div>
@@ -234,14 +234,13 @@ input[type=range]{accent-color:var(--gold);width:65px;cursor:pointer;}
 <header>
   <div class="header-left">
     <div class="title">DUEL SCÉNIQUE · MIDI</div>
-    <div class="subtitle">Cercle des Quintes · Théâtre d'Impro · PSR-E473</div>
+    <div class="subtitle">Cercle des Quintes · Théâtre d'Impro · CTK-3200</div>
   </div>
   <div class="header-right">
     <div class="midi-ind">
       <div class="midi-dot" id="mididot2"></div>
       <span id="midistatus2">MIDI —</span>
     </div>
-    <button class="hbtn" id="refreshmidibtn" title="Rafraîchir les ports MIDI">🔄 MIDI</button>
     <button class="hbtn" id="fullscreenbtn" title="Plein écran">⛶ Plein écran</button>
     <button class="hbtn cbtn danger" onclick="midiPanic()">🔇 Panic</button>
   </div>
@@ -270,7 +269,7 @@ input[type=range]{accent-color:var(--gold);width:65px;cursor:pointer;}
         </div>
         <div class="sdot" id="p1sdot"></div>
       </div>
-      <div class="tone-label">Timbre PSR-E473</div>
+      <div class="tone-label">Timbre CTK-3200</div>
       <select class="tone-select" id="tone0" disabled><option>Chargement des 414 timbres...</option></select>
       <div class="tone-num" id="tonenum0">—</div>
       <div class="p-midi-row">
@@ -341,7 +340,7 @@ input[type=range]{accent-color:var(--gold);width:65px;cursor:pointer;}
         </div>
         <div class="sdot" id="p2sdot"></div>
       </div>
-      <div class="tone-label">Timbre PSR-E473</div>
+      <div class="tone-label">Timbre CTK-3200</div>
       <select class="tone-select" id="tone1" disabled><option>Chargement des 414 timbres...</option></select>
       <div class="tone-num" id="tonenum1">—</div>
       <div class="p-midi-row">
@@ -442,7 +441,7 @@ const DESCS = {
 // ──────────────────────────────────────────────────
 let mode='duel', threshold=0.12, globalTrans=0;
 let octaves=[4,4], gpIdxs=[null,null], prevBtns=[[],[]], loopRunning=false;
-let tones=PSR_VOICES;
+let tones=[];
 let pState=[
   {noteIdx:0,midiNote:-1,active:false,sustain:false,vol:0,angle:270},
   {noteIdx:7,midiNote:-1,active:false,sustain:false,vol:0,angle:270}
@@ -465,13 +464,10 @@ function sendProgramChange(si){
   try{
     const t=JSON.parse(sel.value);
     const ch=si;
-    const msb=t.msb??0;
-    const lsb=t.lsb??0;
-    const pc=t.pc??t.prog??0;
-    o.send([0xB0|ch,0x00,msb]);
-    o.send([0xB0|ch,0x20,lsb]);
-    o.send([0xC0|ch,pc]);
-    document.getElementById(`tonenum${si}`).textContent=`#${t.num} ${t.name||t.nm||''} · MSB:${msb} LSB:${lsb} PC:${pc+1}`;
+    o.send([0xB0|ch,0x00,t.msb??0]);
+    o.send([0xB0|ch,0x20,0x00]);
+    o.send([0xC0|ch,t.prog??0]);
+    document.getElementById(`tonenum${si}`).textContent=`#${t.num} · Bank:${t.msb??0} · PC:${t.prog}`;
   }catch(e){}
 }
 
@@ -519,7 +515,7 @@ function populateMidiOutputs(){
     });
     // Auto-select CTK if nothing chosen yet
     if(!midiOuts[si]){
-      const ctk=outputs.find(o=>['psr','yamaha','ew425','e473','digital keyboard'].some(k=>o.name.toLowerCase().includes(k)));
+      const ctk=outputs.find(o=>o.name.toLowerCase().includes('ctk')||o.name.toLowerCase().includes('casio'));
       if(ctk){ sel.value=ctk.id; selectPlayerMidi(si,ctk.id); }
     }
   });
@@ -553,293 +549,15 @@ function setMidiStatus(msg,ok){
 }
 
 // ──────────────────────────────────────────────────
-// VOIX PSR-E473 / EW425 — Source: Yamaha Data List officiel
-// MSB=CC0, lsb=CC32, pc=Program Change 0-indexed
-// Voix sans PC MIDI (*, **) et arpeggios 323-362 exclus
+// TONES
 // ──────────────────────────────────────────────────
-const PSR_VOICES=[
-{num:1,  name:"Live! Concert Grand Piano",    cat:"Piano",   msb:0,  lsb:115,pc:0},
-{num:2,  name:"Stereo Grand Piano",           cat:"Piano",   msb:0,  lsb:112,pc:0},
-{num:4,  name:"Bright Piano",                 cat:"Piano",   msb:0,  lsb:112,pc:1},
-{num:6,  name:"Harpsichord",                  cat:"Piano",   msb:0,  lsb:112,pc:6},
-{num:8,  name:"Honky Tonk Piano",             cat:"Piano",   msb:0,  lsb:112,pc:3},
-{num:9,  name:"MIDI Grand Piano",             cat:"Piano",   msb:0,  lsb:112,pc:2},
-{num:10, name:"CP80",                         cat:"Piano",   msb:0,  lsb:113,pc:2},
-{num:13, name:"Cool! Suitcase Electric Piano",cat:"E.Piano", msb:0,  lsb:118,pc:4},
-{num:14, name:"Jazz Chorus Electric Piano",   cat:"E.Piano", msb:0,  lsb:118,pc:5},
-{num:15, name:"Phase Electric Piano",         cat:"E.Piano", msb:0,  lsb:120,pc:4},
-{num:16, name:"Cool! Tremolo Electric Piano", cat:"E.Piano", msb:0,  lsb:119,pc:4},
-{num:17, name:"Cool! Electric Piano",         cat:"E.Piano", msb:0,  lsb:121,pc:4},
-{num:18, name:"Stage Electric Piano",         cat:"E.Piano", msb:0,  lsb:117,pc:4},
-{num:19, name:"Cool! Galaxy Electric Piano",  cat:"E.Piano", msb:0,  lsb:114,pc:4},
-{num:20, name:"Hyper Tines",                  cat:"E.Piano", msb:0,  lsb:113,pc:5},
-{num:22, name:"Funky Electric Piano",         cat:"E.Piano", msb:0,  lsb:112,pc:4},
-{num:23, name:"DX Modern Electric Piano",     cat:"E.Piano", msb:0,  lsb:112,pc:5},
-{num:24, name:"Venus Electric Piano",         cat:"E.Piano", msb:0,  lsb:114,pc:5},
-{num:26, name:"Clavi",                        cat:"E.Piano", msb:0,  lsb:112,pc:7},
-{num:27, name:"Wah Clavi",                    cat:"E.Piano", msb:0,  lsb:113,pc:7},
-{num:28, name:"Progressive Rock Organ",       cat:"Organ",   msb:104,lsb:54, pc:16},
-{num:29, name:"Jazz Lead Organ",              cat:"Organ",   msb:104,lsb:51, pc:16},
-{num:30, name:"Gospel Shout Organ",           cat:"Organ",   msb:104,lsb:55, pc:16},
-{num:31, name:"Hard Rock Organ",              cat:"Organ",   msb:104,lsb:44, pc:16},
-{num:32, name:"Clean Amp Organ",              cat:"Organ",   msb:104,lsb:53, pc:16},
-{num:33, name:"Jazz Swish Organ",             cat:"Organ",   msb:104,lsb:52, pc:16},
-{num:34, name:"Jazz Light Organ",             cat:"Organ",   msb:104,lsb:48, pc:16},
-{num:35, name:"Gospel Worship Organ",         cat:"Organ",   msb:104,lsb:56, pc:16},
-{num:36, name:"8feet Organ",                  cat:"Organ",   msb:104,lsb:58, pc:16},
-{num:37, name:"White Bar Organ",              cat:"Organ",   msb:104,lsb:59, pc:16},
-{num:38, name:"Cool! Organ",                  cat:"Organ",   msb:0,  lsb:118,pc:18},
-{num:39, name:"Cool! Rotor Organ",            cat:"Organ",   msb:0,  lsb:117,pc:18},
-{num:40, name:"Jazz Organ 1",                 cat:"Organ",   msb:0,  lsb:112,pc:16},
-{num:41, name:"Jazz Organ 1 + Rotary Fast",   cat:"Organ",   msb:104,lsb:49, pc:16},
-{num:42, name:"Jazz Organ 2",                 cat:"Organ",   msb:0,  lsb:113,pc:16},
-{num:43, name:"Jazz Organ 2 + Rotary Fast",   cat:"Organ",   msb:104,lsb:50, pc:16},
-{num:44, name:"Rock Organ",                   cat:"Organ",   msb:0,  lsb:112,pc:18},
-{num:45, name:"Octave Shift Organ",           cat:"Organ",   msb:0,  lsb:120,pc:18},
-{num:46, name:"Purple Organ",                 cat:"Organ",   msb:0,  lsb:114,pc:18},
-{num:47, name:"Itende Organ",                 cat:"Organ",   msb:104,lsb:57, pc:16},
-{num:48, name:"Click Organ",                  cat:"Organ",   msb:0,  lsb:112,pc:17},
-{num:49, name:"Bright Organ",                 cat:"Organ",   msb:0,  lsb:116,pc:16},
-{num:50, name:"Theater Organ",                cat:"Organ",   msb:0,  lsb:127,pc:18},
-{num:54, name:"Chapel Organ",                 cat:"Organ",   msb:0,  lsb:113,pc:19},
-{num:55, name:"Pipe Organ",                   cat:"Organ",   msb:0,  lsb:112,pc:19},
-{num:56, name:"Reed Organ",                   cat:"Organ",   msb:0,  lsb:112,pc:20},
-{num:57, name:"Musette Accordion",            cat:"Organ",   msb:0,  lsb:112,pc:21},
-{num:58, name:"Traditional Accordion",        cat:"Organ",   msb:0,  lsb:113,pc:21},
-{num:59, name:"Bandoneon",                    cat:"Organ",   msb:0,  lsb:113,pc:23},
-{num:60, name:"Sweet! Harmonica",             cat:"Organ",   msb:0,  lsb:112,pc:22},
-{num:61, name:"Modern Harp",                  cat:"Organ",   msb:0,  lsb:113,pc:22},
-{num:62, name:"Blues Harp",                   cat:"Organ",   msb:0,  lsb:114,pc:22},
-{num:63, name:"Harmonica",                    cat:"Organ",   msb:0,  lsb:115,pc:22},
-{num:69, name:"Dynamic Nylon Guitar",         cat:"Guitar",  msb:0,  lsb:116,pc:24},
-{num:70, name:"Dynamic Overdriven",           cat:"Guitar",  msb:0,  lsb:118,pc:29},
-{num:71, name:"Dynamic Distortion Guitar",    cat:"Guitar",  msb:0,  lsb:121,pc:30},
-{num:72, name:"Nylon Guitar",                 cat:"Guitar",  msb:0,  lsb:122,pc:24},
-{num:73, name:"Classical Guitar",             cat:"Guitar",  msb:0,  lsb:112,pc:24},
-{num:74, name:"Steel Guitar",                 cat:"Guitar",  msb:104,lsb:25, pc:25},
-{num:75, name:"Folk Guitar",                  cat:"Guitar",  msb:0,  lsb:112,pc:25},
-{num:76, name:"Jazz Guitar",                  cat:"Guitar",  msb:0,  lsb:112,pc:26},
-{num:78, name:"60s Clean Guitar",             cat:"Guitar",  msb:0,  lsb:117,pc:27},
-{num:79, name:"12 Strings Guitar",            cat:"Guitar",  msb:0,  lsb:113,pc:25},
-{num:80, name:"Clean Guitar",                 cat:"Guitar",  msb:0,  lsb:112,pc:27},
-{num:81, name:"Wah Guitar",                   cat:"Guitar",  msb:0,  lsb:127,pc:27},
-{num:82, name:"Octave Guitar",                cat:"Guitar",  msb:0,  lsb:113,pc:26},
-{num:83, name:"Muted Guitar",                 cat:"Guitar",  msb:0,  lsb:112,pc:28},
-{num:84, name:"Overdriven Guitar",            cat:"Guitar",  msb:0,  lsb:112,pc:29},
-{num:85, name:"Distortion Guitar",            cat:"Guitar",  msb:0,  lsb:112,pc:30},
-{num:86, name:"Wah Distortion Guitar",        cat:"Guitar",  msb:0,  lsb:127,pc:30},
-{num:88, name:"Dynamic Electric Bass",        cat:"Bass",    msb:0,  lsb:116,pc:33},
-{num:89, name:"Finger Bass",                  cat:"Bass",    msb:0,  lsb:112,pc:33},
-{num:90, name:"Acoustic Bass",                cat:"Bass",    msb:0,  lsb:112,pc:32},
-{num:91, name:"Pick Bass",                    cat:"Bass",    msb:0,  lsb:112,pc:34},
-{num:92, name:"Fretless Bass",                cat:"Bass",    msb:0,  lsb:112,pc:35},
-{num:93, name:"Slap Bass",                    cat:"Bass",    msb:0,  lsb:112,pc:36},
-{num:94, name:"Multi Saw Bass",               cat:"Bass",    msb:104,lsb:20, pc:87},
-{num:95, name:"Deep Sub",                     cat:"Bass",    msb:104,lsb:18, pc:87},
-{num:96, name:"DX100 Bass",                   cat:"Bass",    msb:0,  lsb:118,pc:39},
-{num:97, name:"Ramp Bass",                    cat:"Bass",    msb:0,  lsb:119,pc:39},
-{num:98, name:"Dark Core Bass",               cat:"Bass",    msb:0,  lsb:120,pc:39},
-{num:99, name:"Fat Lo Bass",                  cat:"Bass",    msb:0,  lsb:119,pc:38},
-{num:100,name:"Bleep Bass",                   cat:"Bass",    msb:0,  lsb:122,pc:39},
-{num:101,name:"Funk Bass",                    cat:"Bass",    msb:0,  lsb:121,pc:39},
-{num:102,name:"Synth Bass",                   cat:"Bass",    msb:0,  lsb:112,pc:38},
-{num:103,name:"Hi-Q Bass",                    cat:"Bass",    msb:0,  lsb:113,pc:38},
-{num:104,name:"Dance Bass",                   cat:"Bass",    msb:0,  lsb:113,pc:39},
-{num:105,name:"S.Art Lite Strings",           cat:"Strings", msb:8,  lsb:96, pc:49},
-{num:106,name:"Live! Strings",                cat:"Strings", msb:0,  lsb:117,pc:49},
-{num:107,name:"Studio Strings",               cat:"Strings", msb:104,lsb:23, pc:48},
-{num:108,name:"Strings",                      cat:"Strings", msb:0,  lsb:112,pc:48},
-{num:109,name:"Chamber Strings",              cat:"Strings", msb:0,  lsb:112,pc:49},
-{num:110,name:"Marcato Strings",              cat:"Strings", msb:0,  lsb:115,pc:49},
-{num:111,name:"Slow Strings",                 cat:"Strings", msb:0,  lsb:113,pc:49},
-{num:115,name:"Tremolo Strings",              cat:"Strings", msb:0,  lsb:112,pc:44},
-{num:116,name:"Synth Strings",                cat:"Strings", msb:0,  lsb:112,pc:50},
-{num:117,name:"Pizzicato Strings",            cat:"Strings", msb:0,  lsb:112,pc:45},
-{num:118,name:"Orchestra Pizzicato",          cat:"Strings", msb:0,  lsb:116,pc:45},
-{num:120,name:"Sweet! Violin",                cat:"Strings", msb:0,  lsb:113,pc:40},
-{num:121,name:"Violin",                       cat:"Strings", msb:0,  lsb:112,pc:40},
-{num:122,name:"Cello",                        cat:"Strings", msb:0,  lsb:112,pc:42},
-{num:124,name:"Contrabass",                   cat:"Strings", msb:0,  lsb:112,pc:43},
-{num:125,name:"Harp",                         cat:"Strings", msb:0,  lsb:112,pc:46},
-{num:127,name:"Orchestra Hit",                cat:"Strings", msb:0,  lsb:112,pc:55},
-{num:129,name:"S.Art Lite Brass Section",     cat:"Brass",   msb:8,  lsb:96, pc:56},
-{num:130,name:"Live! Brass",                  cat:"Brass",   msb:0,  lsb:117,pc:62},
-{num:131,name:"Brass Section",                cat:"Brass",   msb:0,  lsb:112,pc:61},
-{num:132,name:"Big Band Brass",               cat:"Brass",   msb:0,  lsb:113,pc:61},
-{num:133,name:"Octave Brass",                 cat:"Brass",   msb:0,  lsb:116,pc:61},
-{num:139,name:"Brass Hit",                    cat:"Brass",   msb:0,  lsb:113,pc:55},
-{num:140,name:"80s Brass",                    cat:"Brass",   msb:0,  lsb:113,pc:62},
-{num:142,name:"Mellow Horns",                 cat:"Brass",   msb:0,  lsb:119,pc:61},
-{num:143,name:"Funky Brass",                  cat:"Brass",   msb:0,  lsb:115,pc:62},
-{num:145,name:"Synth Brass",                  cat:"Brass",   msb:0,  lsb:112,pc:62},
-{num:146,name:"Sweet! Trumpet",               cat:"Brass",   msb:0,  lsb:115,pc:56},
-{num:147,name:"Sweet! Trombone",              cat:"Brass",   msb:0,  lsb:117,pc:57},
-{num:148,name:"Trumpet",                      cat:"Brass",   msb:0,  lsb:112,pc:56},
-{num:149,name:"Distortion Trumpet",           cat:"Brass",   msb:0,  lsb:127,pc:56},
-{num:150,name:"Trombone",                     cat:"Brass",   msb:0,  lsb:112,pc:57},
-{num:151,name:"Trombone Section",             cat:"Brass",   msb:0,  lsb:113,pc:57},
-{num:153,name:"Muted Trumpet",                cat:"Brass",   msb:0,  lsb:112,pc:59},
-{num:154,name:"French Horn",                  cat:"Brass",   msb:0,  lsb:112,pc:60},
-{num:156,name:"Tuba",                         cat:"Brass",   msb:0,  lsb:112,pc:58},
-{num:157,name:"S.Art Lite Tenor Sax",         cat:"Woodwind",msb:8,  lsb:96, pc:82},
-{num:158,name:"Sweet! Tenor Sax",             cat:"Woodwind",msb:0,  lsb:117,pc:66},
-{num:159,name:"Sweet! Soprano Sax",           cat:"Woodwind",msb:0,  lsb:113,pc:64},
-{num:160,name:"Sax Section",                  cat:"Woodwind",msb:0,  lsb:122,pc:66},
-{num:161,name:"Small Sax Section",            cat:"Woodwind",msb:0,  lsb:116,pc:65},
-{num:164,name:"Tenor Sax",                    cat:"Woodwind",msb:0,  lsb:112,pc:66},
-{num:165,name:"Alto Sax",                     cat:"Woodwind",msb:0,  lsb:112,pc:65},
-{num:166,name:"Soprano Sax",                  cat:"Woodwind",msb:0,  lsb:112,pc:64},
-{num:167,name:"Baritone Sax",                 cat:"Woodwind",msb:0,  lsb:112,pc:67},
-{num:168,name:"Breathy Tenor Sax",            cat:"Woodwind",msb:0,  lsb:114,pc:66},
-{num:169,name:"Clarinet",                     cat:"Woodwind",msb:0,  lsb:112,pc:71},
-{num:170,name:"Oboe",                         cat:"Woodwind",msb:0,  lsb:112,pc:68},
-{num:171,name:"English Horn",                 cat:"Woodwind",msb:0,  lsb:112,pc:69},
-{num:172,name:"Bassoon",                      cat:"Woodwind",msb:0,  lsb:112,pc:70},
-{num:173,name:"Woodwind Ensemble",            cat:"Woodwind",msb:0,  lsb:116,pc:71},
-{num:174,name:"S.Art Lite Flute",             cat:"Woodwind",msb:8,  lsb:96, pc:73},
-{num:175,name:"Sweet! Flute",                 cat:"Woodwind",msb:0,  lsb:114,pc:73},
-{num:176,name:"Sweet! Classical Flute",       cat:"Woodwind",msb:0,  lsb:115,pc:73},
-{num:177,name:"Sweet! Pan Flute",             cat:"Woodwind",msb:0,  lsb:113,pc:75},
-{num:178,name:"Flute",                        cat:"Woodwind",msb:0,  lsb:112,pc:73},
-{num:180,name:"Piccolo",                      cat:"Woodwind",msb:0,  lsb:112,pc:72},
-{num:181,name:"Pan Flute",                    cat:"Woodwind",msb:0,  lsb:112,pc:75},
-{num:182,name:"Recorder",                     cat:"Woodwind",msb:0,  lsb:112,pc:74},
-{num:183,name:"Ocarina",                      cat:"Woodwind",msb:0,  lsb:112,pc:79},
-{num:184,name:"Gemini",                       cat:"Synth",   msb:104,lsb:20, pc:90},
-{num:185,name:"Hands Up!",                    cat:"Synth",   msb:104,lsb:21, pc:90},
-{num:186,name:"RS Saw Lead 1",                cat:"Synth",   msb:0,  lsb:104,pc:81},
-{num:187,name:"RS Saw Lead 2",                cat:"Synth",   msb:0,  lsb:106,pc:81},
-{num:188,name:"RS Dist Lead",                 cat:"Synth",   msb:0,  lsb:114,pc:83},
-{num:189,name:"RS Dual Square",               cat:"Synth",   msb:0,  lsb:127,pc:80},
-{num:190,name:"RS Ramp Lead",                 cat:"Synth",   msb:0,  lsb:107,pc:81},
-{num:191,name:"RS Tech Saw",                  cat:"Synth",   msb:0,  lsb:108,pc:81},
-{num:192,name:"RS Quack Lead",                cat:"Synth",   msb:0,  lsb:119,pc:84},
-{num:197,name:"Square Lead",                  cat:"Synth",   msb:0,  lsb:112,pc:80},
-{num:198,name:"Sawtooth Lead",                cat:"Synth",   msb:0,  lsb:112,pc:81},
-{num:202,name:"Analogon 1",                   cat:"Synth",   msb:0,  lsb:115,pc:81},
-{num:203,name:"Fargo 1",                      cat:"Synth",   msb:0,  lsb:119,pc:81},
-{num:206,name:"Voice Lead",                   cat:"Synth",   msb:0,  lsb:112,pc:85},
-{num:218,name:"Choir",                        cat:"Choir&Pad",msb:0, lsb:112,pc:52},
-{num:219,name:"Gospel Hmm",                   cat:"Choir&Pad",msb:104,lsb:12,pc:53},
-{num:220,name:"Gospel Wow",                   cat:"Choir&Pad",msb:104,lsb:13,pc:53},
-{num:221,name:"Vocal Ensemble",               cat:"Choir&Pad",msb:0, lsb:113,pc:52},
-{num:222,name:"Air Choir",                    cat:"Choir&Pad",msb:0, lsb:112,pc:54},
-{num:224,name:"Vox Humana",                   cat:"Choir&Pad",msb:0, lsb:112,pc:53},
-{num:233,name:"Sweet Heaven",                 cat:"Choir&Pad",msb:0, lsb:118,pc:88},
-{num:234,name:"Dream Heaven",                 cat:"Choir&Pad",msb:0, lsb:121,pc:88},
-{num:235,name:"Symbiont",                     cat:"Choir&Pad",msb:0, lsb:113,pc:88},
-{num:236,name:"Stardust",                     cat:"Choir&Pad",msb:0, lsb:112,pc:98},
-{num:237,name:"Xenon Pad",                    cat:"Choir&Pad",msb:0, lsb:112,pc:91},
-{num:238,name:"Equinox",                      cat:"Choir&Pad",msb:0, lsb:112,pc:94},
-{num:239,name:"Fantasia",                     cat:"Choir&Pad",msb:0, lsb:112,pc:88},
-{num:240,name:"Dark Moon",                    cat:"Choir&Pad",msb:0, lsb:113,pc:89},
-{num:241,name:"Brightness",                   cat:"Choir&Pad",msb:0, lsb:112,pc:100},
-{num:242,name:"Bell Pad",                     cat:"Choir&Pad",msb:0, lsb:113,pc:100},
-{num:243,name:"Banjo",                        cat:"World",   msb:0,  lsb:112,pc:105},
-{num:244,name:"Fiddle",                       cat:"World",   msb:0,  lsb:0,  pc:110},
-{num:247,name:"Bagpipe",                      cat:"World",   msb:0,  lsb:0,  pc:109},
-{num:248,name:"Dulcimer 1",                   cat:"World",   msb:0,  lsb:0,  pc:15},
-{num:257,name:"Kalimba",                      cat:"World",   msb:0,  lsb:0,  pc:108},
-{num:258,name:"Harmonium 1",                  cat:"World",   msb:0,  lsb:113,pc:20},
-{num:262,name:"Sitar 1",                      cat:"World",   msb:0,  lsb:0,  pc:104},
-{num:265,name:"Shehnai",                      cat:"World",   msb:0,  lsb:0,  pc:111},
-{num:267,name:"Bansuri",                      cat:"World",   msb:0,  lsb:117,pc:73},
-{num:270,name:"Er Hu",                        cat:"World",   msb:0,  lsb:115,pc:110},
-{num:272,name:"Pi Pa",                        cat:"World",   msb:0,  lsb:116,pc:105},
-{num:273,name:"Gu Zheng",                     cat:"World",   msb:0,  lsb:113,pc:107},
-{num:274,name:"Yang Qin",                     cat:"World",   msb:0,  lsb:40, pc:46},
-{num:278,name:"Shamisen",                     cat:"World",   msb:0,  lsb:0,  pc:106},
-{num:279,name:"Koto",                         cat:"World",   msb:0,  lsb:0,  pc:107},
-{num:282,name:"Vibraphone",                   cat:"Mallet",  msb:0,  lsb:112,pc:11},
-{num:283,name:"Jazz Vibes",                   cat:"Mallet",  msb:0,  lsb:113,pc:11},
-{num:284,name:"Marimba",                      cat:"Mallet",  msb:0,  lsb:112,pc:12},
-{num:286,name:"Xylophone",                    cat:"Mallet",  msb:0,  lsb:112,pc:13},
-{num:288,name:"Steel Drums",                  cat:"Mallet",  msb:0,  lsb:112,pc:114},
-{num:290,name:"Celesta",                      cat:"Mallet",  msb:0,  lsb:112,pc:8},
-{num:291,name:"Music Box",                    cat:"Mallet",  msb:0,  lsb:112,pc:10},
-{num:292,name:"Tubular Bells",                cat:"Mallet",  msb:0,  lsb:112,pc:14},
-{num:293,name:"Timpani",                      cat:"Mallet",  msb:0,  lsb:112,pc:47},
-{num:296,name:"Standard Kit 1",               cat:"Drums",   msb:127,lsb:0,  pc:0},
-{num:297,name:"Standard Kit 2",               cat:"Drums",   msb:127,lsb:0,  pc:1},
-{num:298,name:"Room Kit",                     cat:"Drums",   msb:127,lsb:0,  pc:8},
-{num:299,name:"Rock Kit",                     cat:"Drums",   msb:127,lsb:0,  pc:16},
-{num:300,name:"Electronic Kit",               cat:"Drums",   msb:127,lsb:0,  pc:24},
-{num:301,name:"House Kit",                    cat:"Drums",   msb:127,lsb:0,  pc:64},
-{num:302,name:"T8 Kit",                       cat:"Drums",   msb:127,lsb:0,  pc:58},
-{num:303,name:"T9 Kit",                       cat:"Drums",   msb:127,lsb:0,  pc:59},
-{num:304,name:"Analog Kit",                   cat:"Drums",   msb:127,lsb:0,  pc:25},
-{num:305,name:"Dance Kit",                    cat:"Drums",   msb:127,lsb:0,  pc:112},
-{num:306,name:"Jazz Kit",                     cat:"Drums",   msb:127,lsb:0,  pc:32},
-{num:307,name:"Brush Kit",                    cat:"Drums",   msb:127,lsb:0,  pc:40},
-{num:308,name:"Symphony Kit",                 cat:"Drums",   msb:127,lsb:0,  pc:48},
-];
-
-
-function loadTones(){
-  populateToneSelects();
-}
-
-function populateToneSelects(){
-  [0,1].forEach(si=>{
-    const sel=document.getElementById(`tone${si}`);
-    sel.innerHTML='';
-    PSR_VOICES.forEach(t=>{
-      const o=document.createElement('option');
-      o.value=JSON.stringify(t);
-      o.textContent=`${String(t.num).padStart(3,'0')}  ${t.name}`;
-      sel.appendChild(o);
-    });
-    sel.disabled=false;
-    document.getElementById(`tonenum${si}`).textContent='';
-    if(si===1){
-      const idx=PSR_VOICES.findIndex(t=>t.name.toLowerCase().includes('violin')||t.name.toLowerCase().includes('strings'));
-      if(idx>0) sel.selectedIndex=idx;
-    }
-    sel.onchange=()=>{ sendProgramChange(si); updateToneNum(si); };
-    updateToneNum(si);
-  });
-}
-
-function updateToneNum(si){
-  const sel=document.getElementById(`tone${si}`);
-  if(!sel||!sel.value) return;
+async function loadTones(){
   try{
-    const t=JSON.parse(sel.value);
-    document.getElementById(`tonenum${si}`).textContent=`#${t.num} · MSB:${t.msb} LSB:${t.lsb} PC:${t.pc+1}`;
-  }catch(e){}
-}
-
-
-function showToneFileInput(){
-  [0,1].forEach(si=>{
-    const sel=document.getElementById(`tone${si}`);
-    sel.innerHTML='<option>⚠ JSON non chargé</option>';
-    sel.disabled=true;
-    const num=document.getElementById(`tonenum${si}`);
-    num.innerHTML=`<span style="color:#FF6B6B;font-size:.48rem;">
-      Fichier bloqué (CORS local). 
-      <label style="cursor:pointer;text-decoration:underline;color:var(--gold);">
-        
-        <input type="file" accept=".json" style="display:none" onchange="loadTonesFromFile(event)">
-      </label>
-    </span>`;
-  });
-}
-
-function loadTonesFromFile(event){
-  const file=event.target.files[0];
-  if(!file) return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    try{
-      tones=JSON.parse(e.target.result);
-      populateToneSelects();
-    }catch(err){ alert('Erreur lecture JSON: '+err.message); }
-  };
-  reader.readAsText(file);
-}
-
-function populateToneSelects(){
+    const r=await fetch('https://rogergodro.github.io/CTK3200_WPA_MIDI/ctk3200_tones.json');
+    tones=await r.json();
+  }catch(e){
+    tones=[{num:1,name:'Grand Piano',msb:0,prog:0},{num:49,name:'Strings',msb:0,prog:48}];
+  }
   [0,1].forEach(si=>{
     const sel=document.getElementById(`tone${si}`);
     sel.innerHTML='';
@@ -850,15 +568,11 @@ function populateToneSelects(){
       sel.appendChild(o);
     });
     sel.disabled=false;
-    // Remove file input message
-    const num=document.getElementById(`tonenum${si}`);
-    num.innerHTML='';
     if(si===1){
       const idx=tones.findIndex(t=>t.name.toLowerCase().includes('violin')||t.name.toLowerCase().includes('string'));
       if(idx>0) sel.selectedIndex=idx;
     }
-    // Avoid duplicate listeners
-    sel.onchange=()=>{ sendProgramChange(si); updateToneNum(si); };
+    sel.addEventListener('change',()=>{ sendProgramChange(si); updateToneNum(si); });
     updateToneNum(si);
   });
 }
@@ -1205,25 +919,8 @@ function updateCenter(){
 }
 
 // ──────────────────────────────────────────────────
-// REFRESH MIDI — re-enumerate ports without page reload
+// FULLSCREEN
 // ──────────────────────────────────────────────────
-async function refreshMidi(){
-  const btn=document.getElementById('refreshmidibtn');
-  btn.textContent='⏳ Scan...';
-  btn.disabled=true;
-  try{
-    // Request new access — forces re-enumeration
-    midiAccess=await navigator.requestMIDIAccess({sysex:false});
-    midiAccess.onstatechange=()=>populateMidiOutputs();
-    populateMidiOutputs();
-    setMidiStatus('Ports rafraîchis',true);
-  }catch(e){
-    setMidiStatus('Échec refresh',false);
-  }
-  setTimeout(()=>{ btn.textContent='🔄 MIDI'; btn.disabled=false; },1200);
-}
-
-document.getElementById('refreshmidibtn').addEventListener('click',refreshMidi);
 function toggleFullscreen(){
   if(!document.fullscreenElement){
     document.documentElement.requestFullscreen().catch(()=>{});
@@ -1275,10 +972,12 @@ function startAll(){
 document.getElementById('ovldismiss').addEventListener('click',startAll);
 document.getElementById('ovlskip').addEventListener('click',startAll);
 
+// ──────────────────────────────────────────────────
 // BOOT
+// ──────────────────────────────────────────────────
 (async()=>{
   await initMIDI();
-  loadTones();
+  await loadTones();
 })();
 </script>
 </body>
