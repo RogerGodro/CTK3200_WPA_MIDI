@@ -442,7 +442,7 @@ const DESCS = {
 // ──────────────────────────────────────────────────
 let mode='duel', threshold=0.12, globalTrans=0;
 let octaves=[4,4], gpIdxs=[null,null], prevBtns=[[],[]], loopRunning=false;
-let tones=[];
+let tones=PSR_VOICES;
 let pState=[
   {noteIdx:0,midiNote:-1,active:false,sustain:false,vol:0,angle:270},
   {noteIdx:7,midiNote:-1,active:false,sustain:false,vol:0,angle:270}
@@ -774,7 +774,6 @@ const PSR_VOICES=[
 {num:308,name:"Symphony Kit",                 cat:"Drums",   msb:127,lsb:0,  pc:48},
 ];
 
-let tones = PSR_VOICES; // alias pour compatibilité
 
 function loadTones(){
   populateToneSelects();
