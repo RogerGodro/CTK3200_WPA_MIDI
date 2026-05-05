@@ -1267,7 +1267,8 @@ document.getElementById('thresh').addEventListener('input',e=>{
   document.getElementById('threshval').textContent=threshold.toFixed(2);
 });
 
-function startAll(){
+async function startAll(){
+  await initMIDI();            // geste utilisateur → permission MIDI accordée
   document.getElementById('overlay').classList.add('hidden');
   if(!loopRunning){loopRunning=true;requestAnimationFrame(loop);}
   sendProgramChange(0);sendProgramChange(1);
@@ -1275,13 +1276,11 @@ function startAll(){
 document.getElementById('ovldismiss').addEventListener('click',startAll);
 document.getElementById('ovlskip').addEventListener('click',startAll);
 
-// ──────────────────────────────────────────────────
-// BOOT
-// ──────────────────────────────────────────────────
-(async()=>{
-  await initMIDI();
-  loadTones();
-})();
+// Clic sur le statut MIDI = retry
+document.getElementById('midistatus')?.addEventListener('click',initMIDI);
+
+// BOOT — seulement les tones (pas de MIDI avant geste utilisateur)
+loadTones();
 </script>
 </body>
 </html>
