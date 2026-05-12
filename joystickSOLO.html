@@ -433,14 +433,15 @@ const IVm  = [[0],[0,7],[0,3,7],[0,3,7,10],[0,3,7,10,14],[0,3,7,10,14]];
 const CLBL = ['NOTE','QUINTE','TRIADE','7e DOM.','9e','9e ★'];
 const CDTL = ['Note seule','Root+5e','+Tierce','+7e','+9e','Multi-canal ±voix'];
 
-// ── AXIS MAP (calibration) ─────────────────────────────────────────────────
-// Defaults = Extreme 3D Pro standard HID Chrome/Windows
+// ── AXIS MAP — valeurs confirmées Extreme 3D Pro + driver Logitech/Windows ──
+// (from session Monotron jan 2026 : axe 5=twist, axe 6=molette, axe 9=HAT POV)
+// HAT axe 9 : Up=-1.0, Right=-0.429, Down=0.143, Left=0.714, Neutre>1.1
 const DEFMAP = {
-  bend:2, throttle:3, tInvert:true,
-  hatType:'buttons',                      // 'buttons'|'axis2D'|'axisPOV'|'none'
-  hUp:12, hDn:13, hLt:14, hRt:15,        // button indices
-  hAX:-1, hAY:-1,                         // axis2D indices
-  hPOV:-1,                                // axisPOV index
+  bend:5, throttle:6, tInvert:false,
+  hatType:'axisPOV',    // single-axis POV hat
+  hUp:12, hDn:13, hLt:14, hRt:15,  // inutilisés avec axisPOV
+  hAX:-1, hAY:-1,
+  hPOV:9,               // axe 9 = HAT sur Extreme 3D Pro Logitech
 };
 
 // ── STATE ──────────────────────────────────────────────────────────────────
@@ -589,13 +590,14 @@ function applyCalResults(){
   if(r.hRt && r.hUp){
     if(r.hRt.type==='btn' && r.hUp.type==='btn'){
       m.hatType='buttons'; m.hRt=r.hRt.idx; m.hUp=r.hUp.idx;
-      // Infer down/left from proximity (usually sequential)
-      m.hDn=r.hUp.idx===12?13:r.hUp.idx-1; // common: 12=up,13=dn
+      m.hDn=r.hUp.idx===12?13:r.hUp.idx-1;
       m.hLt=r.hRt.idx===15?14:r.hRt.idx-1;
+    } else if(r.hRt.type==='axis' && r.hUp.type==='axis' && r.hRt.idx===r.hUp.idx){
+      // Même axe pour les 2 directions → POV single-axis (Extreme 3D Pro = axe 9)
+      m.hatType='axisPOV'; m.hPOV=r.hRt.idx;
     } else if(r.hRt.type==='axis'){
-      m.hatType='axis2D';
-      m.hAX=r.hRt.idx;
-      m.hAY=r.hUp.idx>=0 ? r.hUp.idx : r.hRt.idx+1;
+      m.hatType='axis2D'; m.hAX=r.hRt.idx;
+      m.hAY=r.hUp.type==='axis' ? r.hUp.idx : r.hRt.idx+1;
     }
   } else if(r.hRt && r.hRt.type==='axis'){
     m.hatType='axisPOV'; m.hPOV=r.hRt.idx;
@@ -684,9 +686,16 @@ function procGP(gp){
     hL=hx<-0.5;hR=hx>0.5;hU=hy<-0.5;hD=hy>0.5;
     hatRaw=`hx:${hx.toFixed(2)} hy:${hy.toFixed(2)}`;
   } else if(m.hatType==='axisPOV'){
-    const pv=m.hPOV>=0?(ax[m.hPOV]||0):999;
-    hU=pv<-0.85;hR=pv>-0.15&&pv<0.15;hD=pv>0.6&&pv<0.8;hL=pv>0.85;
-    hatRaw=`pov:${pv.toFixed(2)}`;
+    // Valeurs confirmées Extreme 3D Pro (Logitech driver, Windows)
+    // Up=-1.0, Right=-0.429, Down=0.143, Left=0.714, Neutre>1.1
+    const pv=m.hPOV>=0&&m.hPOV<ax.length?(ax[m.hPOV]||0):999;
+    if(pv<=1.1){   // >1.1 = neutre
+      hU = pv < -0.85;
+      hR = pv >= -0.60 && pv < -0.20;
+      hD = pv >=  0.0  && pv <  0.35;
+      hL = pv >=  0.55 && pv <= 1.1;
+    }
+    hatRaw=`pov[${m.hPOV}]:${pv.toFixed(3)}`;
   } else {
     // Show diagnostic: which buttons and axes are active
     const ex=[];
@@ -747,8 +756,8 @@ function handleBase(i){
     switch(s){
       case 0:sendPanic();break;
       case 1:S.trigOn=false;noteOff();$('i-trig').classList.remove('on');break;
-      case 2:chVel(+10);break;
-      case 3:chVel(-10);break;
+      case 2:chVel(-10);break;
+      case 3:chVel(+10);break;
       case 4:tgQuality();break;
       case 5:tgStyle();break;
     }
@@ -780,7 +789,8 @@ function buildChord(){
 }
 
 function noteOn(){
-  if(S.sel<0)return;
+  if(!S.midiOut){ flash('⚠ Aucune sortie MIDI — retourne au Setup'); return; }
+  if(S.sel<0){ flash('← Pousse le manche pour sélectionner une note'); return; }
   stopNotes();
   const nn=buildChord(); if(!nn.length)return;
   nn.forEach(n=>mNOn(1,n,S.vel));
@@ -791,7 +801,8 @@ function noteOn(){
     mNOn(2,r,Math.round(S.vel*.7));mNOn(3,r,Math.round(S.vel*.6));
     S.ch2=S.ch3=true;
   }
-  updNote(true); $('s-note').textContent=COFN[S.sel]+S.oct+' #'+nn[0];
+  updNote(true);
+  $('s-note').textContent=COFN[S.sel]+S.oct+' #'+nn[0]+' vel:'+S.vel;
 }
 
 function stopNotes(){
@@ -893,7 +904,7 @@ function renderGrid(){
   const g=$('btn-grid'); g.innerHTML='';
   if(S.mode==='A'){
     [{n:'BTN 7',l:'PANIC',d:true},{n:'BTN 8',l:'Note Off',d:false},
-     {n:'BTN 9',l:'Vélo +10',d:false},{n:'BTN 10',l:'Vélo −10',d:false},
+     {n:'BTN 9',l:'Vélo −10',d:false},{n:'BTN 10',l:'Vélo +10',d:false},
      {n:'BTN 11',l:'Maj/Min',d:false},{n:'BTN 12',l:'Style ▶■',d:false}
     ].forEach((def,s)=>{
       const div=document.createElement('div');
