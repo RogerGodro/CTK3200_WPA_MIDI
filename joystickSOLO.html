@@ -434,14 +434,15 @@ const CLBL = ['NOTE','QUINTE','TRIADE','7e DOM.','9e','9e ★'];
 const CDTL = ['Note seule','Root+5e','+Tierce','+7e','+9e','Multi-canal ±voix'];
 
 // ── AXIS MAP — valeurs confirmées Extreme 3D Pro + driver Logitech/Windows ──
-// (from session Monotron jan 2026 : axe 5=twist, axe 6=molette, axe 9=HAT POV)
+// axe 5=twist(bend), axe 6=molette(complexité, inversée), axe 9=HAT POV
 // HAT axe 9 : Up=-1.0, Right=-0.429, Down=0.143, Left=0.714, Neutre>1.1
+// Molette inversée : position max(+) = -1.0 → tInvert:true
 const DEFMAP = {
-  bend:5, throttle:6, tInvert:false,
-  hatType:'axisPOV',    // single-axis POV hat
-  hUp:12, hDn:13, hLt:14, hRt:15,  // inutilisés avec axisPOV
+  bend:5, throttle:6, tInvert:true,
+  hatType:'axisPOV',
+  hUp:12, hDn:13, hLt:14, hRt:15,
   hAX:-1, hAY:-1,
-  hPOV:9,               // axe 9 = HAT sur Extreme 3D Pro Logitech
+  hPOV:9,
 };
 
 // ── STATE ──────────────────────────────────────────────────────────────────
@@ -708,8 +709,8 @@ function procGP(gp){
   const ph=S.ph;
   if(hU&&!ph.u) chOct(+1);
   if(hD&&!ph.d) chOct(-1);
-  if(hR&&!ph.r) chVoice(+1);
   if(hL&&!ph.l) chVoice(-1);
+  if(hR&&!ph.r) chVoice(+1);
   S.ph={u:hU,d:hD,l:hL,r:hR};
 
   // Auto-retrigger on note change
@@ -867,10 +868,10 @@ function assignFav(s){
 function clearFav(s){S.favs[s]=null;saveS();renderGrid();}
 
 function saveS(){
-  localStorage.setItem('solo-v2',JSON.stringify({am:S.am,favs:S.favs}));
+  localStorage.setItem('solo-v3',JSON.stringify({am:S.am,favs:S.favs}));
 }
 function loadS(){
-  try{const d=JSON.parse(localStorage.getItem('solo-v2')||'{}');
+  try{const d=JSON.parse(localStorage.getItem('solo-v3')||'{}');
     if(d.am)  Object.assign(S.am,d.am);
     if(d.favs)S.favs=d.favs;
   }catch(e){}
