@@ -746,6 +746,7 @@ select:hover, select:focus { border-color: var(--amber-dim); }
       <div class="panel-section">
         <div class="section-label">ÉTAT</div>
         <div class="indicator-row">
+          <div class="indicator" id="ind-trigger">TRIG</div>
           <div class="indicator" id="ind-sustain">HOLD</div>
           <div class="indicator" id="ind-arp">ARP</div>
         </div>
@@ -852,9 +853,12 @@ select:hover, select:focus { border-color: var(--amber-dim); }
       <span>CPXTÉ</span>
       <span class="status-val" id="status-cpx">0</span>
     </div>
+    <div class="status-sep">·</div>
+    <div class="status-item">
+      <span>HAT</span>
+      <span class="status-val" id="status-hat">—</span>
+    </div>
   </div>
-
-</div><!-- end app -->
 
 <script>
 'use strict';
@@ -964,7 +968,8 @@ const S = {
   playingNotes: [],      // currently-on MIDI notes (ch1)
   playingCh2: false,
   playingCh3: false,
-  triggerHeld: false,
+  triggerOn: false,           // toggle ON/OFF (plus de hold)
+  lastTriggeredNoteIdx: -1,  // pour re-déclencher si note change pendant triggerOn
   // params
   octave: 4,
   velocity: 100,
@@ -1114,23 +1119,57 @@ function processGamepad(gp) {
     updateComplexityDisplay();
   }
 
-  // ── HAT (POV) ──
-  // Try buttons[12-15] first (most common Chrome/Windows mapping)
-  // Fallback: axes[4,5] if available
+  // ── HAT (POV) — détection multi-mapping ──
+  // Le Extreme 3D Pro peut mapper le hat de plusieurs façons selon le driver Windows.
+  // On essaie tous les mappings possibles.
   let hatUp=false, hatRight=false, hatDown=false, hatLeft=false;
 
   if (btns.length > 15) {
-    hatUp    = btns[12] && btns[12].pressed;
-    hatRight = btns[13] && btns[13].pressed;
-    hatDown  = btns[14] && btns[14].pressed;
-    hatLeft  = btns[15] && btns[15].pressed;
-  } else if (axes.length > 5) {
-    // axes[4]=hat X, axes[5]=hat Y
-    hatLeft  = axes[4] < -0.5;
-    hatRight = axes[4] > 0.5;
-    hatUp    = axes[5] < -0.5;
-    hatDown  = axes[5] > 0.5;
+    // Mapping le plus courant Chrome/Windows : 12=Up, 13=Down, 14=Left, 15=Right
+    // (certains drivers inversent 13 et 14)
+    const b12 = btns[12] && btns[12].pressed;
+    const b13 = btns[13] && btns[13].pressed;
+    const b14 = btns[14] && btns[14].pressed;
+    const b15 = btns[15] && btns[15].pressed;
+    // On accepte les deux ordres possibles
+    hatUp    = b12;
+    hatDown  = b13 || b14;   // soit 13 soit 14 selon mapping
+    hatLeft  = b14 || b13;
+    hatRight = b15;
+    // Résolution: si 13 ET 14 sont les deux "potentiels" bas/gauche,
+    // on les traite séparément via S.hatRawBtns
+    hatDown  = b13;
+    hatLeft  = b14;
+    hatRight = b15;
   }
+
+  // Fallback axes[4,5] ou axes[4] seul (POV single-axis)
+  if (!hatUp && !hatDown && !hatLeft && !hatRight && axes.length > 4) {
+    if (axes.length > 5) {
+      hatLeft  = axes[4] < -0.5;
+      hatRight = axes[4] > 0.5;
+      hatUp    = axes[5] < -0.5;
+      hatDown  = axes[5] > 0.5;
+    } else if (axes.length === 5) {
+      // POV single axis: -1=N, -0.71=NE, 0=E, 0.43=SE, 0.71=S, 0.86=SW, 1=W
+      const pov = axes[4];
+      if (pov !== undefined && !isNaN(pov)) {
+        hatUp    = pov > -1.05 && pov < -0.85; // ~-1.0
+        hatRight = pov > -0.15 && pov <  0.15; // ~0
+        hatDown  = pov >  0.6  && pov <  0.8;  // ~0.71
+        hatLeft  = pov >  0.85;                 // ~1.0
+      }
+    }
+  }
+
+  // Debug hat raw en status bar
+  S.hatDebug = {
+    btns: btns.length > 15
+      ? [btns[12]?.pressed?'↑':'·', btns[13]?.pressed?'↓':'·', btns[14]?.pressed?'←':'·', btns[15]?.pressed?'→':'·'].join('')
+      : '—',
+    ax: axes.length > 4 ? axes[4].toFixed(2) : '—',
+    ay: axes.length > 5 ? axes[5].toFixed(2) : '—',
+  };
 
   const prevHat = S.prevHat;
 
@@ -1140,6 +1179,12 @@ function processGamepad(gp) {
   if (hatLeft  && !prevHat.left)  { changeVoice(-1); }
 
   S.prevHat = {up:hatUp, right:hatRight, down:hatDown, left:hatLeft};
+
+  // ── AUTO-RETRIGGER si note change pendant que triggerOn ──
+  if (S.triggerOn && S.selectedNoteIdx >= 0 &&
+      S.selectedNoteIdx !== S.lastTriggeredNoteIdx) {
+    triggerNoteOn();
+  }
 
   // ── BUTTONS ──
   const NUM_BTNS = Math.min(btns.length, 16);
@@ -1169,9 +1214,14 @@ function onBtnDown(i) {
   renderBtnGrid();
 
   switch(i) {
-    case 0: // Gâchette — Note On
-      S.triggerHeld = true;
-      triggerNoteOn();
+    case 0: // Gâchette — Toggle ON/OFF
+      S.triggerOn = !S.triggerOn;
+      if (S.triggerOn) {
+        triggerNoteOn();
+      } else {
+        triggerNoteOff();
+      }
+      updateTriggerIndicator();
       break;
     case 1: // Pouce — Sustain toggle
       toggleSustain();
@@ -1198,11 +1248,7 @@ function onBtnDown(i) {
 function onBtnUp(i) {
   S.activeGridBtns.delete(i);
   renderBtnGrid();
-
-  if (i === 0) { // Trigger released
-    S.triggerHeld = false;
-    if (!S.sustain) triggerNoteOff();
-  }
+  // Le trigger est maintenant un toggle — rien à faire au release
 }
 
 function handleBaseBtn(i) {
@@ -1300,22 +1346,22 @@ function buildChordNotes() {
 
 function triggerNoteOn() {
   if (S.selectedNoteIdx < 0) return;
-  forceNoteOff(); // kill previous
+  // Stopper la note précédente proprement sans changer triggerOn
+  stopPlayingNotes();
   const notes = buildChordNotes();
   if (notes.length === 0) return;
 
   notes.forEach(n => sendNoteOn(1, n, S.velocity));
   S.playingNotes = notes;
+  S.lastTriggeredNoteIdx = S.selectedNoteIdx;
 
-  // Multi-channel for complexity level 5
+  // Multi-channel pour complexité niveau 5
   if (S.complexity >= 5) {
     const rootNote = notes[0];
     const voiceAbove = VOICES[Math.min(S.voiceIdx + 1, VOICES.length - 1)];
     const voiceBelow = VOICES[Math.max(S.voiceIdx - 1, 0)];
-
     sendProgramChange(2, voiceAbove);
     sendProgramChange(3, voiceBelow);
-
     sendNoteOn(2, rootNote, Math.round(S.velocity * 0.7));
     sendNoteOn(3, rootNote, Math.round(S.velocity * 0.6));
     S.playingCh2 = true;
@@ -1324,19 +1370,29 @@ function triggerNoteOn() {
 
   updateNoteDisplay(true);
   document.getElementById('status-note').textContent =
-    COF_NAMES[S.selectedNoteIdx] + (S.octave) + ' #' + notes[0];
+    COF_NAMES[S.selectedNoteIdx] + S.octave + ' #' + notes[0];
 }
 
-function triggerNoteOff() {
+function stopPlayingNotes() {
+  // Stoppe les notes sans toucher à triggerOn
   S.playingNotes.forEach(n => sendNoteOff(1, n));
   if (S.playingCh2) { S.playingNotes.slice(0,1).forEach(n => sendNoteOff(2, n)); S.playingCh2 = false; }
   if (S.playingCh3) { S.playingNotes.slice(0,1).forEach(n => sendNoteOff(3, n)); S.playingCh3 = false; }
   S.playingNotes = [];
+}
+
+function triggerNoteOff() {
+  stopPlayingNotes();
+  S.lastTriggeredNoteIdx = -1;
   updateNoteDisplay(false);
 }
 
 function forceNoteOff() {
-  if (S.playingNotes.length > 0) triggerNoteOff();
+  if (S.playingNotes.length > 0) stopPlayingNotes();
+  S.triggerOn = false;
+  S.lastTriggeredNoteIdx = -1;
+  updateNoteDisplay(false);
+  updateTriggerIndicator();
 }
 
 // ═══════════════════════════════════════
@@ -1365,7 +1421,10 @@ function changeVelocity(delta) {
   document.getElementById('vel-bar').style.width = pct + '%';
 }
 
-function toggleSustain() {
+function updateTriggerIndicator() {
+  const el = document.getElementById('ind-trigger');
+  if (el) el.classList.toggle('on', S.triggerOn);
+}
   S.sustain = !S.sustain;
   sendCC(1, 64, S.sustain ? 127 : 0);
   document.getElementById('ind-sustain').classList.toggle('on', S.sustain);
@@ -1576,6 +1635,11 @@ function updateStatusBar() {
     S.gpId ? S.gpId.substring(0,22) : '—';
   document.getElementById('status-ch').textContent =
     S.complexity >= 5 ? '1+2+3' : '1';
+  // Hat debug
+  if (S.hatDebug) {
+    const el = document.getElementById('status-hat');
+    if (el) el.textContent = `${S.hatDebug.btns} ax4:${S.hatDebug.ax} ax5:${S.hatDebug.ay}`;
+  }
 }
 
 let statusTimeout;
