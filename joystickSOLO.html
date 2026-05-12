@@ -1110,10 +1110,11 @@ function processGamepad(gp) {
   }
 
   // ── AXES: complexity (throttle) ──
-  // Throttle on Extreme 3D Pro: axis[3] typically 1.0 at rest, -1.0 at max
-  // Invert so max forward = max complexity
-  const throttleNorm = Math.max(0, Math.min(1, (-S.rawThrottle + 1) / 2));
-  const newComplexity = Math.floor(throttleNorm * 6);
+  // Extreme 3D Pro: axes[3] = 1.0 au repos (levier vers toi), -1.0 au max (poussé)
+  // On normalise : repos = complexité 0, max = complexité 5
+  const rawT = S.rawThrottle;
+  const throttleNorm = Math.max(0, Math.min(1, (1 - rawT) / 2));
+  const newComplexity = Math.min(5, Math.floor(throttleNorm * 6));
   if (newComplexity !== S.complexity) {
     S.complexity = newComplexity;
     updateComplexityDisplay();
@@ -1425,10 +1426,12 @@ function updateTriggerIndicator() {
   const el = document.getElementById('ind-trigger');
   if (el) el.classList.toggle('on', S.triggerOn);
 }
+
+function toggleSustain() {
   S.sustain = !S.sustain;
   sendCC(1, 64, S.sustain ? 127 : 0);
   document.getElementById('ind-sustain').classList.toggle('on', S.sustain);
-  if (!S.sustain && !S.triggerHeld) triggerNoteOff();
+  if (!S.sustain && !S.triggerOn) triggerNoteOff();
 }
 
 function toggleArpeggio() {
